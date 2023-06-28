@@ -30,7 +30,7 @@ class DbReader implements IDbReader {
 
     async *next(min = 100) {
         do {
-            const rows = this.cursor.read(min);
+            const rows = await this.cursor.read(min);
             yield *rows;
             if (rows.length === 0) {
                 break;

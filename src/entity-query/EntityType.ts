@@ -1,8 +1,30 @@
+import type { IColumn } from "../decorators/Column.js";
+import { IClassOf } from "../decorators/IClassOf.js";
 
-export interface IDbColumn {
+
+interface IEntityRelation {
+
+    type?: EntityType;
+    
+    /**
+     * Name of own field...
+     */
     name: string;
-    columnName?: string;
-    isKey?: boolean;
+
+    isCollection?: boolean;
+
+    
+    foreignKey: string;
+
+    relatedTypeClass: IClassOf<any>;
+
+    relatedName: string;
+
+
+    relatedEntity?: EntityType;
+
+    relatedRelation?: IEntityRelation;
+
 }
 
 /**
@@ -10,24 +32,38 @@ export interface IDbColumn {
  */
 export default class EntityType {
 
+    public readonly typeClass: IClassOf<any>;
+
     public readonly name: string;
     public readonly schema: string;
 
-    public readonly columns: IDbColumn[];
+    private fieldMap: Map<string, IColumn> = new Map();
+    private columnMap: Map<string, IColumn> = new Map();
 
-    public get keys() {
-        return this.columns.filter((x) => x.isKey);
+    public readonly columns: IColumn[] = [];
+
+    public readonly relations: IEntityRelation[] = [];
+
+    public readonly keys: IColumn[] = [];
+
+    public readonly nonKeys: IColumn[] = [];
+
+    public addColumn(c: IColumn) {
+        this.fieldMap.set(c.name, c);
+        this.columnMap.set(c.columnName, c);
+        this.columns.push(c);
+        if (c.key) {
+            this.keys.push(c);
+        } else {
+            this.nonKeys.push(c);
+        }
     }
 
-    public get nonKeys() {
-        return this.columns.filter((x) => !x.isKey);
+    public getColumn(name: string) {
+        return this.columnMap.get(name);
     }
 
-    constructor(
-        p: Partial<EntityType>
-    ) {
-        Object.setPrototypeOf(p, EntityType.prototype);
-        return p as any;
+    public getField(name: string) {
+        return this.fieldMap.get(name);
     }
-
 }
