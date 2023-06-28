@@ -45,11 +45,16 @@ async function runAll(dir) {
 
 await runAll(start);
 
+let exitCode = 0;
+
 for (const { error, name } of results) {
     if (error) {
+        exitCode = 1;
         console.error(`${name} failed`);
         console.error(error?.stack ?? error);
         continue;
     }
-    console.log(`${name} executed.`)
+    console.log(`${name} executed.`);
 }
+
+process.exit(exitCode);;

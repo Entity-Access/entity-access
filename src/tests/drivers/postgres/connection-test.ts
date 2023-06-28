@@ -4,7 +4,7 @@ import { Query } from "../../../query/Query.js";
 export default async function () {
 
     const connection = new PostgreSqlDriver({
-        host: "127.0.0.1",
+        host: "localhost",
         port: 5432,
         user: "postgres",
         password: "abcd123"
