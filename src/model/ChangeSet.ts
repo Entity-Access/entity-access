@@ -1,4 +1,4 @@
-import type EntityContext from "../EntityContext.js";
+import type EntityContext from "./EntityContext.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import EntityType from "../entity-query/EntityType.js";
 

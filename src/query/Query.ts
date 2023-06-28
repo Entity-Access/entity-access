@@ -69,6 +69,13 @@ export class Query {
                 }
                 if (value !== null && typeof value === "object") {
 
+                    if (value instanceof QueryPart) {
+                        if (value.literal) {
+                            r.push(value);
+                            continue;
+                        }
+                    }
+
                     if (value instanceof Query) {
                         for (const iterator of value.parts) {
                             if (typeof iterator === "string") {

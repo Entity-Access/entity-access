@@ -1,4 +1,4 @@
-import EntityContext from "../../EntityContext.js";
+import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
 import ForeignKey from "../../decorators/ForeignKey.js";
 import Table from "../../decorators/Table.js";
@@ -6,10 +6,10 @@ import PostgreSqlDriver from "../../drivers/postgres/PostgreSqlDriver.js";
 
 export class ShoppingContext extends EntityContext {
 
-    constructor() {
+    constructor(name?) {
         super(new PostgreSqlDriver({
             host: "127.0.0.1",
-            database: "shopping",
+            database: name ?? "shopping",
             password: "abcd123",
             user: "postgres"
         }))

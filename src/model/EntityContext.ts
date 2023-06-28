@@ -1,13 +1,13 @@
-import { IClassOf } from "./decorators/IClassOf.js";
-import { BaseDriver, IDbConnectionString, IQueryTask } from "./drivers/base/BaseDriver.js";
-import ChangeSet from "./model/ChangeSet.js";
-import EntityModel from "./model/EntityModel.js";
-import { Query } from "./query/Query.js";
+import { IClassOf } from "../decorators/IClassOf.js";
+import { BaseDriver, IDbConnectionString, IQueryTask } from "../drivers/base/BaseDriver.js";
+import ChangeSet from "./ChangeSet.js";
+import EntityModel from "./EntityModel.js";
+import { Query } from "../query/Query.js";
 
 export default class EntityContext {
 
     constructor(
-        private driver: BaseDriver
+        public driver: BaseDriver
     ) {
 
     }

@@ -1,4 +1,4 @@
-import type EntityContext from "../EntityContext.js";
+import type EntityContext from "./EntityContext.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import type EntityType from "../entity-query/EntityType.js";
@@ -14,8 +14,8 @@ export class EntitySource<T = any> {
 
     public add(item: Partial<T>) {
         const p = Object.getPrototypeOf(item).constructor;
-        if (!p) {
-            Object.setPrototypeOf(item, this.model.typeClass);
+        if (!p || p === Object) {
+            Object.setPrototypeOf(item, this.model.typeClass.prototype);
         }
         const entry = this.context.changeSet.getEntry(item);
         if (entry.status !== "detached") {
