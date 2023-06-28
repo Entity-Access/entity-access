@@ -7,6 +7,7 @@
         "declarationMap": true,
         "outDir": "dist",
         "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
         "lib": [
             "ES2018"
         ]

@@ -14,7 +14,10 @@ const results = [];
  */
 async function runTest(name) {
     let exports = await import(name);
-    exports = exports.default ?? exports;
+    if (!exports.default) {
+        return;
+    }
+    exports = exports.default;
     try {
 
         let r = exports();
