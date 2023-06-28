@@ -1,5 +1,6 @@
 import type { IColumn } from "../decorators/Column.js";
 import { IClassOf } from "../decorators/IClassOf.js";
+import { Query } from "../query/Query.js";
 
 
 interface IEntityRelation {
@@ -47,6 +48,10 @@ export default class EntityType {
     public readonly keys: IColumn[] = [];
 
     public readonly nonKeys: IColumn[] = [];
+
+    public get fullyQualifiedName() {
+        return this.schema ? Query.quotedLiteral(this.schema, this.name) : Query.quotedLiteral(this.name);
+    }
 
     public addColumn(c: IColumn) {
         this.fieldMap.set(c.name, c);

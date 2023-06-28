@@ -27,7 +27,7 @@ export class Query {
 
     public static literal = (name): QueryPart => QueryPart.from({ name, literal: true });
 
-    public static quotedLiteral = (name): QueryPart => QueryPart.from({ name, literal: true, quoted: true });
+    public static quotedLiteral = (... names: string []): QueryPart[] => names.map((name) => QueryPart.from({ name, literal: true, quoted: true }));
 
     public static join(queries: Query[], separator: string = ", ") {
         const r: IQuery[] = [];
@@ -52,6 +52,19 @@ export class Query {
             if (index < a.length) {
                 let value = a[index] as any;
                 if (value === void 0) {
+                    continue;
+                }
+                if (Array.isArray(value)) {
+                    for (const iterator of value) {
+                        if (iterator instanceof QueryPart) {
+                            if(iterator.literal) {
+                                r.push(iterator);
+                                continue;
+                            }
+                        }
+                        name = "@p" + pi++;
+                        r.push(QueryPart.from({ name, value }));
+                    }
                     continue;
                 }
                 if (value !== null && typeof value === "object") {

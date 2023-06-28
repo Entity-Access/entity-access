@@ -1,3 +1,5 @@
+import { IColumn } from "../../decorators/Column.js";
+import EntityType from "../../entity-query/EntityType.js";
 import { Query } from "../../query/Query.js";
 import { BaseDriver, IDbConnectionString, IDbReader, IRecord } from "../base/BaseDriver.js";
 import pkg from "pg";
@@ -57,6 +59,30 @@ export default class PostgreSqlDriver extends BaseDriver {
 
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
+    }
+
+    public createInsert(type: EntityType, entity: any) {
+        const tableName = type.fullyQualifiedName;
+        const fields = [];
+        const values = [];
+        let id: IColumn;
+        for (const iterator of type.columns) {
+            if (iterator.autoGenerate) {
+                id = iterator;
+                continue;
+            }
+            fields.push(Query.quotedLiteral(iterator.columnName));
+            values.push(entity[iterator.name]);
+        }
+        if (id) {
+            return {
+                query: Query.create `INSERT INTO ${tableName} (${fields}) VALUES (${values}) RETURNING ${Query.quotedLiteral(id.columnName)};`,
+                postExecution: (x) => entity[id.name] = x[id.columnName]
+            };
+        }
+        return {
+            query: Query.create `INSERT INTO ${tableName} (${fields}) VALUES (${values});`
+        }
     }
 
     public escape(name: string) {

@@ -1,3 +1,4 @@
+import EntityType from "../../entity-query/EntityType.js";
 import { Query } from "../../query/Query.js";
 
 const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
@@ -23,6 +24,11 @@ export interface IDbReader extends IDisposable {
     dispose(): Promise<any>;
 }
 
+export interface IQueryTask {
+    query: Query;
+    postExecution?: ((r: any) => Promise<any>);
+}
+
 export abstract class BaseDriver {
 
     constructor(public readonly connectionString: IDbConnectionString) {}
@@ -33,4 +39,5 @@ export abstract class BaseDriver {
 
     public abstract executeNonQuery(command: Query);
 
+    abstract createInsert(type: EntityType, entity: any): IQueryTask;
 }
