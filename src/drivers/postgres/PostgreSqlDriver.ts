@@ -66,6 +66,7 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 
     public async executeReader(command: IQuery): Promise<IDbReader> {
+        await this.ensureDatabase();
         const connection = await this.getConnection();
         const q = toQuery(command);
         console.log(`Executing ${q.text}`);
@@ -74,6 +75,7 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 
     public async executeNonQuery(command: IQuery) {
+        await this.ensureDatabase();
         const connection = await this.getConnection();
         // we need to change parameter styles
         try {
@@ -84,6 +86,33 @@ export default class PostgreSqlDriver extends BaseDriver {
             await connection.end();
         }
     }
+
+    public ensureDatabase() {
+        const create = async () => {
+            const defaultDb = "postgres";
+            const db = this.config.database;
+            this.config.database = defaultDb;
+            const connection = await this.getConnection();
+            // @ts-expect-error
+            this.config = { ... this.config };
+            this.config.database = db;
+            try {
+                const r = await connection.query("SELECT FROM pg_database WHERE datname = $1", [ db ]);
+                if(r.rowCount === 1) {
+                    return;
+                }
+                await connection.query("CREATE DATABASE " + JSON.stringify(db));
+            } finally {
+                await connection.end();
+            }
+        };
+        const value = create();
+        Object.defineProperty(this, "ensureDatabase", {
+            value: () => value,
+        });
+        return value;
+    }
+
 
     private async getConnection() {
         const client = new Client(this.config);

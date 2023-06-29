@@ -1,3 +1,4 @@
+import { IColumn } from "../../decorators/Column.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
 
 export class Expression {
@@ -66,6 +67,14 @@ export class InsertStatement extends Expression {
 
 }
 
+export class CreateTableStatement extends Expression {
+    readonly type = "CreateTableStatement";
+
+    table: TableLiteral;
+
+    columns: IColumn;
+}
+
 const All = [
     ValuesStatement,
     SelectStatement,
@@ -73,7 +82,8 @@ const All = [
     QuotedLiteral,
     ExpressionAs,
     TableLiteral,
-    InsertStatement
+    InsertStatement,
+    CreateTableStatement
 ];
 
 export type ExpressionType = InstanceType<(typeof All)[0]>;

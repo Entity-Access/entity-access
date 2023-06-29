@@ -7,6 +7,7 @@ export default async function () {
         host: "localhost",
         port: 5432,
         user: "postgres",
+        database: "postgres",
         password: "abcd123"
     });
 

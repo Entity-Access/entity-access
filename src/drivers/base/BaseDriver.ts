@@ -46,7 +46,9 @@ export abstract class BaseDriver {
 
     public abstract executeReader(command: IQuery): Promise<IDbReader>;
 
-    public abstract executeNonQuery(command: IQuery);
+    public abstract executeNonQuery(command: IQuery): Promise<any>;
+
+    public abstract ensureDatabase(dbName: string): Promise<any>;
 
     createInsertExpression(type: EntityType, entity: any): Expression {
         const exports = [] as QuotedLiteral[];

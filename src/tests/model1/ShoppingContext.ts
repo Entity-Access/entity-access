@@ -21,13 +21,23 @@ export class ShoppingContext extends EntityContext {
 
     public orderItems = this.model.register(OrderItem);
 
+    public users = this.model.register(User);
+
+}
+
+@Table("Users")
+export class User {
+
+    @Column({ key: true , dataType: "Char" })
+    public userID: string;
+
 }
 
 
 @Table("Products")
 export class Product {
 
-    @Column({ key: true, autoGenerate: true, dataType: "bigint" })
+    @Column({ key: true, autoGenerate: true, dataType: "BigInt" })
     public productID: number;
 
     @Column()
@@ -43,11 +53,14 @@ export class Product {
 @Table("Orders")
 export class Order {
 
-    @Column({ key: true, autoGenerate: true, dataType: "bigint"})
+    @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
     public orderID: number;
 
     @Column()
     public orderDate: Date;
+
+    @Column()
+    public customerID: number;
 
     public orderItems: OrderItem[];
 
@@ -56,7 +69,7 @@ export class Order {
 @Table("OrderItems")
 export class OrderItem {
 
-    @Column({ key: true, autoGenerate: true, dataType: "bigint"})
+    @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
     public orderItemID: number;
 
     @Column()

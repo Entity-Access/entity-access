@@ -22,9 +22,15 @@ export default abstract class Visitor<T = any> {
                 return this.visitTableLiteral(e);
             case "ValuesStatement":
                 return this.visitValuesStatement(e);
+            case "CreateTableStatement":
+                return this.visitCreateTableStatement();
         }
         const c: never = e;
         throw new Error("Not implemented");
+    }
+
+    visitCreateTableStatement(): T {
+        return;
     }
 
     visitValuesStatement(e: ValuesStatement): T {

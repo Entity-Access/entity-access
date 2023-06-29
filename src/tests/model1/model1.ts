@@ -3,13 +3,9 @@ import { ShoppingContext } from "./ShoppingContext.js";
 
 export default async function() {
 
-    const rn = "d" + Date.now();
+    // const rn = "d" + Date.now();
 
-    let c1 = new ShoppingContext("postgres");
-
-    await c1.driver.executeNonQuery(`CREATE database ${Query.literal(rn)};`);
-
-    const context = new ShoppingContext(rn);
+    const context = new ShoppingContext();
 
     await context.driver.executeNonQuery(`
         CREATE TABLE IF NOT EXISTS "Products" (
