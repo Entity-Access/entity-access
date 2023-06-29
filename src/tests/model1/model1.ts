@@ -3,16 +3,13 @@ import { ShoppingContext } from "./ShoppingContext.js";
 
 export default async function() {
 
-    // const rn = "d" + Date.now();
+    const rn = "d" + Date.now();
 
-    const context = new ShoppingContext();
+    const context = new ShoppingContext(rn);
 
-    await context.driver.executeNonQuery(`
-        CREATE TABLE IF NOT EXISTS "Products" (
-            "productID" bigserial not null primary key,
-            "name" text not null
-        );
-    `);
+    await context.driver.ensureDatabase();
+
+    await context.driver.automaticMigrations().migrate(context);
 
     context.products.add({
         name: "Umbrella"

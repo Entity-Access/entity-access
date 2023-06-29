@@ -1,5 +1,7 @@
 import { IColumn } from "../../decorators/Column.js";
 import EntityType from "../../entity-query/EntityType.js";
+import Migrations from "../../migrations/Migrations.js";
+import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
 import { Query } from "../../query/Query.js";
 import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import pkg from "pg";
@@ -61,12 +63,15 @@ export default class PostgreSqlDriver extends BaseDriver {
         super(config);
     }
 
+    public automaticMigrations(): Migrations {
+        return new PostgresAutomaticMigrations();
+    }
+
     public escape(name: string) {
         return JSON.stringify(name);
     }
 
     public async executeReader(command: IQuery): Promise<IDbReader> {
-        await this.ensureDatabase();
         const connection = await this.getConnection();
         const q = toQuery(command);
         console.log(`Executing ${q.text}`);
@@ -75,7 +80,6 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 
     public async executeNonQuery(command: IQuery) {
-        await this.ensureDatabase();
         const connection = await this.getConnection();
         // we need to change parameter styles
         try {

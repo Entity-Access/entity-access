@@ -1,4 +1,5 @@
 import EntityType from "../../entity-query/EntityType.js";
+import Migrations from "../../migrations/Migrations.js";
 import { Constant, Expression, InsertStatement, QuotedLiteral, TableLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
 
 const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
@@ -48,7 +49,13 @@ export abstract class BaseDriver {
 
     public abstract executeNonQuery(command: IQuery): Promise<any>;
 
-    public abstract ensureDatabase(dbName: string): Promise<any>;
+    public abstract ensureDatabase(): Promise<any>;
+
+    /**
+     * This migrations only support creation of missing items.
+     * However, you can provide events to change existing items.
+     */
+    public abstract automaticMigrations(): Migrations;
 
     createInsertExpression(type: EntityType, entity: any): Expression {
         const exports = [] as QuotedLiteral[];

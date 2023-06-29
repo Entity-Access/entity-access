@@ -29,7 +29,12 @@ export type ISqlType =
     /**
      * Unicode character
      */
-    | "Char";
+    | "Char"
+    
+    /**
+     * Single bit
+     */
+    | "Boolean";
 
 export interface IColumn {
     name?: string;
