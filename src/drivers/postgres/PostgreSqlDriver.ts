@@ -1,7 +1,7 @@
 import { IColumn } from "../../decorators/Column.js";
 import EntityType from "../../entity-query/EntityType.js";
 import { Query } from "../../query/Query.js";
-import { BaseDriver, IDbConnectionString, IDbReader, IRecord } from "../base/BaseDriver.js";
+import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import pkg from "pg";
 import Cursor from "pg-cursor";
 
@@ -61,47 +61,23 @@ export default class PostgreSqlDriver extends BaseDriver {
         super(config);
     }
 
-    public createInsert(type: EntityType, entity: any) {
-        const tableName = type.fullyQualifiedName;
-        const fields = [];
-        const values = [];
-        let id: IColumn;
-        for (const iterator of type.columns) {
-            if (iterator.autoGenerate) {
-                id = iterator;
-                continue;
-            }
-            fields.push(Query.quotedLiteral(iterator.columnName));
-            values.push(entity[iterator.name]);
-        }
-        if (id) {
-            return {
-                query: Query.create `INSERT INTO ${tableName} (${fields}) VALUES (${values}) RETURNING ${Query.quotedLiteral(id.columnName)};`,
-                postExecution: (x) => entity[id.name] = x[id.columnName]
-            };
-        }
-        return {
-            query: Query.create `INSERT INTO ${tableName} (${fields}) VALUES (${values});`
-        }
-    }
-
     public escape(name: string) {
         return JSON.stringify(name);
     }
 
-    public async executeReader(command: Query): Promise<IDbReader> {
+    public async executeReader(command: IQuery): Promise<IDbReader> {
         const connection = await this.getConnection();
-        const q = command.toQuery();
+        const q = toQuery(command);
         console.log(`Executing ${q.text}`);
         const cursor = connection.query(new Cursor(q.text, q.values));
         return new DbReader(cursor, connection);
     }
 
-    public async executeNonQuery(command: Query) {
+    public async executeNonQuery(command: IQuery) {
         const connection = await this.getConnection();
         // we need to change parameter styles
         try {
-            const q = command.toQuery();
+            const q = toQuery(command);
             console.log(`Executing ${q.text}`);
             await connection.query(q.text, q.values);
         } finally {

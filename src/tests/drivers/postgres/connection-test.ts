@@ -11,10 +11,10 @@ export default async function () {
     });
 
     // create table...
-    await connection.executeNonQuery(Query.create `SELECT 1;`);
+    await connection.executeNonQuery(`SELECT 1;`);
 
     // select items...
-    const items = await connection.executeReader(Query.create `SELECT * FROM (VALUES (1, 1), (1, 1)) as V(ID, Value)`);
+    const items = await connection.executeReader(`SELECT * FROM (VALUES (1, 1), (1, 1)) as V(ID, Value)`);
 
     try { 
         for await (const iterator of items.next(100)) {

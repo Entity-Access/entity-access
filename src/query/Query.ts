@@ -25,6 +25,8 @@ export type IQuery = string | QueryPart;
 
 export class Query {
 
+    public static empty = new Query([]);
+
     public static literal = (name): QueryPart => QueryPart.from({ name, literal: true });
 
     public static quotedLiteral = (... names: string []): QueryPart[] => names.map((name) => QueryPart.from({ name, literal: true, quoted: true }));
@@ -108,6 +110,19 @@ export class Query {
 
     append(t: TemplateStringsArray, ... a: []) {
         return new Query(this.parts.concat(... Query.create(t, ... a).parts));
+    }
+
+    appendLiteral(text) {
+        return new Query(this.parts.concat([Query.literal(text)]));
+    }
+
+    appendQuotedLiteral(text) {
+        return new Query(this.parts.concat(Query.quotedLiteral(text)));
+    }
+
+    appendParameter(value, name?) {
+        name ??= "@p" + Date.now();
+        return new Query(this.parts.concat(QueryPart.from({ name, value })));
     }
 
     toString() {
