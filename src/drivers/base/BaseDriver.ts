@@ -32,7 +32,7 @@ export const toQuery = (text: IQuery): { text: string, values?: any[]} => typeof
 export type IQuery = string | {
     text: string;
     values?: any[];
-}
+};
 
 export interface IQueryTask {
     query: IQuery;
@@ -72,7 +72,7 @@ export abstract class BaseDriver {
                 continue;
             }
             fields.push(literal);
-            values.push(Constant.create({ value }))
+            values.push(Constant.create({ value }));
         }
 
         const name = QuotedLiteral.create({ literal: type.name });
@@ -85,7 +85,7 @@ export abstract class BaseDriver {
             }),
             values: ValuesStatement.create({ fields, values: [values] }),
             exports,
-        })
+        });
     }
 
 }

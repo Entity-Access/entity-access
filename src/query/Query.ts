@@ -52,7 +52,7 @@ export class Query {
             r.push(element);
             let name: string;
             if (index < a.length) {
-                let value = a[index] as any;
+                const value = a[index] as any;
                 if (value === void 0) {
                     continue;
                 }

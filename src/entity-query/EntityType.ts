@@ -14,8 +14,6 @@ export default class EntityType {
     public readonly name: string;
     public readonly schema: string;
 
-    private fieldMap: Map<string, IColumn> = new Map();
-    private columnMap: Map<string, IColumn> = new Map();
 
     public readonly columns: IColumn[] = [];
 
@@ -28,6 +26,9 @@ export default class EntityType {
     public get fullyQualifiedName() {
         return this.schema ? Query.quotedLiteral(this.schema, this.name) : Query.quotedLiteral(this.name);
     }
+
+    private fieldMap: Map<string, IColumn> = new Map();
+    private columnMap: Map<string, IColumn> = new Map();
 
     public addColumn(c: IColumn) {
 

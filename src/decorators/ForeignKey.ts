@@ -21,13 +21,13 @@ export default function ForeignKey<T, TRelated>(
             relatedKey?: (item: TRelated) => any,
             dotNotCreateIndex?: boolean,
         }
-    
+
     ) {
     return (target: T, key: string): any => {
 
         const cn = target.constructor ?? target;
         const type = SchemaRegistry.model(cn);
-        
+
         type.addRelation({
             type,
             name: key,
@@ -37,6 +37,6 @@ export default function ForeignKey<T, TRelated>(
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             dotNotCreateIndex
         });
-        
+
     };
 }

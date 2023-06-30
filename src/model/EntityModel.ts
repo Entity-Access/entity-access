@@ -22,17 +22,17 @@ export class EntitySource<T = any> {
             throw new Error("Entity is already attached to the context");
         }
         entry.status = "inserted";
+        return item as T;
     }
 }
 
 export default class EntityModel {
 
+    public entities: Map<IClassOf<any>, EntitySource> = new Map();
+
     constructor(private context: EntityContext) {
 
     }
-
-
-    public entities: Map<IClassOf<any>, EntitySource> = new Map();
 
     register<T>(type: IClassOf<T>) {
         let source = this.entities.get(type);
@@ -43,6 +43,5 @@ export default class EntityModel {
         }
         return source as EntitySource<T>;
     }
-    
 
 }

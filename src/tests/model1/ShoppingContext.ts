@@ -6,15 +6,6 @@ import PostgreSqlDriver from "../../drivers/postgres/PostgreSqlDriver.js";
 
 export class ShoppingContext extends EntityContext {
 
-    constructor(name?) {
-        super(new PostgreSqlDriver({
-            host: "127.0.0.1",
-            database: name ?? "shopping",
-            password: "abcd123",
-            user: "postgres"
-        }))
-    }
-
     public products = this.model.register(Product);
 
     public orders = this.model.register(Order);
@@ -22,6 +13,15 @@ export class ShoppingContext extends EntityContext {
     public orderItems = this.model.register(OrderItem);
 
     public users = this.model.register(User);
+
+    constructor(name?) {
+        super(new PostgreSqlDriver({
+            host: "127.0.0.1",
+            database: name ?? "shopping",
+            password: "abcd123",
+            user: "postgres"
+        }));
+    }
 
 }
 

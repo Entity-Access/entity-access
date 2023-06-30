@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 import { Query } from "../../../query/Query.js";
 
@@ -17,12 +18,12 @@ export default async function () {
     // select items...
     const items = await connection.executeReader(`SELECT * FROM (VALUES (1, 1), (1, 1)) as V(ID, Value)`);
 
-    try { 
+    try {
         for await (const iterator of items.next(100)) {
             console.log(iterator);
         }
     } finally {
         await items.dispose();
     }
-    
+
 }

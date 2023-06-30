@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { IColumn } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
@@ -10,9 +11,9 @@ import Cursor from "pg-cursor";
 const { Client } = pkg;
 
 export interface IPgSqlConnectionString extends IDbConnectionString {
-    
+
     user?: string, // default process.env.PGUSER || process.env.USER
-    password?: string, //default process.env.PGPASSWORD
+    password?: string, // default process.env.PGPASSWORD
     host?: string, // default process.env.PGHOST
     database?: string, // default process.env.PGDATABASE || user
     port?: number, // default process.env.PGPORT
@@ -39,20 +40,20 @@ class DbReader implements IDbReader {
             if (rows.length === 0) {
                 break;
             }
-        } while (true)
+        } while (true);
     }
 
     async dispose() {
         try {
             await this.cursor.close();
         } catch {
-
+            // intentionally left blank
         }
 
         try {
             await this.client.end();
         } catch {
-
+            // intentionally left blank
         }
     }
 }
@@ -97,7 +98,7 @@ export default class PostgreSqlDriver extends BaseDriver {
             const db = this.config.database;
             this.config.database = defaultDb;
             const connection = await this.getConnection();
-            // @ts-expect-error
+            // @ts-expect-error readonly
             this.config = { ... this.config };
             this.config.database = db;
             try {

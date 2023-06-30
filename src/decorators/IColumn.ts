@@ -39,7 +39,7 @@ export interface IColumn {
 export interface IEntityRelation {
 
     type?: EntityType;
-    
+
     /**
      * Name of own field...
      */
@@ -47,7 +47,7 @@ export interface IEntityRelation {
 
     isCollection?: boolean;
 
-    
+
     foreignKey: string;
 
     relatedTypeClass: IClassOf<any>;

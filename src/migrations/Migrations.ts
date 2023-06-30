@@ -4,10 +4,6 @@ import type EntityContext from "../model/EntityContext.js";
 
 export default abstract class Migrations {
 
-    constructor() {
-
-    }
-
     public async migrate(context: EntityContext) {
         for (const iterator of context.model.entities.keys()) {
             const type = SchemaRegistry.model(iterator);

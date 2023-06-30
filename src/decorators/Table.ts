@@ -10,9 +10,9 @@ export default function Table<T>(
     schema?: string): any {
     return (target: T) => {
         const model = SchemaRegistry.model(target);
-        // @ts-expect-error
+        // @ts-expect-error readonly
         model.name = name;
-        // @ts-expect-error
+        // @ts-expect-error readonly
         model.schema = schema;
-    }
+    };
 }

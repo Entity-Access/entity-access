@@ -3,6 +3,6 @@ export default class NameParser {
         const t: string = text.toString();
 
         const index = t.lastIndexOf(".");
-        return t.substring(index + 1);    
+        return t.substring(index + 1);
     }
 }

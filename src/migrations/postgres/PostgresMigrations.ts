@@ -10,7 +10,7 @@ export default abstract class PostgresMigrations extends Migrations {
             }
             return `decimal (18,2)`;
         }
-        var type = this.getColumnType(iterator);
+        const type = this.getColumnType(iterator);
         if (iterator.length) {
             return `${type} (${iterator.length})`;
         }
@@ -32,7 +32,7 @@ export default abstract class PostgresMigrations extends Migrations {
             case "DateTimeOffset":
                 return "timestamp with time zone";
             case "Double":
-                return "float8"
+                return "float8";
             case "Float":
                 return "real";
             case "Int":

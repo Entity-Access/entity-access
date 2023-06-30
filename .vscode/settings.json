@@ -8,5 +8,28 @@
             ]
         }
    },
-   "terminal.integrated.defaultProfile.windows": "PowerShell"
+   "terminal.integrated.defaultProfile.windows": "PowerShell",
+   "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+	"eslint.format.enable": true,
+	"emmet.showSuggestionsAsSnippets": false,
+	"emmet.showAbbreviationSuggestions": false,
+	"emmet.excludeLanguages": [
+		"markdown",
+		"typescript",
+		"typescriptreact"
+    ],
+    "[typescript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "cSpell.words": [
+        "bigserial",
+        "bytea",
+        "datname",
+        "Millis",
+        "PGDATABASE",
+        "PGHOST",
+        "PGPASSWORD",
+        "PGPORT",
+        "PGUSER"
+    ]
 }

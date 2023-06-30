@@ -8,14 +8,14 @@ import ExpressionToQueryVisitor from "../query/ast/ExpressionToQueryVisitor.js";
 
 export default class EntityContext {
 
+    public readonly model = new EntityModel(this);
+    public readonly changeSet = new ChangeSet(this);
+
     constructor(
         public driver: BaseDriver
     ) {
 
     }
-
-    public readonly model = new EntityModel(this);
-    public readonly changeSet = new ChangeSet(this);
 
     public async saveChanges() {
 

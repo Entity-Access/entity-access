@@ -48,22 +48,22 @@ export type ISqlType =
      * Single bit
      */
     "Boolean" |
-    
+
     /**
      * uuid
      */
     "UUID" |
-    
+
     /**
      * text json
      */
     "JSON" |
-    
+
     /**
      * Binary Json
      */
-    "JSONB" | 
-    
+    "JSONB" |
+
     /**
      * Byte Array - var binary
      */

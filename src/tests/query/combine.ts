@@ -13,11 +13,11 @@ export default function () {
 
     const id2 = 2;
 
-    let ors = [];
-    ors.push(Query.create `ID == ${id}`);
-    ors.push(Query.create `ID == ${id2}`);
+    const orConstraints = [];
+    orConstraints.push(Query.create `ID == ${id}`);
+    orConstraints.push(Query.create `ID == ${id2}`);
 
-    const final = Query.create `SELECT * FROM Accounts WHERE ${Query.join(ors, " OR ")}`;
+    const final = Query.create `SELECT * FROM Accounts WHERE ${Query.join(orConstraints, " OR ")}`;
     assert.equal("SELECT * FROM Accounts WHERE ID == @p0 OR ID == @p1", final.toString());
 
     const rn = "D" + Date.now();
