@@ -2,6 +2,7 @@ import type EntityContext from "./EntityContext.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import type EntityType from "../entity-query/EntityType.js";
+import EntityQuery from "./EntityQuery.js";
 
 export class EntitySource<T = any> {
 
@@ -26,7 +27,7 @@ export class EntitySource<T = any> {
     }
 
     public where<P>(p: P, fx: (px: P) => (t: T) => boolean) {
-
+        
     }
 }
 
