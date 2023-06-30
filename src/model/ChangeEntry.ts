@@ -1,0 +1,136 @@
+import { IColumn } from "../decorators/IColumn.js";
+import EntityType from "../entity-query/EntityType.js";
+import type ChangeSet from "./ChangeSet.js";
+
+export interface IChanges {
+    type: EntityType;
+    entity: any;
+    order: number;
+    original: any;
+    status: "detached" | "attached" | "inserted" | "modified" | "deleted" | "unchanged";
+}
+
+export interface IChange {
+    column: IColumn;
+    oldValue: any;
+    newValue: any;
+}
+
+export default class ChangeEntry implements IChanges {
+
+    type: EntityType;
+    entity: any;
+    order: number;
+    original: any;
+    status: "detached" | "attached" | "inserted" | "modified" | "deleted" | "unchanged";
+
+    modified: Map<string, IChange>;
+
+    changeSet: ChangeSet;
+
+    private pending: (() => void)[];
+
+    constructor(p: IChanges, changeSet: ChangeSet) {
+        Object.setPrototypeOf(p, ChangeEntry.prototype);
+        const ce = p as ChangeEntry;
+        ce.changeSet = changeSet;
+        ce.pending = [];
+        ce.modified = new Map();
+        return ce;
+    }
+
+    public detect() {
+
+        const { type: { columns }, entity, original } = this;
+
+        if (original === void 0) {
+            this.status = "inserted";
+            this.detectDependencies();
+            return;
+        }
+
+        this.detectDependencies();
+
+        for (const iterator of columns) {
+            const oldValue = original[iterator.columnName];
+            const newValue = entity[iterator.name];
+            if (entity[iterator.name] !== original[iterator.columnName]) {
+                let modifiedEntry = this.modified.get(iterator.name);
+                if (!modifiedEntry) {
+                    modifiedEntry = { column: iterator, oldValue, newValue };
+                    this.modified.set(iterator.name, modifiedEntry);
+                }
+            }
+        }
+
+
+        if (this.modified.size > 0) {
+            this.status = "modified";
+        } else {
+            this.status = "unchanged";
+        }
+    }
+
+    public apply(dbValues) {
+        // apply values to main entity
+        // set status to unchanged
+
+        // we will only apply the columns defined
+        for (const iterator of this.type.columns) {
+            this.entity[iterator.name] = dbValues[iterator.columnName];
+        }
+        this.status = "unchanged";
+        this.modified.clear();
+    }
+
+    detectDependencies() {
+        const { type: { relations }, entity } = this;
+        // for parent relations.. check if related key is set or not...
+        for (const iterator of relations) {
+            if (iterator.isCollection) {
+                continue;
+            }
+
+            // get related entry..
+            const related = entity[iterator.name];
+            if (!related) {
+                continue;
+            }
+
+            // if related has key defined.. set it...
+            const rKey = iterator.relatedEntity.keys[0];
+
+            const keyValue = related[rKey.name];
+            if (keyValue === void 0) {
+                this.order++;
+                const fk = iterator;
+                this.pending.push(() => {
+                    this[fk.fkColumn.name] = related[rKey.name];
+                });
+                this.modified.set(iterator.name, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                continue;
+            }
+
+            this[iterator.fkColumn.name] = related[rKey.name];
+        }
+    }
+
+    setupInverseProperties() {
+        for (const iterator of this.type.relations) {
+            if (!iterator.isCollection) {
+                continue;
+            }
+            const related = this.entity[iterator.name];
+            if (related === void 0) {
+                continue;
+            }
+            if (Array.isArray(related)) {
+                for (const r of related) {
+                    r[iterator.relatedName] = this.entity;
+                }
+                continue;
+            }
+            related[iterator.relatedName] = this.entity;
+        }
+    }
+}

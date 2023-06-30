@@ -51,7 +51,9 @@ class DbReader implements IDbReader {
         }
 
         try {
-            await this.client.end();
+            if (this.client) {
+                await this.client.end();
+            }
         } catch {
             // intentionally left blank
         }
@@ -97,7 +99,7 @@ export default class PostgreSqlDriver extends BaseDriver {
         const q = toQuery(command);
         console.log(`Executing ${q.text}`);
         const cursor = connection.query(new Cursor(q.text, q.values));
-        return new DbReader(cursor, connection);
+        return new DbReader(cursor, this.transaction ? void 0 : connection);
     }
 
     public async executeNonQuery(command: IQuery) {
@@ -108,7 +110,9 @@ export default class PostgreSqlDriver extends BaseDriver {
             console.log(`Executing ${q.text}`);
             await connection.query(q.text, q.values);
         } finally {
-            await connection.end();
+            if (!this.transaction) {
+                await connection.end();
+            }
         }
     }
 

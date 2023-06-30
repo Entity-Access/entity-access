@@ -50,6 +50,7 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
     }
 
     visitInsertStatement(e: InsertStatement): string {
+        const exports = e.exports.map((x) => this.visit(x)).join(",");
         if (e.values instanceof ValuesStatement) {
             const rows = [];
             for (const iterator of e.values.values) {
@@ -59,9 +60,9 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
                 }
                 rows.push("(" + row.join(",") + ")");
             }
-            return `INSERT INTO ${this.visit(e.table)} (${this.walkJoin(e.values.fields)}) VALUES ${rows.join(",")}`;
+            return `INSERT INTO ${this.visit(e.table)} (${this.walkJoin(e.values.fields)}) VALUES ${rows.join(",")} RETURNING ${exports}`;
         }
-        return `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)}`;
+        return `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)} RETURNING ${exports}`;
 
     }
 

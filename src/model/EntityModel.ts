@@ -18,7 +18,7 @@ export class EntitySource<T = any> {
             Object.setPrototypeOf(item, this.model.typeClass.prototype);
         }
         const entry = this.context.changeSet.getEntry(item);
-        if (entry.status !== "detached") {
+        if (entry.status !== "detached" && entry.status !== "unchanged") {
             throw new Error("Entity is already attached to the context");
         }
         entry.status = "inserted";
@@ -31,7 +31,6 @@ export default class EntityModel {
     public entities: Map<IClassOf<any>, EntitySource> = new Map();
 
     constructor(private context: EntityContext) {
-
     }
 
     register<T>(type: IClassOf<T>) {

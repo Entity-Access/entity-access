@@ -59,7 +59,7 @@ export abstract class BaseDriver {
      */
     public abstract automaticMigrations(): Migrations;
 
-    createInsertExpression(type: EntityType, entity: any): Expression {
+    createInsertExpression(type: EntityType, entity: any): InsertStatement {
         const exports = [] as QuotedLiteral[];
         const fields = [] as QuotedLiteral[];
         const values = [] as Constant[];

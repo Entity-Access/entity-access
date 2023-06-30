@@ -2,6 +2,7 @@ import type { IColumn, IEntityRelation } from "../decorators/IColumn.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/MemberParser.js";
+import SchemaRegistry from "../decorators/SchemaRegistry.js";
 
 
 /**
@@ -75,6 +76,23 @@ export default class EntityType {
         if (fkColumn.dataType === "Double") {
             fkColumn.dataType = "BigInt";
         }
+
+        // let us set inverse relations...
+        const relatedType = SchemaRegistry.model(relation.relatedTypeClass);
+        relation.relatedEntity = relatedType;
+        const inverseRelation = {
+            name: relation.relatedName,
+            foreignKey: "",
+            relatedName: relation.name,
+            relatedTypeClass: this.typeClass,
+            dotNotCreateIndex: true,
+            fkColumn,
+            isCollection: true,
+            relatedRelation: relation,
+            relatedType: this
+        };
+        relatedType.relations.push(inverseRelation);
+        inverseRelation.relatedRelation = relation;
 
     }
 
