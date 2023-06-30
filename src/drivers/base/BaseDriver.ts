@@ -51,6 +51,8 @@ export abstract class BaseDriver {
 
     public abstract ensureDatabase(): Promise<any>;
 
+    public abstract runInTransaction<T = any>(fx?: () => Promise<T>): Promise<T>;
+
     /**
      * This migrations only support creation of missing items.
      * However, you can provide events to change existing items.

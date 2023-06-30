@@ -21,7 +21,6 @@ export default class EntityContext {
 
         const expressions: Expression[] = [];
 
-        // build query...
         for (const iterator of this.changeSet.entries) {
             switch(iterator.status) {
                 case "inserted":
@@ -30,19 +29,22 @@ export default class EntityContext {
             }
         }
 
-        for (const iterator of expressions) {
-            const ev = new ExpressionToQueryVisitor();
-            const text = ev.visit(iterator);
-            const values = ev.variables;
-            const reader = await this.driver.executeReader({ text, values });
-            try {
-                for await (const r of reader.next()) {
-                    // wait...
+        await this.driver.runInTransaction(async () => {
+
+            for (const iterator of expressions) {
+                const ev = new ExpressionToQueryVisitor();
+                const text = ev.visit(iterator);
+                const values = ev.variables;
+                const reader = await this.driver.executeReader({ text, values });
+                try {
+                    for await (const r of reader.next()) {
+                        // wait...
+                    }
+                } finally {
+                    await reader.dispose();
                 }
-            } finally {
-                await reader.dispose();
             }
-        }
+        });
     }
 
 }

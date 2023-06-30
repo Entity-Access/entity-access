@@ -60,8 +60,28 @@ class DbReader implements IDbReader {
 
 export default class PostgreSqlDriver extends BaseDriver {
 
+    private transaction: pkg.Client;
+
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
+    }
+
+    public async runInTransaction<T>(fx?: () => Promise<T>): Promise<T> {
+        const connection = await this.getConnection();
+        let result: T;
+        try {
+            this.transaction = connection;
+            await connection.query("BEGIN");
+            result = await fx();
+            await connection.query("COMMIT");
+            return result;
+        } catch (error) {
+            await connection.query("ROLLBACK");
+            throw error;
+        } finally {
+            this.transaction = void 0;
+            await connection.end();
+        }
     }
 
     public automaticMigrations(): Migrations {
@@ -120,6 +140,9 @@ export default class PostgreSqlDriver extends BaseDriver {
 
 
     private async getConnection() {
+        if (this.transaction) {
+            return this.transaction;
+        }
         const client = new Client(this.config);
         await client.connect();
         return client;
