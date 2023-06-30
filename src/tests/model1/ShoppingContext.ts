@@ -28,8 +28,11 @@ export class ShoppingContext extends EntityContext {
 @Table("Users")
 export class User {
 
-    @Column({ key: true , dataType: "Char" })
-    public userID: string;
+    @Column({ key: true , autoGenerate: true, dataType: "BigInt" })
+    public userID: number;
+
+    @Column({})
+    public dateCreated: Date;
 
     public ownedProducts: Product[];
 
@@ -71,7 +74,7 @@ export class Order {
     public orderDate: Date;
 
     @Column()
-    public customerID: string;
+    public customerID: number;
 
     public orderItems: OrderItem[];
 

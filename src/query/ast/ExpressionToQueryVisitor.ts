@@ -63,14 +63,23 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
     visitInsertStatement(e: InsertStatement): string {
         const returnValues = this.visit(e.returnValues);
         if (e.values instanceof ValuesStatement) {
+
             const rows = [];
             for (const iterator of e.values.values) {
                 const row = [];
                 for (const v of iterator) {
                     row.push(this.visit(v));
                 }
+                if (row.length === 0) {
+                    continue;
+                }
                 rows.push("(" + row.join(",") + ")");
             }
+
+            if (rows.length === 0) {
+                return `INSERT INTO ${this.visit(e.table)} ${returnValues}`;
+            }
+
             return `INSERT INTO ${this.visit(e.table)} (${this.walkJoin(e.values.fields)}) VALUES ${rows.join(",")} ${returnValues}`;
         }
         return `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)} ${returnValues}`;

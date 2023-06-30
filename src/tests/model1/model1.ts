@@ -15,11 +15,12 @@ export default async function() {
         name: "Umbrella"
     });
 
+    const now = new Date();
     context.users.add({
-        userID: Date.now().toString(),
+        dateCreated: now,
         orders: [
             context.orders.add({
-                orderDate: new Date(),
+                orderDate: now,
                 orderItems: [
                     context.orderItems.add({
                         product

@@ -37,6 +37,8 @@ function typeFrom(c: IColumn, jsType: any): ISqlType {
             return "Double";
         case BigInt:
             return "BigInt";
+        case Date:
+            return "DateTime";
         case Boolean:
             return "Boolean";
     }
