@@ -20,6 +20,25 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
         await this.createColumns(driver, type, nonKeyColumns);
 
+        await this.createIndexes(driver, type, nonKeyColumns.filter((x) => x.fkRelation && !x.fkRelation?.dotNotCreateIndex));
+
+    }
+
+    async createIndexes(driver: BaseDriver, type: EntityType, fkColumns: IColumn[]) {
+        
+        const name = type.schema
+        ? JSON.stringify(type.schema) + "." + JSON.stringify(type.name)
+        : JSON.stringify(type.name);
+
+        for (const iterator of fkColumns) {
+            const indexName =  JSON.stringify(`IX_${type.name}_${iterator.columnName}`);
+            const columnName = JSON.stringify(iterator.columnName);
+            let query = `CREATE INDEX ${indexName} ON ${name} ( ${columnName})`
+            if (iterator.nullable !== true) {
+                query += ` WHERE (${columnName} is not null)`;
+            }
+            await driver.executeNonQuery(query);
+        }
     }
 
     async createColumns(driver: BaseDriver, type: EntityType, nonKeyColumns: IColumn[]) {

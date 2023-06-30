@@ -64,5 +64,7 @@ export interface IEntityRelation {
 
     relatedRelation?: IEntityRelation;
 
+    dotNotCreateIndex?: boolean;
+
 }
 

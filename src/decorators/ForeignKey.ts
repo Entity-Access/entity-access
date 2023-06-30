@@ -8,7 +8,8 @@ export default function ForeignKey<T, TRelated>(
         key: name,
         related: c,
         relatedProperty: inv,
-        relatedKey: invKey
+        relatedKey: invKey,
+        dotNotCreateIndex
     } : {
 
             key: (item: T) => any,
@@ -17,7 +18,8 @@ export default function ForeignKey<T, TRelated>(
 
             relatedProperty: (item: TRelated) => any,
 
-            relatedKey?: (item: TRelated) => any
+            relatedKey?: (item: TRelated) => any,
+            dotNotCreateIndex?: boolean,
         }
     
     ) {
@@ -32,7 +34,8 @@ export default function ForeignKey<T, TRelated>(
             foreignKey: NameParser.parseMember(name),
             relatedTypeClass: c,
             relatedName: NameParser.parseMember(inv),
-            relatedKey: invKey ? NameParser.parseMember(invKey) : void 0
+            relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
+            dotNotCreateIndex
         });
         
     };
