@@ -1,4 +1,4 @@
-import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, JoinExpression, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 export default class ExpressionToQueryVisitor extends Visitor<string> {
@@ -12,10 +12,7 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
     visitValuesStatement(e: ValuesStatement): string {
         const rows = [];
         for (const rowValues of e.values) {
-            const row = [];
-            for (const rowValue of rowValues) {
-                row.push(this.visit(rowValue));
-            }
+            const row = this.visitArray(rowValues);
             rows.push(`(${row.join(",")})`);
         }
         return `VALUES ${rows.join(",")}`;
@@ -29,7 +26,12 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
     }
 
     visitSelectStatement(e: SelectStatement): string {
-        throw new Error("not implemented");
+        const fields = this.visitArray(e.fields).join(",");
+        const joins = e.joins?.length > 0 ?  this.visitArray(e.joins) : "";
+        const orderBy = e.orderBy?.length > 0 ? ` ORDER BY ${this.visitArray(e.orderBy)}` : "";
+        const source = this.visit(e.source);
+        const where = e.where ? ` WHERE ${this.visit(e.where)}` : "";
+        return `SELECT ${fields} FROM ${source} ${joins} ${where} ${orderBy}`;
     }
 
     visitQuotedLiteral(e: QuotedLiteral): string {
@@ -56,7 +58,7 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
         if (e.fields.length === 0) {
             return "";
         }
-        const fields = e.fields.map((x) => this.visit(x)).join(",");
+        const fields = this.visitArray(e.fields).join(",");
         return ` RETURNING ${fields}`;
     }
 
@@ -66,10 +68,7 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
 
             const rows = [];
             for (const iterator of e.values.values) {
-                const row = [];
-                for (const v of iterator) {
-                    row.push(this.visit(v));
-                }
+                const row = this.visitArray(iterator);
                 if (row.length === 0) {
                     continue;
                 }
@@ -92,7 +91,7 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
 
         const where = this.visit(e.where);
 
-        const set = e.set.map((x) => this.visit(x));
+        const set = this.visitArray(e.set);
 
         return `UPDATE ${table} SET ${set.join(",")} WHERE ${where}`;
     }
@@ -100,7 +99,26 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
     visitDeleteStatement(e: DeleteStatement): string {
         const table = this.visit(e.table);
         const where = this.visit(e.where);
-        return `DELETE ${table} WHERE ${e.where}`;
+        return `DELETE ${table} WHERE ${where}`;
+    }
+
+    visitJoinExpression(e: JoinExpression): string {
+        if(!e) {
+            return "";
+        }
+        const table = this.visit(e.source);
+        const where = this.visit(e.where);
+        return ` ${e.joinType} JOIN ${table} ON ${where}`;
+    }
+
+    visitOrderByExpression(e: OrderByExpression): string {
+        if(!e) {
+            return "";
+        }
+        if (e.descending) {
+            return `${this.visit(e.target)} DESC`;
+        }
+        return `${this.visit(e.target)}`;
     }
 
     walkJoin(e: Expression[], sep = ",\r\n\t"): string {

@@ -29,6 +29,12 @@ export class ValuesStatement extends Expression {
     values: Expression[][];
 }
 
+export class OrderByExpression extends Expression {
+    readonly type = "OrderByExpression";
+    target: Expression;
+    descending: boolean;
+}
+
 export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
@@ -41,6 +47,18 @@ export class SelectStatement extends Expression {
 
     where: Expression;
 
+    orderBy: OrderByExpression[];
+
+    joins: JoinExpression[];
+
+}
+
+export class JoinExpression extends Expression {
+    readonly type = "JoinExpression";
+    joinType: "LEFT" | "INNER";
+    source: SelectStatement | QuotedLiteral | ExpressionAs;
+    as: QuotedLiteral;
+    where: Expression;
 }
 
 export class ReturnUpdated extends Expression {
@@ -122,7 +140,9 @@ const All = [
     CreateTableStatement,
     UpdateStatement,
     DeleteStatement,
-    ReturnUpdated
+    ReturnUpdated,
+    OrderByExpression,
+    JoinExpression
 ];
 
 export type ExpressionType = InstanceType<(typeof All)[0]>;

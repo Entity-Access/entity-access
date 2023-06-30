@@ -1,7 +1,15 @@
-import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, JoinExpression, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
+
+    visitArray(ea: Expression[]) {
+        const r = [];
+        for (const iterator of ea) {
+            r.push(this.visit(iterator));
+        }
+        return r;
+    }
 
     visit(e1: Expression): T {
 
@@ -32,9 +40,21 @@ export default abstract class Visitor<T = any> {
                 return this.visitDeleteStatement(e);
             case "ReturnUpdated":
                 return this.visitReturnUpdated(e);
+            case "OrderByExpression":
+                return this.visitOrderByExpression(e);
+            case "JoinExpression":
+                return this.visitJoinExpression(e);
         }
         const c: never = e;
         throw new Error("Not implemented");
+    }
+
+    visitJoinExpression(e: JoinExpression): T {
+        return;
+    }
+
+    visitOrderByExpression(e: OrderByExpression): T {
+        return;
     }
 
     visitReturnUpdated(e: ReturnUpdated): T {

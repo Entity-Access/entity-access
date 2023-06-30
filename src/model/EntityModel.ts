@@ -24,6 +24,10 @@ export class EntitySource<T = any> {
         entry.status = "inserted";
         return item as T;
     }
+
+    public where<P>(p: P, fx: (px: P) => (t: T) => boolean) {
+
+    }
 }
 
 export default class EntityModel {
