@@ -1,4 +1,4 @@
-import { Constant, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, SelectStatement, TableLiteral, ValuesStatement } from "./Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -24,9 +24,27 @@ export default abstract class Visitor<T = any> {
                 return this.visitValuesStatement(e);
             case "CreateTableStatement":
                 return this.visitCreateTableStatement();
+            case "BinaryExpression":
+                return this.visitBinaryExpression(e);
+            case "UpdateStatement":
+                return this.visitUpdateStatement(e);
+            case "DeleteStatement":
+                return this.visitDeleteStatement(e);
         }
         const c: never = e;
         throw new Error("Not implemented");
+    }
+
+    visitDeleteStatement(e: DeleteStatement): T {
+        return;
+    }
+
+    visitUpdateStatement(e: UpdateStatement): T {
+        return;
+    }
+
+    visitBinaryExpression(e: BinaryExpression): T {
+        return;
     }
 
     visitCreateTableStatement(): T {

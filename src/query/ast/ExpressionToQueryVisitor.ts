@@ -1,4 +1,4 @@
-import { Constant, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, SelectStatement, TableLiteral, ValuesStatement } from "./Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 export default class ExpressionToQueryVisitor extends Visitor<string> {
@@ -45,6 +45,10 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
         return "$" + this.variables.length;
     }
 
+    visitBinaryExpression(e: BinaryExpression): string {
+        return `${this.visit(e.left)} ${e.operator} ${this.visit(e.right)}`;
+    }
+
     visitInsertStatement(e: InsertStatement): string {
         if (e.values instanceof ValuesStatement) {
             const rows = [];
@@ -59,6 +63,23 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
         }
         return `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)}`;
 
+    }
+
+    visitUpdateStatement(e: UpdateStatement): string {
+
+        const table = this.visit(e.table);
+
+        const where = this.visit(e.where);
+
+        const set = e.set.map((x) => this.visit(x));
+
+        return `UPDATE ${table} SET ${set.join(",")} WHERE ${where}`;
+    }
+
+    visitDeleteStatement(e: DeleteStatement): string {
+        const table = this.visit(e.table);
+        const where = this.visit(e.where);
+        return `DELETE ${table} WHERE ${e.where}`;
     }
 
     walkJoin(e: Expression[], sep = ",\r\n\t"): string {

@@ -13,6 +13,15 @@ export class Expression {
 
 }
 
+export class BinaryExpression {
+
+    readonly type = "BinaryExpression";
+
+    left: Expression;
+    right: Expression;
+    operator: string;
+}
+
 export class ValuesStatement extends Expression {
     readonly type = "ValuesStatement";
     as: QuotedLiteral;
@@ -67,6 +76,24 @@ export class InsertStatement extends Expression {
 
 }
 
+export class UpdateStatement extends Expression {
+
+    readonly type = "UpdateStatement";
+
+    table: TableLiteral;
+
+    set: BinaryExpression[];
+
+    where: Expression;
+
+}
+
+export class DeleteStatement extends Expression {
+    readonly type = "DeleteStatement";
+    table: TableLiteral;
+    where: Expression;
+}
+
 export class CreateTableStatement extends Expression {
     readonly type = "CreateTableStatement";
 
@@ -76,6 +103,7 @@ export class CreateTableStatement extends Expression {
 }
 
 const All = [
+    BinaryExpression,
     ValuesStatement,
     SelectStatement,
     Constant,
@@ -83,7 +111,9 @@ const All = [
     ExpressionAs,
     TableLiteral,
     InsertStatement,
-    CreateTableStatement
+    CreateTableStatement,
+    UpdateStatement,
+    DeleteStatement
 ];
 
 export type ExpressionType = InstanceType<(typeof All)[0]>;
