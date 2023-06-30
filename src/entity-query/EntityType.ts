@@ -1,32 +1,8 @@
-import type { IColumn } from "../decorators/Column.js";
+import type { IColumn, IEntityRelation } from "../decorators/IColumn.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
+import NameParser from "../decorators/parser/MemberParser.js";
 
-
-interface IEntityRelation {
-
-    type?: EntityType;
-    
-    /**
-     * Name of own field...
-     */
-    name: string;
-
-    isCollection?: boolean;
-
-    
-    foreignKey: string;
-
-    relatedTypeClass: IClassOf<any>;
-
-    relatedName: string;
-
-
-    relatedEntity?: EntityType;
-
-    relatedRelation?: IEntityRelation;
-
-}
 
 /**
  * DbQuery represents sql equivalent table with columns...
@@ -54,6 +30,13 @@ export default class EntityType {
     }
 
     public addColumn(c: IColumn) {
+
+        const existing = this.fieldMap.get(c.name);
+        if (existing) {
+            c.fkRelation = existing.fkRelation;
+            c.fkRelation.fkColumn = c;
+        }
+
         this.fieldMap.set(c.name, c);
         this.columnMap.set(c.columnName, c);
         this.columns.push(c);
@@ -71,4 +54,27 @@ export default class EntityType {
     public getField(name: string) {
         return this.fieldMap.get(name);
     }
+
+    addRelation(relation: IEntityRelation) {
+        // we will also set fk to the corresponding column
+        this.relations.push(relation);
+
+        // find fk...
+        let fkColumn = this.fieldMap.get(relation.foreignKey);
+        if(!fkColumn) {
+            fkColumn = {
+                name: relation.foreignKey,
+                fkRelation: relation,
+                dataType: "BigInt"
+            };
+            this.fieldMap.set(relation.foreignKey, fkColumn);
+        }
+        fkColumn.fkRelation = relation;
+        relation.fkColumn = fkColumn;
+        if (fkColumn.dataType === "Double") {
+            fkColumn.dataType = "BigInt";
+        }
+
+    }
+
 }

@@ -1,4 +1,4 @@
-import { IColumn } from "../../decorators/Column.js";
+import { IColumn } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";

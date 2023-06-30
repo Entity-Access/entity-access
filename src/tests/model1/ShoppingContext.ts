@@ -31,6 +31,10 @@ export class User {
     @Column({ key: true , dataType: "Char" })
     public userID: string;
 
+    public ownedProducts: Product[];
+
+    public orders: Order[];
+
 }
 
 
@@ -48,6 +52,13 @@ export class Product {
 
     public orderItems: OrderItem[];
 
+    @ForeignKey({
+        key: (product) => product.ownerID,
+        related: User,
+        relatedProperty: (user) => user.ownedProducts
+    })
+    public owner: User;
+
 }
 
 @Table("Orders")
@@ -60,9 +71,16 @@ export class Order {
     public orderDate: Date;
 
     @Column()
-    public customerID: number;
+    public customerID: string;
 
     public orderItems: OrderItem[];
+
+    @ForeignKey({
+        key: (order) => order.customerID,
+        related: User,
+        relatedProperty: (user) => user.orders
+    })
+    public customer: User;
 
 }
 
@@ -78,10 +96,18 @@ export class OrderItem {
     @Column()
     public productID: number;
 
-    @ForeignKey((x) => x.orderID, Order, (x) => x.orderItems)
+    @ForeignKey({
+        key: (orderItem) => orderItem.orderID,
+        related: Order,
+        relatedProperty: (order) => order.orderItems
+    })
     public order: Order;
 
-    @ForeignKey((x) => x.productID, Product, (x) => x.orderItems)
+    @ForeignKey({
+        key: (orderItem) => orderItem.productID,
+        related: Product,
+        relatedProperty:(product) => product.orderItems
+    })
     public product: Product;
 
 }

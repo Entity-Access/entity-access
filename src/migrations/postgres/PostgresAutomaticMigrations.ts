@@ -1,10 +1,11 @@
-import { IColumn } from "../../decorators/Column.js";
+import { IColumn } from "../../decorators/IColumn.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import Migrations from "../Migrations.js";
+import PostgresMigrations from "./PostgresMigrations.js";
 
-export default class PostgresAutomaticMigrations extends Migrations {
+export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
     async migrateTable(context: EntityContext, type: EntityType) {
         
@@ -16,6 +17,33 @@ export default class PostgresAutomaticMigrations extends Migrations {
         const driver = context.driver;
 
         await this.createTable(driver, type, keys);
+
+        await this.createColumns(driver, type, nonKeyColumns);
+
+    }
+
+    async createColumns(driver: BaseDriver, type: EntityType, nonKeyColumns: IColumn[]) {
+
+        const name = type.schema
+        ? JSON.stringify(type.schema) + "." + JSON.stringify(type.name)
+        : JSON.stringify(type.name);
+
+        if (nonKeyColumns.length > 1) {
+            nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        }
+
+        for (const iterator of nonKeyColumns) {
+            const columnName = JSON.stringify(iterator.columnName);
+            let def = `ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS ${columnName} `;
+            def += this.getColumnDefinition(iterator);
+            if (iterator.nullable !== true) {
+                def += " NOT NULL ";
+            }
+            if (typeof iterator.default === "string") {
+                def += " DEFAULT " + iterator.default;
+            }
+            await driver.executeNonQuery(def + ";");
+        }
 
     }
 
@@ -36,30 +64,15 @@ export default class PostgresAutomaticMigrations extends Migrations {
             if (iterator.autoGenerate) {
                 def += iterator.dataType === "BigInt" ? "bigserial " : "serial ";
             } else {
-                def += this.getColumnType(iterator);
+                def += this.getColumnDefinition(iterator);
             }
-            def += "not null primary key\r\n\t";
+            def += " not null primary key\r\n\t";
+            fields.push(def);
         }
 
         await driver.executeNonQuery(`CREATE TABLE IF NOT EXISTS ${name} (${fields.join(",")})`);
 
     }
-    
-    getColumnType(iterator: IColumn) {
-        switch(iterator.dataType) {
-            case "AsciiChar":
-            case "BigInt":
-            case "Char":
-            case "DateTime":
-            case "Double":
-                return "double"
-            case "Float":
-                return "float";
-            case "Int":
-                return "int";
-            case "Boolean":
-                return "bit";
-        }
-    }
+
     
 }

@@ -1,4 +1,4 @@
-import { IColumn } from "../../decorators/Column.js";
+import { IColumn } from "../../decorators/IColumn.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
 
 export class Expression {
