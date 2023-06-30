@@ -1,4 +1,4 @@
-import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 export default class ExpressionToQueryVisitor extends Visitor<string> {
@@ -49,8 +49,19 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
         return `${this.visit(e.left)} ${e.operator} ${this.visit(e.right)}`;
     }
 
+    visitReturnUpdated(e: ReturnUpdated): string {
+        if (!e) {
+            return "";
+        }
+        if (e.fields.length === 0) {
+            return "";
+        }
+        const fields = e.fields.map((x) => this.visit(x)).join(",");
+        return ` RETURNING ${fields}`;
+    }
+
     visitInsertStatement(e: InsertStatement): string {
-        const exports = e.exports.map((x) => this.visit(x)).join(",");
+        const returnValues = this.visit(e.returnValues);
         if (e.values instanceof ValuesStatement) {
             const rows = [];
             for (const iterator of e.values.values) {
@@ -60,9 +71,9 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
                 }
                 rows.push("(" + row.join(",") + ")");
             }
-            return `INSERT INTO ${this.visit(e.table)} (${this.walkJoin(e.values.fields)}) VALUES ${rows.join(",")} RETURNING ${exports}`;
+            return `INSERT INTO ${this.visit(e.table)} (${this.walkJoin(e.values.fields)}) VALUES ${rows.join(",")} ${returnValues}`;
         }
-        return `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)} RETURNING ${exports}`;
+        return `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)} ${returnValues}`;
 
     }
 

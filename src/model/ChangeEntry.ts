@@ -76,9 +76,21 @@ export default class ChangeEntry implements IChanges {
         // set status to unchanged
 
         // we will only apply the columns defined
-        for (const iterator of this.type.columns) {
-            this.entity[iterator.name] = dbValues[iterator.columnName];
+        if (dbValues !== void 0) {
+            for (const iterator of this.type.columns) {
+                const dbValue = dbValues[iterator.columnName];
+                if (dbValue !== void 0) {
+                    this.entity[iterator.name] = dbValues[iterator.columnName];
+                }
+            }
         }
+
+        for (const iterator of this.pending) {
+            iterator();
+        }
+
+        this.pending.length = 0;
+
         this.status = "unchanged";
         this.modified.clear();
     }
@@ -100,18 +112,20 @@ export default class ChangeEntry implements IChanges {
             // if related has key defined.. set it...
             const rKey = iterator.relatedEntity.keys[0];
 
+            const relatedChanges = this.changeSet.getEntry(related);
+
             const keyValue = related[rKey.name];
             if (keyValue === void 0) {
                 this.order++;
                 const fk = iterator;
-                this.pending.push(() => {
-                    this[fk.fkColumn.name] = related[rKey.name];
+                relatedChanges.pending.push(() => {
+                    this.entity[fk.fkColumn.name] = related[rKey.name];
                 });
                 this.modified.set(iterator.name, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
                 continue;
             }
 
-            this[iterator.fkColumn.name] = related[rKey.name];
+            this.entity[iterator.fkColumn.name] = related[rKey.name];
         }
     }
 

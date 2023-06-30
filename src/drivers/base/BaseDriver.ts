@@ -1,6 +1,6 @@
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
-import { Constant, Expression, InsertStatement, QuotedLiteral, TableLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
+import { Constant, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
 
 const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
@@ -60,13 +60,13 @@ export abstract class BaseDriver {
     public abstract automaticMigrations(): Migrations;
 
     createInsertExpression(type: EntityType, entity: any): InsertStatement {
-        const exports = [] as QuotedLiteral[];
+        const returnFields = [] as QuotedLiteral[];
         const fields = [] as QuotedLiteral[];
         const values = [] as Constant[];
         for (const iterator of type.columns) {
             const literal = QuotedLiteral.create({ literal: iterator.columnName });
             if (iterator.autoGenerate) {
-                exports.push(literal);
+                returnFields.push(literal);
                 continue;
             }
             const value = entity[iterator.name];
@@ -86,7 +86,10 @@ export abstract class BaseDriver {
                 schema
             }),
             values: ValuesStatement.create({ fields, values: [values] }),
-            exports,
+            returnValues: ReturnUpdated.create({
+                changes: "INSERTED",
+                fields: returnFields
+            }),
         });
     }
 

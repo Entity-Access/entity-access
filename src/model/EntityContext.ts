@@ -19,38 +19,34 @@ export default class EntityContext {
 
     public async saveChanges() {
 
-        const expressions: { expression, post: ((r) => void) }[] = [];
-
         this.changeSet.detectChanges();
 
-        for (const iterator of this.changeSet.entries) {
-            switch(iterator.status) {
-                case "inserted":
-                    const insert  = this.driver.createInsertExpression(iterator.type, iterator.entity);
-                    expressions.push({ expression: insert , post: (r) => {
-                        iterator.apply(r);
-                    }});
-                    break;
-            }
-        }
-
         await this.driver.runInTransaction(async () => {
-
-            for (const { expression, post } of expressions) {
-                const ev = new ExpressionToQueryVisitor();
-                const text = ev.visit(expression);
-                const values = ev.variables;
-                const reader = await this.driver.executeReader({ text, values });
-                try {
-                    for await (const r of reader.next()) {
-                        // wait...
-                        post(r);
-                    }
-                } finally {
-                    await reader.dispose();
+            for (const iterator of this.changeSet.entries) {
+                switch(iterator.status) {
+                    case "inserted":
+                        const insert  = this.driver.createInsertExpression(iterator.type, iterator.entity);
+                        const r = await this.executeExpression(insert);
+                        iterator.apply(r);
+                        break;
                 }
             }
         });
+    }
+
+    private async executeExpression(expression: Expression) {
+        const ev = new ExpressionToQueryVisitor();
+        const text = ev.visit(expression);
+        const values = ev.variables;
+        const reader = await this.driver.executeReader({ text, values });
+        try {
+            for await (const r of reader.next()) {
+                return r;
+            }
+        } finally {
+            await reader.dispose();
+        }
+
     }
 
 }

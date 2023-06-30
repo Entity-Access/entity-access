@@ -43,6 +43,14 @@ export class SelectStatement extends Expression {
 
 }
 
+export class ReturnUpdated extends Expression {
+    readonly type = "ReturnUpdated";
+
+    fields: QuotedLiteral[];
+
+    changes: "INSERTED" | "DELETED" | "UPDATED";
+}
+
 export class Constant extends Expression {
     readonly type = "Constant";
     public value: any;
@@ -72,7 +80,7 @@ export class InsertStatement extends Expression {
 
     values: ValuesStatement | SelectStatement;
 
-    exports: QuotedLiteral[];
+    returnValues: ReturnUpdated;
 
 }
 
@@ -113,7 +121,8 @@ const All = [
     InsertStatement,
     CreateTableStatement,
     UpdateStatement,
-    DeleteStatement
+    DeleteStatement,
+    ReturnUpdated
 ];
 
 export type ExpressionType = InstanceType<(typeof All)[0]>;
