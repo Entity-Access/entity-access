@@ -1,8 +1,6 @@
 import EntityType from "../entity-query/EntityType.js";
 import { Expression } from "../query/ast/Expressions.js";
 
-export type IFilterWithParameter<P, T> = (p: P) => (x: T) => boolean;
-
 export interface ITargetExpression {
     model: EntityType,
     where?: Expression,
