@@ -27,7 +27,7 @@ export class EntitySource<T = any> {
     }
 
     public where<P>(p: P, fx: (px: P) => (t: T) => boolean) {
-        
+        return EntityQuery.from<T>(this.model).where(p, fx);
     }
 }
 
