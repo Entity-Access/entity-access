@@ -6,22 +6,22 @@ export const PostgreSqlHelper: ISqlHelpers = {
     },
     date: {
         addDays(d, n) {
-            return `${d} + (${n} * interval '1 day')`;
+            return `(${d} + (${n} * interval '1 day'))`;
         },
         addHours(d, n) {
-            return `${d} + (${n} * interval '1 hour')`;
+            return `(${d} + (${n} * interval '1 hour'))`;
         },
         addMinutes(d, n) {
-            return `${d} + (${n} * interval '1 minute')`;
+            return `(${d} + (${n} * interval '1 minute'))`;
         },
         addMonths(d, n) {
-            return `${d} + (${n} * interval '1 month')`;
+            return `(${d} + (${n} * interval '1 month'))`;
         },
         addSeconds(d, n) {
-            return `${d} + (${n} * interval '1 second')`;
+            return `(${d} + (${n} * interval '1 second'))`;
         },
         addYears(d, n) {
-            return `${d} + (${n} * interval '1 year')`;
+            return `(${d} + (${n} * interval '1 year'))`;
         },
         dayOf(d) {
             return `DATE_PART(${d}, day)`;
@@ -50,7 +50,7 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return `strpos(${text}, ${test}) = length(${text}) - length(${test})`;
         },
         iLike(text, test) {
-            return `${text} iLike ${test}`;
+            return `(${text} iLike ${test})`;
         },
         indexOf(text, test) {
             return `strpos(${text}, ${test})`;
@@ -59,7 +59,7 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return `left(${text}, ${length})`;
         },
         like(text, test) {
-            return `${text} LIKE ${test}`;
+            return `(${text} LIKE ${test})`;
         },
         right(text, length) {
             return `right(${text}, ${length})`;

@@ -117,7 +117,7 @@ export default class ExpressionToSql extends Visitor<string> {
     }
 
     visitBinaryExpression(e: BinaryExpression): string {
-        return `${this.visit(e.left)} ${e.operator} ${this.visit(e.right)}`;
+        return `(${this.visit(e.left)} ${e.operator} ${this.visit(e.right)})`;
     }
 
     visitCoalesceExpression(e: CoalesceExpression): string {
