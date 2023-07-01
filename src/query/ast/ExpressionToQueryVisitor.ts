@@ -4,9 +4,10 @@ import Visitor from "./Visitor.js";
 
 export default class ExpressionToQueryVisitor extends Visitor<string> {
 
-    public variables: any[] = [];
+    public variables: string[] = [];
 
     constructor(
+        private root: string,
         private quotedLiteral: ((i: string) => string) = JSON.stringify,
         private escapeLiteral: ((i: string) => string) = SqlLiteral.escapeLiteral
     ) {
@@ -82,11 +83,17 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
         return e.value;
     }
 
-    visitMemberExpression(e: MemberExpression): string {
-        if (e.computed) {
-            return `${this.visit(e.target)}[${this.visit(e.property)}]`;
+    visitMemberExpression({ target, computed, property }: MemberExpression): string {
+        const identifier = target as Identifier;
+        if (identifier.type === "Identifier" && identifier.value === this.root) {
+            // we have a parameter...
+            this.variables.push(this.visit(property));
+            return "$" + this.variables.length;
         }
-        return `${this.visit(e.target)}.${this.visit(e.property)}`;
+        if (computed) {
+            return `${this.visit(target)}[${this.visit(property)}]`;
+        }
+        return `${this.visit(target)}.${this.visit(property)}`;
     }
 
     visitNullExpression(e: NullExpression): string {
