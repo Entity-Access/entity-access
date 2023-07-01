@@ -4,7 +4,7 @@ import { ISqlMethodTransformer, IStringTransformer } from "../query/ast/IStringT
 import { Expression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
-import SqlMethodTransformer from "./SqlMethodTransformer.js";
+import PostgreSqlMethodTransformer from "./postgres/SqlMethodTransformer.js";
 
 export default class QueryCompiler {
 
@@ -24,7 +24,7 @@ export default class QueryCompiler {
             expressionToSql = ExpressionToSql,
             quotedLiteral = JSON.stringify,
             escapeLiteral = SqlLiteral.escapeLiteral,
-            sqlMethodTransformer = SqlMethodTransformer
+            sqlMethodTransformer = PostgreSqlMethodTransformer
         }: Partial<QueryCompiler> = {}
     ) {
         this.arrowToExpression = arrowToExpression;
