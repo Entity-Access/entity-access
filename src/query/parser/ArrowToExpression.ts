@@ -43,6 +43,8 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
         };
     }
 
+    public readonly leftJoins: string[] = [];
+
     protected constructor(public param: string, public target: string) {
         super();
     }
@@ -123,6 +125,11 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitCallExpression({ callee, arguments: args }: bpe.CallExpression) {
+
+        // let us check if we are using any of array extension methods...
+        // .some alias .any
+        // .find alias .firstOrDefault
+
         return CallExpression.create({
             callee: callee ? this.visit(callee) : void 0,
             arguments: args ? args.map((x) => this.visit(x)) : []
