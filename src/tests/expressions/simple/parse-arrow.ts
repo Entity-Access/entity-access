@@ -35,5 +35,6 @@ export default function () {
     r = compiler.compile((p) => (x) => Sql.text.startsWith(x.firstName, p.name));
 
     assert.equal(`starts_with("x"."firstName", $1)`, r.text);
+    assert.equal("name", r.values[0]);
 
 }
