@@ -27,4 +27,8 @@ export default function () {
 
     assert.equal(`"x"."firstName" LIKE $1`, r.text);
 
+    r = compiler.compile((p) => (x) => Sql.text.startsWith(x.firstName, p.name));
+
+    assert.equal(`starts_with("x"."firstName", $1)`, r.text);
+
 }
