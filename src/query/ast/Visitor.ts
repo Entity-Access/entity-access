@@ -1,4 +1,4 @@
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -60,9 +60,14 @@ export default abstract class Visitor<T = any> {
                 return this.visitCallExpression(e);
             case "Identifier":
                 return this.visitIdentifier(e);
+            case "CoalesceExpression":
+                return this.visitCoalesceExpression(e);
         }
         const c: never = e;
         throw new Error("Not implemented");
+    }
+    visitCoalesceExpression(e: CoalesceExpression): T {
+        return;
     }
     visitIdentifier(e: Identifier): T {
         return;

@@ -1,8 +1,13 @@
 /* eslint-disable no-console */
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 import { Query } from "../../../query/Query.js";
+import { TestConfig } from "../../TestConfig.js";
 
 export default async function () {
+
+    if(!TestConfig.db) {
+        return;
+    }
 
     const connection = new PostgreSqlDriver({
         host: "localhost",

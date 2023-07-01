@@ -1,7 +1,12 @@
 import { Query } from "../../query/Query.js";
+import { TestConfig } from "../TestConfig.js";
 import { Order, ShoppingContext } from "./ShoppingContext.js";
 
 export default async function() {
+
+    if(!TestConfig.db) {
+        return;
+    }
 
     const rn = "d" + Date.now();
 

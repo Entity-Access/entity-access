@@ -66,6 +66,12 @@ export class BinaryExpression extends Expression {
     operator: string;
 }
 
+export class CoalesceExpression extends Expression {
+    readonly type = "CoalesceExpression";
+    left: Expression;
+    right: Expression;
+}
+
 export class ValuesStatement extends Expression {
     readonly type = "ValuesStatement";
     as: QuotedLiteral;
@@ -233,6 +239,7 @@ const All = [
     TemplateLiteral,
     MemberExpression,
     CallExpression,
+    CoalesceExpression,
     Identifier
 ];
 

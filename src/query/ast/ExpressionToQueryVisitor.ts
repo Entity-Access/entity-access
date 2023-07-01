@@ -1,15 +1,36 @@
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import SqlTranslator from "../parser/SqlTranslator.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
 
+export type IStringTransformer = (s: string) => string;
+
 export default class ExpressionToQueryVisitor extends Visitor<string> {
 
-    public variables: string[] = [];
+    public static expressionToQuery(exp: Expression) {
+        const x = new this(void 0, void 0);
+        const text = x.visit(exp);
+        return { text, values: x.values };
+    }
+
+    public static toQuery(
+        exp: (p) => (x) => any,
+        quotedLiteral: IStringTransformer = JSON.stringify,
+        escapeLiteral: IStringTransformer = SqlLiteral.escapeLiteral) {
+        const { param, body, target } = SqlTranslator.transform(exp);
+        const x = new this(param, target, quotedLiteral, escapeLiteral);
+        const text = x.visit(body);
+
+        return { text, values: x.values };
+    }
+
+    public values: string[] = [];
 
     constructor(
         private root: string,
-        private quotedLiteral: ((i: string) => string) = JSON.stringify,
-        private escapeLiteral: ((i: string) => string) = SqlLiteral.escapeLiteral
+        private target: string,
+        private quotedLiteral: IStringTransformer = JSON.stringify,
+        private escapeLiteral: IStringTransformer = SqlLiteral.escapeLiteral
     ) {
         super();
     }
@@ -48,8 +69,8 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
     }
 
     visitConstant(e: Constant): string {
-        this.variables.push(e.value);
-        return "$" + this.variables.length;
+        this.values.push(e.value);
+        return "$" + this.values.length;
     }
 
     visitBigIntLiteral(e: BigIntLiteral): string {
@@ -85,11 +106,19 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
 
     visitMemberExpression({ target, computed, property }: MemberExpression): string {
         const identifier = target as Identifier;
-        if (identifier.type === "Identifier" && identifier.value === this.root) {
-            // we have a parameter...
-            this.variables.push(this.visit(property));
-            return "$" + this.variables.length;
+        if (identifier.type === "Identifier") {
+            if (identifier.value === this.root) {
+                // we have a parameter...
+                this.values.push(this.visit(property));
+                return "$" + this.values.length;
+            }
+            if (identifier.value === this.target) {
+                // we have column name from table parameter
+                // we need to set quoted literal...
+                return `${this.quotedLiteral(this.target)}.${this.quotedLiteral(this.visit(property))}`;
+            }
         }
+
         if (computed) {
             return `${this.visit(target)}[${this.visit(property)}]`;
         }
@@ -102,6 +131,12 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
 
     visitBinaryExpression(e: BinaryExpression): string {
         return `${this.visit(e.left)} ${e.operator} ${this.visit(e.right)}`;
+    }
+
+    visitCoalesceExpression(e: CoalesceExpression): string {
+        const left = this.visit(e.left);
+        const right = this.visit(e.right);
+        return `COALESCE(${left}, ${right})`;
     }
 
     visitReturnUpdated(e: ReturnUpdated): string {

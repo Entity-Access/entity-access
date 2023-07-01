@@ -35,9 +35,7 @@ export default class EntityContext {
     }
 
     private async executeExpression(expression: Expression) {
-        const ev = new ExpressionToQueryVisitor();
-        const text = ev.visit(expression);
-        const values = ev.variables;
+        const { text, values } = ExpressionToQueryVisitor.expressionToQuery(expression);
         const reader = await this.driver.executeReader({ text, values });
         try {
             for await (const r of reader.next()) {
