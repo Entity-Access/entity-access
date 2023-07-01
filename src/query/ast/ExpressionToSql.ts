@@ -1,8 +1,7 @@
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ISqlMethodTransformer, IStringTransformer } from "./IStringTransformer.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
-
-export type IStringTransformer = (s: string) => string;
 
 export default class ExpressionToSql extends Visitor<string> {
 
@@ -12,7 +11,8 @@ export default class ExpressionToSql extends Visitor<string> {
         private root: string,
         private target: string,
         private quotedLiteral: IStringTransformer = JSON.stringify,
-        private escapeLiteral: IStringTransformer = SqlLiteral.escapeLiteral
+        private escapeLiteral: IStringTransformer = SqlLiteral.escapeLiteral,
+        private sqlMethodTranslator: ISqlMethodTransformer = (x, y) => void 0
     ) {
         super();
     }
@@ -77,8 +77,13 @@ export default class ExpressionToSql extends Visitor<string> {
     }
 
     visitCallExpression(e: CallExpression): string {
-        const args = this.visitArray(e.arguments).join(",");
-        return `${this.visit(e.callee)}(${args})`;
+        const args = this.visitArray(e.arguments);
+        const callee = this.visit(e.callee);
+        const transformedCallee = this.sqlMethodTranslator(callee, args);
+        if (transformedCallee) {
+            return transformedCallee;
+        }
+        return `${this.visit(e.callee)}(${args.join(",")})`;
     }
 
     visitIdentifier(e: Identifier): string {

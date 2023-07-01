@@ -1,8 +1,10 @@
 import { IClassOf } from "../decorators/IClassOf.js";
-import ExpressionToSql, { IStringTransformer } from "../query/ast/ExpressionToSql.js";
+import ExpressionToSql from "../query/ast/ExpressionToSql.js";
+import { ISqlMethodTransformer, IStringTransformer } from "../query/ast/IStringTransformer.js";
 import { Expression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
+import SqlMethodTransformer from "./SqlMethodTransformer.js";
 
 export default class QueryCompiler {
 
@@ -14,23 +16,27 @@ export default class QueryCompiler {
     public readonly quotedLiteral: IStringTransformer;
     public readonly escapeLiteral: IStringTransformer;
 
+    public readonly sqlMethodTransformer: ISqlMethodTransformer;
+
     constructor(
         {
             arrowToExpression = ArrowToExpression,
             expressionToSql = ExpressionToSql,
             quotedLiteral = JSON.stringify,
-            escapeLiteral = SqlLiteral.escapeLiteral
+            escapeLiteral = SqlLiteral.escapeLiteral,
+            sqlMethodTransformer = SqlMethodTransformer
         }: Partial<QueryCompiler> = {}
     ) {
         this.arrowToExpression = arrowToExpression;
         this.expressionToSql = expressionToSql;
         this.escapeLiteral = escapeLiteral;
         this.quotedLiteral = quotedLiteral;
+        this.sqlMethodTransformer = sqlMethodTransformer;
     }
 
     public compile(fx: (p) => (x) => any) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral);
+        const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
         const text = exp.visit(body);
         return { text, values: exp.values };
     }

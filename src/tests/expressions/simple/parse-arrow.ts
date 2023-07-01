@@ -25,6 +25,6 @@ export default function () {
 
     r = compiler.compile((p) => (x) => Sql.text.like(x.firstName, p.name));
 
-    assert.equal(`Sql.text.like("x"."firstName",$1)`, r.text);
+    assert.equal(`"x"."firstName" LIKE $1`, r.text);
 
 }
