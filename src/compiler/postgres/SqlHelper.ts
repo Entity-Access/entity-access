@@ -1,6 +1,6 @@
 import { ISqlHelpers } from "../ISqlHelpers.js";
 
-export const SqlHelper: ISqlHelpers = {
+export const PostgreSqlHelper: ISqlHelpers = {
     in(a, array) {
         return `${a} IN ${array}`;
     },

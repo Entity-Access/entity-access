@@ -1,5 +1,5 @@
 import { ISql } from "../sql/ISql.js";
-import { SqlHelper } from "./sql/SqlHelper.js";
+import { PostgreSqlHelper } from "./postgres/SqlHelper.js";
 
 const flatten = (f, name, target = {}) => {
     for (const key in f) {
@@ -18,7 +18,7 @@ const flatten = (f, name, target = {}) => {
     return target;
 };
 
-const names = flatten(SqlHelper, "Sql");
+const names = flatten(PostgreSqlHelper, "Sql");
 
 export default function SqlMethodTransformer(callee: string, args: string[]): string {
     return names[callee]?.(... args);
