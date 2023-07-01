@@ -1,28 +1,10 @@
-import SqlTranslator from "../parser/SqlTranslator.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
 
 export type IStringTransformer = (s: string) => string;
 
-export default class ExpressionToQueryVisitor extends Visitor<string> {
-
-    public static expressionToQuery(exp: Expression) {
-        const x = new this(void 0, void 0);
-        const text = x.visit(exp);
-        return { text, values: x.values };
-    }
-
-    public static toQuery(
-        exp: (p) => (x) => any,
-        quotedLiteral: IStringTransformer = JSON.stringify,
-        escapeLiteral: IStringTransformer = SqlLiteral.escapeLiteral) {
-        const { param, body, target } = SqlTranslator.transform(exp);
-        const x = new this(param, target, quotedLiteral, escapeLiteral);
-        const text = x.visit(body);
-
-        return { text, values: x.values };
-    }
+export default class ExpressionToSql extends Visitor<string> {
 
     public values: string[] = [];
 

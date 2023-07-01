@@ -6,7 +6,7 @@ import * as bpe from "@babel/types";
 type IQueryFragment = string | { name?: string, value?: any };
 type IQueryFragments = IQueryFragment[];
 
-export default class SqlTranslator extends BabelVisitor<Expression> {
+export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     public static transform(fx: (p: any) => (x: any) => any) {
         const node = parseExpression(fx.toString());
