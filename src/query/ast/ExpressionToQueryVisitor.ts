@@ -1,11 +1,15 @@
-import { BinaryExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, InsertStatement, JoinExpression, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
 
 export default class ExpressionToQueryVisitor extends Visitor<string> {
 
     public variables: any[] = [];
 
-    constructor(private quotedLiteral: ((i: string) => string) = JSON.stringify) {
+    constructor(
+        private quotedLiteral: ((i: string) => string) = JSON.stringify,
+        private escapeLiteral: ((i: string) => string) = SqlLiteral.escapeLiteral
+    ) {
         super();
     }
 
@@ -45,6 +49,48 @@ export default class ExpressionToQueryVisitor extends Visitor<string> {
     visitConstant(e: Constant): string {
         this.variables.push(e.value);
         return "$" + this.variables.length;
+    }
+
+    visitBigIntLiteral(e: BigIntLiteral): string {
+        return e.value.toString();
+    }
+
+    visitNumberLiteral(e: NumberLiteral): string {
+        return e.value.toString();
+    }
+
+    visitStringLiteral(e: StringLiteral): string {
+        return this.escapeLiteral(e.value);
+    }
+
+    visitBooleanLiteral(e: BooleanLiteral): string {
+        return e.value ? "1" : "0";
+    }
+
+    visitTemplateLiteral(e: TemplateLiteral): string {
+        const args = this.visitArray(e.value);
+        return `CONCAT(${args.join(", ")})`;
+    }
+
+    visitCallExpression(e: CallExpression): string {
+        const args = this.visitArray(e.arguments).join(",");
+        return `${this.visit(e.callee)}(${args})`;
+    }
+
+    visitIdentifier(e: Identifier): string {
+        // need to visit parameters
+        return e.value;
+    }
+
+    visitMemberExpression(e: MemberExpression): string {
+        if (e.computed) {
+            return `${this.visit(e.target)}[${this.visit(e.property)}]`;
+        }
+        return `${this.visit(e.target)}.${this.visit(e.property)}`;
+    }
+
+    visitNullExpression(e: NullExpression): string {
+        return "NULL";
     }
 
     visitBinaryExpression(e: BinaryExpression): string {
