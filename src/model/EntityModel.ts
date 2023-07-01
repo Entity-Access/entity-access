@@ -3,8 +3,19 @@ import { IClassOf } from "../decorators/IClassOf.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import type EntityType from "../entity-query/EntityType.js";
 import EntityQuery from "./EntityQuery.js";
+import { Expression } from "@babel/types";
+import { IFilterExpression } from "./IFilterWithParameter.js";
+
+
 
 export class EntitySource<T = any> {
+
+    public readonly filters: {
+        read?: () => IFilterExpression,
+        modify?: () => IFilterExpression,
+        delete?: () => IFilterExpression,
+        include?: () => IFilterExpression
+    } = {};
 
     constructor(
         private readonly model: EntityType,
@@ -26,7 +37,7 @@ export class EntitySource<T = any> {
         return item as T;
     }
 
-    public where<P>(p: P, fx: (px: P) => (t: T) => boolean) {
+    public where<P>( ... [p, fx]: IFilterExpression<P, T>) {
         return EntityQuery.from<T>(this.model).where(p, fx);
     }
 }

@@ -5,6 +5,8 @@ import { Expression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/SqlMethodTransformer.js";
+import EntityType from "../entity-query/EntityType.js";
+import { EntitySource } from "../model/EntityModel.js";
 
 export default class QueryCompiler {
 
@@ -34,7 +36,7 @@ export default class QueryCompiler {
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 
-    public compile(fx: (p) => (x) => any) {
+    public compile(fx: (p) => (x) => any, source?: EntitySource) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
         const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
         const text = exp.visit(body);

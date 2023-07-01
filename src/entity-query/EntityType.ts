@@ -30,6 +30,13 @@ export default class EntityType {
 
     private fieldMap: Map<string, IColumn> = new Map();
     private columnMap: Map<string, IColumn> = new Map();
+    private relationMap: Map<string, IEntityRelation> = new Map();
+
+    public getProperty(name: string) {
+        const field = this.fieldMap.get(name);
+        const relation = this.relationMap.get(name);
+        return { field, relation };
+    }
 
     public addColumn(c: IColumn) {
 
@@ -60,6 +67,7 @@ export default class EntityType {
     addRelation(relation: IEntityRelation) {
         // we will also set fk to the corresponding column
         this.relations.push(relation);
+        this.relationMap.set(relation.name, relation);
 
         // find fk...
         let fkColumn = this.fieldMap.get(relation.foreignKey);
@@ -91,6 +99,7 @@ export default class EntityType {
             relatedRelation: relation,
             relatedType: this
         };
+        relatedType.relationMap.set(inverseRelation.name, inverseRelation);
         relatedType.relations.push(inverseRelation);
         inverseRelation.relatedRelation = relation;
 

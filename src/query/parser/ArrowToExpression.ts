@@ -2,6 +2,8 @@ import { parseExpression } from "@babel/parser";
 import { BinaryExpression, CallExpression, CoalesceExpression, Constant, Expression, Identifier, MemberExpression, NullExpression, NumberLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
+import EntityType from "../../entity-query/EntityType.js";
+import { EntitySource } from "../../model/EntityModel.js";
 
 type IQueryFragment = string | { name?: string, value?: any };
 type IQueryFragments = IQueryFragment[];
@@ -45,7 +47,10 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     public readonly leftJoins: string[] = [];
 
-    protected constructor(public param: string, public target: string) {
+    protected constructor(
+        public param: string,
+        public target: string
+    ) {
         super();
     }
 
@@ -125,11 +130,6 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitCallExpression({ callee, arguments: args }: bpe.CallExpression) {
-
-        // let us check if we are using any of array extension methods...
-        // .some alias .any
-        // .find alias .firstOrDefault
-
         return CallExpression.create({
             callee: callee ? this.visit(callee) : void 0,
             arguments: args ? args.map((x) => this.visit(x)) : []
@@ -148,5 +148,4 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             computed
         });
     }
-
 }

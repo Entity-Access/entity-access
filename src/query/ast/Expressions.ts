@@ -40,7 +40,7 @@ export abstract class Expression {
         for (const key in expression) {
             if (Object.prototype.hasOwnProperty.call(expression, key)) {
                 const element = expression[key];
-                if (key === "type") {
+                if (key === "type" || key === "is") {
                     continue;
                 }
                 if (element instanceof Constant) {
@@ -83,6 +83,11 @@ export class OrderByExpression extends Expression {
     readonly type = "OrderByExpression";
     target: Expression;
     descending: boolean;
+}
+
+export class ExistsExpression extends Expression {
+    readonly type = "ExistsExpression";
+    target: Expression;
 }
 
 export class CallExpression extends Expression {
@@ -217,30 +222,29 @@ export class DeleteStatement extends Expression {
     where: Expression;
 }
 
-const All = [
-    BinaryExpression,
-    ValuesStatement,
-    SelectStatement,
-    Constant,
-    QuotedLiteral,
-    ExpressionAs,
-    TableLiteral,
-    InsertStatement,
-    UpdateStatement,
-    DeleteStatement,
-    ReturnUpdated,
-    OrderByExpression,
-    JoinExpression,
-    NullExpression,
-    StringLiteral,
-    NumberLiteral,
-    BigIntLiteral,
-    BooleanLiteral,
-    TemplateLiteral,
-    MemberExpression,
-    CallExpression,
-    CoalesceExpression,
+export type ExpressionType =
+    BinaryExpression |
+    ValuesStatement |
+    SelectStatement |
+    Constant|
+    QuotedLiteral|
+    ExpressionAs|
+    TableLiteral|
+    InsertStatement|
+    UpdateStatement|
+    DeleteStatement|
+    ReturnUpdated|
+    OrderByExpression|
+    JoinExpression|
+    NullExpression|
+    StringLiteral|
+    NumberLiteral|
+    BigIntLiteral|
+    BooleanLiteral|
+    TemplateLiteral|
+    MemberExpression|
+    CallExpression|
+    CoalesceExpression|
+    ExistsExpression|
     Identifier
-];
-
-export type ExpressionType = InstanceType<(typeof All)[0]>;
+;

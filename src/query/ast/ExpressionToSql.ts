@@ -1,4 +1,4 @@
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ISqlMethodTransformer, IStringTransformer } from "./IStringTransformer.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
@@ -78,6 +78,29 @@ export default class ExpressionToSql extends Visitor<string> {
 
     visitCallExpression(e: CallExpression): string {
         const args = this.visitArray(e.arguments);
+        // let us check if we are using any of array extension methods...
+        // .some alias .any
+        // .find alias .firstOrDefault
+
+        const targetProperty = this.getTargetPropertyIdentifier(e.callee as ExpressionType);
+        if (targetProperty) {
+            if (targetProperty.childProperty) {
+                // calling method on property...
+                // should be navigation...
+                // @ts-expect-error private
+                const targetType = this.source.model;
+                // @ts-expect-error private
+                const context = this.source.context;
+                const relation = targetType?.getProperty(targetProperty.property);
+                if (relation) {
+                    if (/^(some|any)$/i.test(targetProperty.childProperty)) {
+
+                        const relatedSource = context.model.register(relation.relation.relatedTypeClass);
+                    }
+                }
+            }
+        }
+
         const callee = this.visit(e.callee);
         const transformedCallee = this.sqlMethodTranslator(callee, args);
         if (transformedCallee) {
@@ -183,7 +206,7 @@ export default class ExpressionToSql extends Visitor<string> {
         }
         const table = this.visit(e.source);
         const where = this.visit(e.where);
-        return ` ${e.joinType} JOIN ${table} ON ${where}`;
+        return ` ${e.joinType || "LEFT"} JOIN ${table} ON ${where}`;
     }
 
     visitOrderByExpression(e: OrderByExpression): string {
@@ -196,8 +219,46 @@ export default class ExpressionToSql extends Visitor<string> {
         return `${this.visit(e.target)}`;
     }
 
+    visitExistsExpression(e: ExistsExpression): string {
+        return `EXISTS (${this.visit(e.target)})`;
+    }
+
     walkJoin(e: Expression[], sep = ",\r\n\t"): string {
         return e.map((i) => this.visit(i)).join(sep);
     }
+
+    private getTargetPropertyIdentifier(x: ExpressionType): { property?: string, childProperty?: string } {
+        if (x.type !== "MemberExpression") {
+            return;
+        }
+
+        const { target, property } = x;
+        if(property.type !== "Identifier") {
+            return;
+        }
+
+        if (target.type === "Identifier"
+            && target.value === this.target) {
+            return { property: property.value };
+        }
+
+        if (target.type !== "MemberExpression") {
+            return;
+        }
+
+        const root = target.target;
+        if (root.type !== "Identifier" || root.value !== this.target) {
+            return;
+        }
+
+        const childProperty = property.value;
+        const { property: parentProperty } = target;
+        if(parentProperty.type !== "Identifier") {
+            return;
+        }
+
+        return { property: parentProperty.value, childProperty };
+    }
+
 
 }
