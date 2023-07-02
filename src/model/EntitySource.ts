@@ -1,7 +1,7 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
-import type { IFilterExpression } from "./IFilterWithParameter.js";
-import { Expression, PlaceholderExpression } from "../query/ast/Expressions.js";
+import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
+import { BinaryExpression, Expression, PlaceholderExpression } from "../query/ast/Expressions.js";
 
 export class EntitySource<T = any> {
 
@@ -36,6 +36,12 @@ export class EntitySource<T = any> {
     public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
         const compiled = this.context.driver.compiler.compile(this, fx);
         const expression = (p) => compiled.map((x) => typeof x === "function" ? x(p) : x);
-        PlaceholderExpression.create({ expression: () => ({ parameter, expression })});
+        const exp = PlaceholderExpression.create({ expression: () => ({ parameter, expression })});
+        if (this.filter) {
+            this.filter = BinaryExpression.create({ left: this.filter, operator: "AND", right: exp });
+        } else {
+            this.filter = exp;
+        }
+        return this as any as IEntityQuery<T>;
     }
 }
