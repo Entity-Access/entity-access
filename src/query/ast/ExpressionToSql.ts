@@ -82,18 +82,21 @@ export default class ExpressionToSql extends Visitor<string> {
         // .some alias .any
         // .find alias .firstOrDefault
 
-        const targetProperty = this.getTargetPropertyIdentifier(e.callee as ExpressionType);
-        if (targetProperty) {
-            if (targetProperty.childProperty) {
+        const targetProperty = this.getPropertyChain(e.callee as ExpressionType);
+        if (targetProperty?.length) {
+            const [ target , property, childProperty ] = targetProperty;
+            if (target === this.target) {
+
+
                 // calling method on property...
                 // should be navigation...
                 // @ts-expect-error private
                 const targetType = this.source.model;
                 // @ts-expect-error private
                 const context = this.source.context;
-                const relation = targetType?.getProperty(targetProperty.property);
+                const relation = targetType?.getProperty(property);
                 if (relation) {
-                    if (/^(some|any)$/i.test(targetProperty.childProperty)) {
+                    if (/^(some|any)$/i.test(childProperty)) {
 
                         const relatedSource = context.model.register(relation.relation.relatedTypeClass);
                     }
@@ -227,12 +230,38 @@ export default class ExpressionToSql extends Visitor<string> {
         return e.map((i) => this.visit(i)).join(sep);
     }
 
+    private getPropertyChain(x: Expression) {
+        const chain = [];
+        let start = x as ExpressionType;
+        do {
+
+            if (start.type !== "MemberExpression") {
+                return;
+            }
+
+            const target = start.target as ExpressionType;
+            const property = start.property as ExpressionType;
+            if (property.type !== "Identifier") {
+                return;
+            }
+            chain.push(property.value);
+            if (target.type === "Identifier") {
+                chain.push(target.value);
+                break;
+            }
+            start = target;
+        } while (true);
+        return chain.reverse();
+    }
+
+
     private getTargetPropertyIdentifier(x: ExpressionType): { property?: string, childProperty?: string } {
         if (x.type !== "MemberExpression") {
             return;
         }
 
-        const { target, property } = x;
+        const target = x.target as ExpressionType;
+        const property = x.property as ExpressionType;
         if(property.type !== "Identifier") {
             return;
         }
@@ -246,13 +275,13 @@ export default class ExpressionToSql extends Visitor<string> {
             return;
         }
 
-        const root = target.target;
+        const root = target.target as ExpressionType;
         if (root.type !== "Identifier" || root.value !== this.target) {
             return;
         }
 
         const childProperty = property.value;
-        const { property: parentProperty } = target;
+        const parentProperty= target as ExpressionType;
         if(parentProperty.type !== "Identifier") {
             return;
         }
