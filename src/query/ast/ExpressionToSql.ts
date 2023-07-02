@@ -1,5 +1,5 @@
-import QueryBuilder from "../../compiler/builder/QueryBuilder.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { EntitySource } from "../../model/EntitySource.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ISqlMethodTransformer, IStringTransformer, ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
@@ -7,6 +7,7 @@ import Visitor from "./Visitor.js";
 export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
     constructor(
+        private type: EntitySource,
         private root: string,
         private target: string,
         private quotedLiteral: IStringTransformer = JSON.stringify,
@@ -234,6 +235,11 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
     visitExistsExpression(e: ExistsExpression): ITextOrFunctionArray {
         return prepare `EXISTS (${this.visit(e.target)})`;
+    }
+
+    visitPlaceholderExpression(e: PlaceholderExpression): ITextOrFunctionArray {
+        const e1 = e.expression();
+        return prepare `${() => e1.expression(e1.parameter)}`;
     }
 
     private getPropertyChain(x: Expression) {

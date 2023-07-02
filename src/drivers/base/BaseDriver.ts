@@ -1,3 +1,4 @@
+import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import { Constant, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
@@ -40,6 +41,8 @@ export interface IQueryTask {
 }
 
 export abstract class BaseDriver {
+
+    abstract get compiler(): QueryCompiler;
 
     constructor(public readonly connectionString: IDbConnectionString) {}
 

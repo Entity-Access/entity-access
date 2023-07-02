@@ -6,7 +6,8 @@ import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/SqlMethodTransformer.js";
 import EntityType from "../entity-query/EntityType.js";
-import { EntitySource } from "../model/EntityModel.js";
+import { EntitySource } from "../model/EntitySource.js";
+import { IEntityQuery } from "../model/IFilterWithParameter.js";
 
 export default class QueryCompiler {
 
@@ -36,22 +37,21 @@ export default class QueryCompiler {
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 
-    public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any) {
+    public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: EntitySource) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
+        const exp = new ExpressionToSql(source, param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
         const query = exp.visit(body);
         return this.invoke(query, parameters);
     }
 
-    public compile(fx: (p) => (x) => any, source?: EntitySource) {
+    public compile( source: EntitySource , fx: (p) => (x) => any) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
-        const query = exp.visit(body);
-        return this.invoke(query);
+        const exp = new ExpressionToSql(source, param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
+        return exp.visit(body);
     }
 
     public compileExpression(exp: Expression) {
-        const toSql = new ExpressionToSql(void 0, void 0, this.quotedLiteral, this.escapeLiteral);
+        const toSql = new ExpressionToSql(null, void 0, void 0, this.quotedLiteral, this.escapeLiteral);
         const query = toSql.visit(exp);
         return this.invoke(query);
     }

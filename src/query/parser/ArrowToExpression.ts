@@ -3,7 +3,7 @@ import { BinaryExpression, CallExpression, CoalesceExpression, Constant, Express
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import EntityType from "../../entity-query/EntityType.js";
-import { EntitySource } from "../../model/EntityModel.js";
+import { EntitySource } from "../../model/EntitySource.js";
 
 type IQueryFragment = string | { name?: string, value?: any };
 type IQueryFragments = IQueryFragment[];

@@ -1,46 +1,11 @@
 import type EntityContext from "./EntityContext.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
-import type EntityType from "../entity-query/EntityType.js";
 import EntityQuery from "./EntityQuery.js";
 import { Expression } from "@babel/types";
-import { IFilterExpression } from "./IFilterWithParameter.js";
+import { EntitySource } from "./EntitySource.js";
 
 
-
-export class EntitySource<T = any> {
-
-    public readonly filters: {
-        read?: () => IFilterExpression,
-        modify?: () => IFilterExpression,
-        delete?: () => IFilterExpression,
-        include?: () => IFilterExpression
-    } = {};
-
-    constructor(
-        private readonly model: EntityType,
-        private readonly context: EntityContext
-    ) {
-
-    }
-
-    public add(item: Partial<T>) {
-        const p = Object.getPrototypeOf(item).constructor;
-        if (!p || p === Object) {
-            Object.setPrototypeOf(item, this.model.typeClass.prototype);
-        }
-        const entry = this.context.changeSet.getEntry(item);
-        if (entry.status !== "detached" && entry.status !== "unchanged") {
-            throw new Error("Entity is already attached to the context");
-        }
-        entry.status = "inserted";
-        return item as T;
-    }
-
-    public where<P>( ... [p, fx]: IFilterExpression<P, T>) {
-        return EntityQuery.from<T>(this.model).where(p, fx);
-    }
-}
 
 export default class EntityModel {
 

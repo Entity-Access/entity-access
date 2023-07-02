@@ -1,5 +1,6 @@
 import { IColumn } from "../../decorators/IColumn.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
+import { ITextOrFunctionArray } from "./IStringTransformer.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
 
@@ -55,6 +56,14 @@ export abstract class Expression {
 
     readonly type: never | string;
 
+}
+
+export class PlaceholderExpression extends Expression {
+    readonly type = "PlaceholderExpression";
+    expression: () => {
+        parameter: any,
+        expression: (p) => ITextOrFunctionArray
+    };
 }
 
 export class BinaryExpression extends Expression {
@@ -246,5 +255,6 @@ export type ExpressionType =
     CallExpression|
     CoalesceExpression|
     ExistsExpression|
-    Identifier
+    Identifier |
+    PlaceholderExpression
 ;

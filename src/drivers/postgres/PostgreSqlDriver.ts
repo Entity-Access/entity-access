@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import QueryCompiler from "../../compiler/QueryCompiler.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
@@ -62,7 +63,12 @@ class DbReader implements IDbReader {
 
 export default class PostgreSqlDriver extends BaseDriver {
 
+    public get compiler() {
+        return this.myCompiler;
+    }
+
     private transaction: pkg.Client;
+    private myCompiler = new QueryCompiler();
 
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
