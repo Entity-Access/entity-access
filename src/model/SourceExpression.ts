@@ -1,6 +1,6 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, ExpressionAs, Identifier, JoinExpression, MemberExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { BinaryExpression, Expression, ExpressionAs, Identifier, JoinExpression, MemberExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
 import { ITextOrFunction } from "../query/ast/IStringTransformer.js";
 import EntityContext from "./EntityContext.js";
 
@@ -18,13 +18,31 @@ export class SourceExpression {
     model?: EntityType;
     include?: EntityType[];
     select: SelectStatement;
+    parent?: SourceExpression;
 
     private map: Map<string,SourceExpression>;
     private paramMap: Map<string, SourceExpression>;
 
-    constructor(p: Partial<SourceExpression>) {
+    private constructor(p: Partial<SourceExpression>) {
         Object.setPrototypeOf(p, SourceExpression.prototype);
-        return p as SourceExpression;
+        const r = p as SourceExpression;
+        if (r.parent) {
+            r.map = r.parent.map;
+            r.paramMap = r.parent.paramMap;
+        } else {
+            r.paramMap = new Map();
+            r.map = new Map();
+        }
+        return r;
+    }
+
+    copy() {
+        const r = { ... this } as SourceExpression;
+        Object.setPrototypeOf(r, Object.getPrototypeOf(this));
+        r.map = this.map;
+        r.paramMap = this.paramMap;
+        r.select = Expression.clone(this.select);
+        return r;
     }
 
     addJoin(property: string) {
@@ -64,28 +82,30 @@ export class SourceExpression {
         return source;
     }
 
-    addSource(model: EntityType, parameter) {
+    addSource(model: EntityType, parameter: string) {
 
-        this.map ??= new Map();
         const { context } = this;
         const source = SourceExpression.create({
             model,
             parameter,
-            context
+            context,
+            parent: this
         });
+
+        source.map = this.map;
+        source.paramMap = this.paramMap;
+
         let id = 0;
         let alias: string;
         do {
             alias = model.name[0] + id++;
-            const exists = this.map.get(source.alias);
+            const exists = this.map.get(alias);
             if (exists === null || exists === void 0) {
                 break;
             }
         }while (true);
         source.alias = alias;
-        this.map ??= new Map();
         this.map.set(alias, source);
-        this.paramMap ??= new Map();
         this.paramMap.set(parameter, source);
         return source;
     }
@@ -111,6 +131,6 @@ export class SourceExpression {
 
         // this must be a navigation...
         const source = this.addJoin(property);
-        return source.flatten(others);
+        return source.prepareNames(others);
     }
 }

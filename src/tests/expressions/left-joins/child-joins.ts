@@ -23,22 +23,26 @@ const sql2 = `SELECT
     "P1"."name",
     "P1"."ownerID"
 FROM "Products" AS "P1"
+    WHERE (EXISTS (SELECT
+            $1 AS "o1"
+        FROM "OrderItems" AS "O0"
+        WHERE (("P1"."productID" = "O0"."productID") AND ("O0"."productID" = $2))) AND EXISTS (SELECT
+            $3 AS "o1"
+        FROM "OrderItems" AS "O1"
+        WHERE (("P1"."productID" = "O1"."productID") AND ("O1"."amount" > $4))))
+`;
+
+const sql3 = `SELECT
+"P1"."productID","P1"."name","P1"."ownerID"
+FROM "Products" AS "P1"
 WHERE (EXISTS (SELECT
-                $1 AS "o1"
-            FROM "OrderItems" AS "O0"
-            WHERE (
-                ("P1"."productID" = "O0"."productID")
-                AND ("O0"."productID" = $2)
-            )
-        ) AND EXISTS (SELECT
-                $3 AS "o1"
-            FROM "OrderItems" AS "O0"
-            WHERE (
-                ("P1"."productID" = "O0"."productID")
-                AND ("O0"."amount" > $4)
-            )
-        )
-    )`;
+$1 AS "o1"
+FROM "OrderItems" AS "O0"
+WHERE (("P1"."productID" = "O0"."productID") AND ("O0"."productID" = $2))) AND EXISTS (SELECT
+$3 AS "o1"
+FROM "OrderItems" AS "O2"
+ INNER JOIN "Orders" AS "O3" ON ("O2"."orderID" = "O3"."orderID")
+WHERE (("P1"."productID" = "O2"."productID") AND ("O3"."orderDate" > $4))))`;
 
 export default function() {
 
@@ -55,5 +59,5 @@ export default function() {
 
     query = old.where({ date: new Date()}, (p) => (x) => x.orderItems.some((o) => o.order.orderDate > p.date));
     r = query.toQuery();
-    assertSqlMatch(sql2, r.text);
+    assertSqlMatch(sql3, r.text);
 }

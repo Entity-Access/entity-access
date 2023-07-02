@@ -48,13 +48,15 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
     }
 
     visitSelectStatement(e: SelectStatement): ITextOrFunctionArray {
-        const fields = this.visitArray(e.fields);
-        const joins = e.joins?.length > 0 ? prepare ` ${this.visitArray(e.joins)}` : [];
-        const orderBy = e.orderBy?.length > 0 ? prepare ` ORDER BY ${this.visitArray(e.orderBy)}` : "";
+        const fields = this.visitArray(e.fields, ",\n\t\t");
+        const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const source = this.visit(e.source);
-        const where = e.where ? prepare ` WHERE ${this.visit(e.where)}` : "";
+        const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
         const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
-        return prepare `SELECT ${fields} FROM ${source}${as}${joins}${where}${orderBy}`;
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
+        return prepare `SELECT
+        ${fields}
+        FROM ${source}${as}${joins}${where}${orderBy}`;
     }
 
     visitQuotedLiteral(e: QuotedLiteral): ITextOrFunctionArray {
@@ -116,7 +118,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                         if (body.type === "ArrowFunctionExpression") {
 
                             const param1 = body.params[0] as Identifier;
-                            const relatedSource = this.source.addSource(relation.relation.relatedEntity, param1);
+                            const relatedSource = this.source.addSource(relation.relation.relatedEntity, param1.value);
                             const relatedModel = relatedSource.model;
                             const targetKey = MemberExpression.create({
                                 target: Identifier.create({ value: target }),
@@ -157,7 +159,8 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                                 select,
                                 parameter: param1.value,
                                 alias: select.as.literal,
-                                model: relatedModel
+                                model: relatedModel,
+                                parent: this.source
                             }));
 
                             const r = this.visit(exists);
@@ -281,7 +284,8 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         }
         const table = this.visit(e.source);
         const where = this.visit(e.where);
-        return prepare ` ${e.joinType || "LEFT"} JOIN ${table} ON ${where}`;
+        const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
+        return prepare ` ${e.joinType || "LEFT"} JOIN ${table}${as} ON ${where}`;
     }
 
     visitOrderByExpression(e: OrderByExpression): ITextOrFunctionArray {

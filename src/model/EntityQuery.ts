@@ -15,10 +15,7 @@ export default class EntityQuery<T = any>
     }
     where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): any {
 
-        const source = SourceExpression.create({
-            ... this.source,
-            select: SelectStatement.create({ ... this.source.select})
-        });
+        const source = this.source.copy();
         const { select } = source;
         const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx);
         if(!select.where) {

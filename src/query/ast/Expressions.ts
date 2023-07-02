@@ -30,11 +30,20 @@ export abstract class Expression {
         return p as T;
     }
 
-    static clone<T extends Expression>(expression: T):{ copy: T, constants: Expression[]} {
-
-        const constants = [];
-        const copy = this.shallowCopy(expression, constants);
-        return { copy, constants };
+    static clone<T extends Expression>(expression: T): T {
+        const r = {} as any;
+        Object.setPrototypeOf(r, Object.getPrototypeOf(expression));
+        for (const key in expression) {
+            if (Object.prototype.hasOwnProperty.call(expression, key)) {
+                const element = expression[key];
+                if(Array.isArray(element)) {
+                    r[key] = element.map((x) => this.clone(x));
+                } else {
+                    r[key] = element;
+                }
+            }
+        }
+        return r as T;
     }
 
     private static shallowCopy(expression, constants: Expression[]) {
