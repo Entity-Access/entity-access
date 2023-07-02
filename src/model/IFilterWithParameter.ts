@@ -6,7 +6,6 @@ export type ILambdaExpression<P = any, T = any, TR = any> = [input: P, x: (p: P)
 export type IFilterExpression<P = any, T = any> = [input: P, x: (p: P) => (s: T) => boolean];
 
 export interface IBaseQuery<T> {
-    where<P>(parameters: P, fx: (p: P) => (x: T) => boolean);
     enumerate(): AsyncGenerator<T>;
     firstOrFail(): Promise<T>;
     first(): Promise<T>;
@@ -14,11 +13,13 @@ export interface IBaseQuery<T> {
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
+    where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): IOrderedEntityQuery<T>;
     thenBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
     thenByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
 }
 
 export interface IEntityQuery<T> extends IBaseQuery<T> {
+    where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): IEntityQuery<T>;
     orderBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
     orderByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
 }

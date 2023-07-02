@@ -1,29 +1,54 @@
-import EntityType from "../entity-query/EntityType.js";
-import { Expression } from "../query/ast/Expressions.js";
+import { BinaryExpression, Expression, SelectStatement, TableSource } from "../query/ast/Expressions.js";
+import { EntitySource } from "./EntitySource.js";
+import { IOrderedEntityQuery, IEntityQuery, ILambdaExpression } from "./IFilterWithParameter.js";
+import { SourceExpression } from "./SourceExpression.js";
 
-export interface ITargetExpression {
-    model: EntityType,
-    where?: Expression,
-    orderBy?: Expression[],
-    include?: EntityType[]
-}
-
-export default class EntityQuery<T = any> {
-
-    public static from<T1>(model: EntityType) {
-        return new EntityQuery<T1>({ model });
+export default class EntityQuery<T = any>
+    implements IOrderedEntityQuery<T>, IEntityQuery<T> {
+    constructor (public readonly source: SourceExpression) {
     }
-
-    constructor (public readonly target: ITargetExpression) {
-
+    thenBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+        throw new Error("Method not implemented.");
     }
-
-    where<P>(p: P, fx: (px: P) => (x: T) => boolean) {
-
+    thenByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+        throw new Error("Method not implemented.");
     }
+    where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): any {
 
-    orderBy<P>(p: P, fx: (px: P) => (x: T) => any) {
-
+        const source = SourceExpression.create({
+            ... this.source,
+            select: SelectStatement.create({ ... this.source.select})
+        });
+        const { select } = source;
+        const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx);
+        if(!select.where) {
+            select.where = exp;
+        } else {
+            select.where = BinaryExpression.create({
+                left: select.where,
+                operator: "AND",
+                right: exp
+            });
+        }
+        return new EntityQuery(source);
+    }
+    enumerate(): AsyncGenerator<T, any, unknown> {
+        throw new Error("Method not implemented.");
+    }
+    firstOrFail(): Promise<T> {
+        throw new Error("Method not implemented.");
+    }
+    first(): Promise<T> {
+        throw new Error("Method not implemented.");
+    }
+    toQuery(): { text: string; values: any[]; } {
+        return this.source.context.driver.compiler.compileExpression(this.source.select);
+    }
+    orderBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+        throw new Error("Method not implemented.");
+    }
+    orderByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+        throw new Error("Method not implemented.");
     }
 
 }

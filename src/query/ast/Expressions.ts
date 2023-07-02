@@ -1,6 +1,7 @@
 import { IColumn } from "../../decorators/IColumn.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
 import { ITextOrFunctionArray } from "./IStringTransformer.js";
+import type EntityType from "../../entity-query/EntityType.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
 
@@ -115,15 +116,17 @@ export class ArrowFunctionExpression extends Expression {
     body: Expression;
 }
 
+export type TableSource = SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
+
 export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
 
-    source: SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
+    source: TableSource;
 
     as: QuotedLiteral;
 
-    fields: ExpressionAs[];
+    fields: (Expression | QuotedLiteral | ExpressionAs)[];
 
     where: Expression;
 
@@ -139,6 +142,7 @@ export class JoinExpression extends Expression {
     source: SelectStatement | QuotedLiteral | ExpressionAs;
     as: QuotedLiteral;
     where: Expression;
+    model: EntityType;
 }
 
 export class ReturnUpdated extends Expression {
@@ -189,6 +193,19 @@ export class TemplateLiteral extends Expression {
 }
 
 export class QuotedLiteral extends Expression {
+
+    static propertyChain(... properties: string[]): Expression {
+        const literal = properties.pop();
+        const property = QuotedLiteral.create({ literal });
+        if (properties.length === 0) {
+            return property;
+        }
+        return MemberExpression.create({
+            target: QuotedLiteral.propertyChain(... properties),
+            property
+        });
+    }
+
     readonly type = "QuotedLiteral";
     public literal: string;
 }

@@ -8,6 +8,7 @@ import PostgreSqlMethodTransformer from "./postgres/SqlMethodTransformer.js";
 import EntityType from "../entity-query/EntityType.js";
 import { EntitySource } from "../model/EntitySource.js";
 import { IEntityQuery } from "../model/IFilterWithParameter.js";
+import { SourceExpression } from "../model/SourceExpression.js";
 
 export default class QueryCompiler {
 
@@ -37,14 +38,14 @@ export default class QueryCompiler {
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 
-    public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: EntitySource) {
+    public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: SourceExpression) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
         const exp = new ExpressionToSql(source, param, target, this);
         const query = exp.visit(body);
         return this.invoke(query, parameters);
     }
 
-    public compileToExpression(source: EntitySource, p: any, fx: (p1) => (x) => any) {
+    public compileToExpression(source: SourceExpression, p: any, fx: (p1) => (x) => any) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
         const exp = new ExpressionToSql(source, param, target, this);
         const visited = exp.visit(body);
@@ -53,7 +54,7 @@ export default class QueryCompiler {
         });
     }
 
-    public compile( source: EntitySource , fx: (p) => (x) => any) {
+    public compile( source: SourceExpression , fx: (p) => (x) => any) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
         const exp = new ExpressionToSql(source, param, target, this);
         return exp.visit(body);

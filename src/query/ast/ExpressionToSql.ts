@@ -1,28 +1,28 @@
+import { modelSymbol } from "../../common/symbols/symbols.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import type EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
 import { EntitySource } from "../../model/EntitySource.js";
+import { SourceExpression } from "../../model/SourceExpression.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
-export interface IEntitySource {
-    model: EntityType;
-    context: EntityContext;
-}
-
 export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
-    private targets: Map<string, IEntitySource> = new Map();
+    private targets: Map<string, SourceExpression> = new Map();
 
     constructor(
-        type: EntitySource,
+        private source: SourceExpression,
         private root: string,
         target: string,
         private compiler: QueryCompiler
     ) {
         super();
-        this.targets.set(target, type as any as IEntitySource);
+        if (source) {
+            source.parameter = target;
+            this.targets.set(target, source);
+        }
     }
 
     visitArray(e: Expression[], sep = ","): ITextOrFunctionArray {
@@ -111,16 +111,13 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                 if (relation) {
                     if (/^(some|any)$/i.test(childProperty)) {
 
-                        const relatedSource = context.model.register(relation.relation.relatedTypeClass) as any as IEntitySource;
-                        const relatedModel = relatedSource.model;
 
                         const body = e.arguments[0] as ExpressionType;
                         if (body.type === "ArrowFunctionExpression") {
 
                             const param1 = body.params[0] as Identifier;
-
-                            const dispose = this.pushTarget(param1.value, relatedSource);
-
+                            const relatedSource = this.source.addSource(relation.relation.relatedTypeClass, param1);
+                            const relatedModel = relatedSource.model;
                             const targetKey = MemberExpression.create({
                                 target: Identifier.create({ value: target }),
                                 property: Identifier.create({
@@ -138,7 +135,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                             const exists = ExistsExpression.create({
                                 target: SelectStatement.create({
                                     source: relatedModel.fullyQualifiedName,
-                                    as: QuotedLiteral.create({ literal: param1.value}),
+                                    as: QuotedLiteral.create({ literal: relatedSource.alias }),
                                     fields: [
                                         ExpressionAs.create({ expression: NumberLiteral.create({ value: 1 }),
                                         alias: QuotedLiteral.create({ literal: param1.value + "1" })
@@ -154,6 +151,14 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                                     })
                                 })
                             });
+                            const select = exists.target as SelectStatement;
+                            const dispose = this.pushTarget(param1.value, SourceExpression.create({
+                                context,
+                                select,
+                                parameter: param1.value,
+                                alias: select.as.literal,
+                                model: relatedModel
+                            }));
 
                             const r = this.visit(exists);
                             dispose();
@@ -190,12 +195,11 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                 // we have a parameter...
                 return [(p) => p[key]];
             }
-            if (this.targets.has(root)) {
-                // we have column name from table parameter
-                // we need to set quoted literal...
-                const all = chain.map((x) => this.compiler.quotedLiteral(x)).join(".");
-                return [all];
+            const source = this.targets.get(root);
+            if (source) {
+                return [source.flatten(chain)];
             }
+            return [chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
         }
 
         const { target, computed, property } = me;
@@ -299,7 +303,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare `${p}`;
     }
 
-    private pushTarget(target: string, type: IEntitySource) {
+    private pushTarget(target: string, type: SourceExpression) {
         this.targets.set(target, type);
         return () => this.targets.delete(target);
     }
