@@ -1,41 +1,8 @@
 import QueryBuilder from "../../compiler/builder/QueryBuilder.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
-import { ISqlMethodTransformer, IStringTransformer } from "./IStringTransformer.js";
+import { ISqlMethodTransformer, IStringTransformer, ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
-
-export type ITextOrFunction = string | ((p: any) => any);
-export type ITextOrFunctionArray = ITextOrFunction[];
-
-const prepare = (a: TemplateStringsArray, ... p: (ITextOrFunction | ITextOrFunctionArray)[]): ITextOrFunctionArray => {
-    const r = [];
-    for (let index = 0; index < a.length; index++) {
-        const element = a[index];
-        r.push(element);
-        if (index < p.length) {
-            const pi = p[index];
-            if (Array.isArray(pi)) {
-                r.push(... pi);
-                continue;
-            }
-            r.push(pi);
-        }
-    }
-    return r.flat(2);
-};
-
-const prepareJoin = (a: (ITextOrFunction | ITextOrFunctionArray)[], sep: string = ","): ITextOrFunctionArray => {
-    const r = [];
-    let first = true;
-    for (const iterator of a) {
-        if (!first) {
-            r.push(",");
-        }
-        first = false;
-        r.push(iterator);
-    }
-    return r.flat(2);
-};
 
 export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
@@ -115,7 +82,6 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
     }
 
     visitCallExpression(e: CallExpression): ITextOrFunctionArray {
-        const args = this.visitArray(e.arguments);
         // let us check if we are using any of array extension methods...
         // .some alias .any
         // .find alias .firstOrDefault
@@ -143,12 +109,14 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
             if (target === "Sql") {
                 const names = `${target}.${property}.${childProperty}`;
-                const transformedCallee = this.sqlMethodTranslator(names, args as any[]);
+                const argList = e.arguments.map((x) => this.visit(x));
+                const transformedCallee = this.sqlMethodTranslator(names, argList as any[]);
                 if (transformedCallee) {
-                    return [transformedCallee];
+                    return prepare `${transformedCallee}`;
                 }
             }
         }
+        const args = this.visitArray(e.arguments);
         return prepare `${this.visit(e.callee)}(${args})`;
     }
 
@@ -168,7 +136,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
             if (root === this.target) {
                 // we have column name from table parameter
                 // we need to set quoted literal...
-                return prepare `${this.quotedLiteral(this.target)}.${this.quotedLiteral(key)}`;
+                return [`${this.quotedLiteral(this.target)}.${this.quotedLiteral(key)}`];
             }
         }
 

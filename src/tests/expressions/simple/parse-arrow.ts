@@ -32,9 +32,9 @@ export default function () {
 
     assert.equal(`("x"."firstName" LIKE $1)`, r.text);
 
-    r = compiler.compile((p) => (x) => Sql.text.startsWith(x.firstName, p.name));
+    r = compiler.execute({name: "Akash"}, (p) => (x) => Sql.text.startsWith(x.firstName, p.name));
 
     assert.equal(`starts_with("x"."firstName", $1)`, r.text);
-    assert.equal("name", r.values[0]);
+    assert.equal("Akash", r.values[0]);
 
 }

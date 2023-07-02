@@ -1,6 +1,6 @@
 import { IClassOf } from "../decorators/IClassOf.js";
-import ExpressionToSql, { ITextOrFunctionArray } from "../query/ast/ExpressionToSql.js";
-import { ISqlMethodTransformer, IStringTransformer } from "../query/ast/IStringTransformer.js";
+import ExpressionToSql from "../query/ast/ExpressionToSql.js";
+import { ISqlMethodTransformer, IStringTransformer, ITextOrFunctionArray } from "../query/ast/IStringTransformer.js";
 import { Expression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
@@ -36,6 +36,13 @@ export default class QueryCompiler {
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 
+    public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any) {
+        const { param, target , body } = this.arrowToExpression.transform(fx);
+        const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
+        const query = exp.visit(body);
+        return this.invoke(query, parameters);
+    }
+
     public compile(fx: (p) => (x) => any, source?: EntitySource) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
         const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
@@ -49,7 +56,7 @@ export default class QueryCompiler {
         return this.invoke(query);
     }
 
-    invoke(query: ITextOrFunctionArray, p: any = {}) {
+    private invoke(query: ITextOrFunctionArray, p: any = {}) {
         let text = "";
         const values = [];
         for (const iterator of query) {

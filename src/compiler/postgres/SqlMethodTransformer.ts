@@ -1,79 +1,83 @@
-import { ISql } from "../../sql/ISql.js";
 
+import { prepareAny } from "../../query/ast/IStringTransformer.js";
 import { ISqlHelpers, flattenHelpers } from "../ISqlHelpers.js";
 
 export const PostgreSqlHelper: ISqlHelpers = {
     in(a, array) {
-        return `${a} IN ${array}`;
+        return prepareAny `${a} IN ${array}`;
     },
     date: {
         addDays(d, n) {
-            return `(${d} + (${n} * interval '1 day'))`;
+            return prepareAny `(${d} + (${n} * interval '1 day'))`;
         },
         addHours(d, n) {
-            return `(${d} + (${n} * interval '1 hour'))`;
+            return prepareAny `(${d} + (${n} * interval '1 hour'))`;
         },
         addMinutes(d, n) {
-            return `(${d} + (${n} * interval '1 minute'))`;
+            return prepareAny `(${d} + (${n} * interval '1 minute'))`;
         },
         addMonths(d, n) {
-            return `(${d} + (${n} * interval '1 month'))`;
+            return prepareAny `(${d} + (${n} * interval '1 month'))`;
         },
         addSeconds(d, n) {
-            return `(${d} + (${n} * interval '1 second'))`;
+            return prepareAny `(${d} + (${n} * interval '1 second'))`;
         },
         addYears(d, n) {
-            return `(${d} + (${n} * interval '1 year'))`;
+            return prepareAny `(${d} + (${n} * interval '1 year'))`;
         },
         dayOf(d) {
-            return `DATE_PART(${d}, day)`;
+            return prepareAny `DATE_PART(${d}, day)`;
         },
         hourOf(d) {
-            return `DATE_PART(${d}, hour)`;
+            return prepareAny `DATE_PART(${d}, hour)`;
         },
         minuteOf(d) {
-            return `DATE_PART(${d}, minute)`;
+            return prepareAny `DATE_PART(${d}, minute)`;
         },
         monthOf(d) {
-            return `DATE_PART(${d}, month)`;
+            return prepareAny `DATE_PART(${d}, month)`;
         },
         secondOf(d) {
-            return `DATE_PART(${d}, second)`;
+            return prepareAny `DATE_PART(${d}, second)`;
         },
         yearOf(d) {
-            return `DATE_PART(${d}, year)`;
+            return prepareAny `DATE_PART(${d}, year)`;
         },
     },
     text: {
         concat(...p) {
-            return `CONCAT(${p.join(",")})`;
+            return prepareAny `CONCAT(${p.join(",")})`;
         },
         endsWith(text, test) {
-            return `strpos(${text}, ${test}) = length(${text}) - length(${test})`;
+            return prepareAny `strpos(${text}, ${test}) = length(${text}) - length(${test})`;
         },
         iLike(text, test) {
-            return `(${text} iLike ${test})`;
+            return prepareAny `(${text} iLike ${test})`;
         },
         indexOf(text, test) {
-            return `strpos(${text}, ${test})`;
+            return prepareAny `strpos(${text}, ${test})`;
         },
         left(text, length) {
-            return `left(${text}, ${length})`;
+            return prepareAny `left(${text}, ${length})`;
         },
         like(text, test) {
-            return `(${text} LIKE ${test})`;
+            return prepareAny `(${text} LIKE ${test})`;
         },
         right(text, length) {
-            return `right(${text}, ${length})`;
+            return prepareAny `right(${text}, ${length})`;
         },
         startsWith(text, test) {
-            return `starts_with(${text}, ${test})`;
+            return prepareAny `starts_with(${text}, ${test})`;
         },
     }
 };
 
 const names = flattenHelpers(PostgreSqlHelper, "Sql");
 
-export default function PostgreSqlMethodTransformer(callee: string, args: string[]): string {
+export default function PostgreSqlMethodTransformer(callee: string, args: any[]): string {
+    const name = names[callee];
+    if (!name) {
+        return;
+    }
     return names[callee]?.(... args);
 }
