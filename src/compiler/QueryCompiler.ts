@@ -44,7 +44,7 @@ export default class QueryCompiler {
         return this.invoke(query, parameters);
     }
 
-    public compileToExpression(source: EntitySource, p: any, fx: (p) => (x) => any) {
+    public compileToExpression(source: EntitySource, p: any, fx: (p1) => (x) => any) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
         const exp = new ExpressionToSql(source, param, target, this);
         const visited = exp.visit(body);

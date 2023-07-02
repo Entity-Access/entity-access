@@ -1,10 +1,9 @@
-import type QueryCompiler from "../../compiler/QueryCompiler.js";
+import QueryCompiler from "../../compiler/QueryCompiler.js";
 import type EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
 import { EntitySource } from "../../model/EntitySource.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
-import { ISqlMethodTransformer, IStringTransformer, ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
-import SqlLiteral from "./SqlLiteral.js";
+import { ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
 export interface IEntitySource {
@@ -122,6 +121,20 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
                             const dispose = this.pushTarget(param1.value, relatedSource);
 
+                            const targetKey = MemberExpression.create({
+                                target: Identifier.create({ value: target }),
+                                property: Identifier.create({
+                                    value: targetType.keys[0].columnName
+                                })
+                            });
+
+                            const relatedKey = MemberExpression.create({
+                                target: Identifier.create({ value: param1.value }),
+                                property: Identifier.create({
+                                    value: relation.relation.fkColumn.columnName
+                                })
+                            });
+
                             const exists = ExistsExpression.create({
                                 target: SelectStatement.create({
                                     source: relatedModel.fullyQualifiedName,
@@ -130,7 +143,15 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                                         ExpressionAs.create({ expression: NumberLiteral.create({ value: 1 }),
                                         alias: QuotedLiteral.create({ literal: param1.value + "1" })
                                     })],
-                                    where: body.body
+                                    where: BinaryExpression.create({
+                                        left: BinaryExpression.create({
+                                            left: targetKey,
+                                            operator: "=",
+                                            right: relatedKey,
+                                        }),
+                                        operator: "AND",
+                                        right:body.body
+                                    })
                                 })
                             });
 
