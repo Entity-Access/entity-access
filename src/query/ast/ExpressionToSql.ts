@@ -50,11 +50,12 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
     visitSelectStatement(e: SelectStatement): ITextOrFunctionArray {
         const fields = this.visitArray(e.fields);
-        const joins = e.joins?.length > 0 ?  this.visitArray(e.joins) : [];
+        const joins = e.joins?.length > 0 ? prepare ` ${this.visitArray(e.joins)}` : [];
         const orderBy = e.orderBy?.length > 0 ? prepare ` ORDER BY ${this.visitArray(e.orderBy)}` : "";
         const source = this.visit(e.source);
         const where = e.where ? prepare ` WHERE ${this.visit(e.where)}` : "";
-        return prepare `SELECT ${fields} FROM ${source} ${joins} ${where} ${orderBy}`;
+        const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
+        return prepare `SELECT ${fields} FROM ${source}${as}${joins}${where}${orderBy}`;
     }
 
     visitQuotedLiteral(e: QuotedLiteral): ITextOrFunctionArray {
@@ -127,7 +128,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                                     as: QuotedLiteral.create({ literal: param1.value}),
                                     fields: [
                                         ExpressionAs.create({ expression: NumberLiteral.create({ value: 1 }),
-                                        alias: QuotedLiteral.create({ literal: param1.value })
+                                        alias: QuotedLiteral.create({ literal: param1.value + "1" })
                                     })],
                                     where: body.body
                                 })
