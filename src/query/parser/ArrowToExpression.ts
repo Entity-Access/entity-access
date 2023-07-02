@@ -1,5 +1,5 @@
 import { parseExpression } from "@babel/parser";
-import { BinaryExpression, CallExpression, CoalesceExpression, Constant, Expression, Identifier, MemberExpression, NullExpression, NumberLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, BinaryExpression, CallExpression, CoalesceExpression, Constant, Expression, Identifier, MemberExpression, NullExpression, NumberLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import EntityType from "../../entity-query/EntityType.js";
@@ -146,6 +146,15 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             target: this.visit(object),
             property,
             computed
+        });
+    }
+
+    visitArrowFunctionExpression(node: bpe.ArrowFunctionExpression): Expression {
+        const params = node.params.map((x) => this.visit(x));
+        const body = this.visit(node.body);
+        return ArrowFunctionExpression.create({
+            params,
+            body
         });
     }
 }

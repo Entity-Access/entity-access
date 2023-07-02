@@ -1,4 +1,4 @@
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -34,17 +34,17 @@ export default abstract class Visitor<T = any> {
                 return this.visitOrderByExpression(e);
             case "JoinExpression":
                 return this.visitJoinExpression(e);
-            case "Null":
+            case "NullExpression":
                 return this.visitNullExpression(e);
-            case "BigInt":
+            case "BigIntLiteral":
                 return this.visitBigIntLiteral(e);
-            case "Boolean":
+            case "BooleanLiteral":
                 return this.visitBooleanLiteral(e);
-            case "Number":
+            case "NumberLiteral":
                 return this.visitNumberLiteral(e);
-            case "String":
+            case "StringLiteral":
                 return this.visitStringLiteral(e);
-            case "Template":
+            case "TemplateLiteral":
                 return this.visitTemplateLiteral(e);
             case "MemberExpression":
                 return this.visitMemberExpression(e);
@@ -58,9 +58,14 @@ export default abstract class Visitor<T = any> {
                 return this.visitExistsExpression(e);
             case "PlaceholderExpression":
                 return this.visitPlaceholderExpression(e);
+            case "ArrowFunctionExpression":
+                return this.visitArrowFunctionExpression(e);
         }
         const c: never = e;
-        throw new Error("Not implemented");
+        throw new Error(`${e1.type} Not implemented`);
+    }
+    visitArrowFunctionExpression(e: ArrowFunctionExpression): T {
+        return;
     }
     visitPlaceholderExpression(e: PlaceholderExpression): T {
         return;

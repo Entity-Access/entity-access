@@ -1,20 +1,29 @@
+import type QueryCompiler from "../../compiler/QueryCompiler.js";
+import type EntityType from "../../entity-query/EntityType.js";
+import type EntityContext from "../../model/EntityContext.js";
 import { EntitySource } from "../../model/EntitySource.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ISqlMethodTransformer, IStringTransformer, ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
 
+export interface IEntitySource {
+    model: EntityType;
+    context: EntityContext;
+}
+
 export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
+    private targets: Map<string, IEntitySource> = new Map();
+
     constructor(
-        private type: EntitySource,
+        type: EntitySource,
         private root: string,
-        private target: string,
-        private quotedLiteral: IStringTransformer = JSON.stringify,
-        private escapeLiteral: IStringTransformer = SqlLiteral.escapeLiteral,
-        private sqlMethodTranslator: ISqlMethodTransformer = (x, y) => void 0
+        target: string,
+        private compiler: QueryCompiler
     ) {
         super();
+        this.targets.set(target, type as any as IEntitySource);
     }
 
     visitArray(e: Expression[], sep = ","): ITextOrFunctionArray {
@@ -49,7 +58,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
     }
 
     visitQuotedLiteral(e: QuotedLiteral): ITextOrFunctionArray {
-        return [this.quotedLiteral(e.literal)];
+        return [this.compiler.quotedLiteral(e.literal)];
     }
 
     visitExpressionAs(e: ExpressionAs): ITextOrFunctionArray {
@@ -69,7 +78,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
     }
 
     visitStringLiteral({ value }: StringLiteral): ITextOrFunctionArray {
-        const escapeLiteral = this.escapeLiteral;
+        const escapeLiteral = this.compiler.escapeLiteral;
         return [() => escapeLiteral(value)];
     }
 
@@ -90,20 +99,45 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         const targetProperty = this.getPropertyChain(e.callee as ExpressionType);
         if (targetProperty?.length) {
             const [ target , property, childProperty ] = targetProperty;
-            if (target === this.target) {
+            const existingTarget = this.targets.get(target);
+            if (existingTarget) {
 
 
                 // calling method on property...
                 // should be navigation...
-                // @ts-expect-error private
-                const targetType = this.source.model;
-                // @ts-expect-error private
-                const context = this.source.context;
+                const targetType = existingTarget.model;
+                const context = existingTarget.context;
                 const relation = targetType?.getProperty(property);
                 if (relation) {
                     if (/^(some|any)$/i.test(childProperty)) {
 
-                        const relatedSource = context.model.register(relation.relation.relatedTypeClass);
+                        const relatedSource = context.model.register(relation.relation.relatedTypeClass) as any as IEntitySource;
+                        const relatedModel = relatedSource.model;
+
+                        const body = e.arguments[0] as ExpressionType;
+                        if (body.type === "ArrowFunctionExpression") {
+
+                            const param1 = body.params[0] as Identifier;
+
+                            const dispose = this.pushTarget(param1.value, relatedSource);
+
+                            const exists = ExistsExpression.create({
+                                target: SelectStatement.create({
+                                    source: relatedModel.fullyQualifiedName,
+                                    as: QuotedLiteral.create({ literal: param1.value}),
+                                    fields: [
+                                        ExpressionAs.create({ expression: NumberLiteral.create({ value: 1 }),
+                                        alias: QuotedLiteral.create({ literal: param1.value })
+                                    })],
+                                    where: body.body
+                                })
+                            });
+
+                            const r = this.visit(exists);
+                            dispose();
+                            return r;
+                        }
+
                     }
                 }
             }
@@ -111,7 +145,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
             if (target === "Sql") {
                 const names = `${target}.${property}.${childProperty}`;
                 const argList = e.arguments.map((x) => this.visit(x));
-                const transformedCallee = this.sqlMethodTranslator(names, argList as any[]);
+                const transformedCallee = this.compiler.sqlMethodTransformer(names, argList as any[]);
                 if (transformedCallee) {
                     return prepare `${transformedCallee}`;
                 }
@@ -134,10 +168,11 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                 // we have a parameter...
                 return [(p) => p[key]];
             }
-            if (root === this.target) {
+            if (this.targets.has(root)) {
                 // we have column name from table parameter
                 // we need to set quoted literal...
-                return [`${this.quotedLiteral(this.target)}.${this.quotedLiteral(key)}`];
+                const all = chain.map((x) => this.compiler.quotedLiteral(x)).join(".");
+                return [all];
             }
         }
 
@@ -238,8 +273,13 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
     }
 
     visitPlaceholderExpression(e: PlaceholderExpression): ITextOrFunctionArray {
-        const e1 = e.expression();
-        return prepare `${() => e1.expression(e1.parameter)}`;
+        const p = e.expression();
+        return prepare `${p}`;
+    }
+
+    private pushTarget(target: string, type: IEntitySource) {
+        this.targets.set(target, type);
+        return () => this.targets.delete(target);
     }
 
     private getPropertyChain(x: Expression) {
@@ -264,41 +304,6 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
             start = target;
         } while (true);
         return chain.reverse();
-    }
-
-
-    private getTargetPropertyIdentifier(x: ExpressionType): { property?: string, childProperty?: string } {
-        if (x.type !== "MemberExpression") {
-            return;
-        }
-
-        const target = x.target as ExpressionType;
-        const property = x.property as ExpressionType;
-        if(property.type !== "Identifier") {
-            return;
-        }
-
-        if (target.type === "Identifier"
-            && target.value === this.target) {
-            return { property: property.value };
-        }
-
-        if (target.type !== "MemberExpression") {
-            return;
-        }
-
-        const root = target.target as ExpressionType;
-        if (root.type !== "Identifier" || root.value !== this.target) {
-            return;
-        }
-
-        const childProperty = property.value;
-        const parentProperty= target as ExpressionType;
-        if(parentProperty.type !== "Identifier") {
-            return;
-        }
-
-        return { property: parentProperty.value, childProperty };
     }
 
 

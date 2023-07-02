@@ -99,6 +99,9 @@ export class OrderItem {
     @Column()
     public productID: number;
 
+    @Column()
+    public amount: number;
+
     @ForeignKey({
         key: (orderItem) => orderItem.orderID,
         related: Order,

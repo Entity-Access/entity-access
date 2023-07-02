@@ -60,10 +60,7 @@ export abstract class Expression {
 
 export class PlaceholderExpression extends Expression {
     readonly type = "PlaceholderExpression";
-    expression: () => {
-        parameter: any,
-        expression: (p) => ITextOrFunctionArray
-    };
+    expression: () => ITextOrFunctionArray;
 }
 
 export class BinaryExpression extends Expression {
@@ -112,11 +109,17 @@ export class MemberExpression extends Expression {
     computed: boolean;
 }
 
+export class ArrowFunctionExpression extends Expression {
+    readonly type = "ArrowFunctionExpression";
+    params: Expression[];
+    body: Expression;
+}
+
 export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
 
-    source: SelectStatement | QuotedLiteral | ExpressionAs;
+    source: SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
 
     as: QuotedLiteral;
 
@@ -157,31 +160,31 @@ export class Identifier extends Expression {
 }
 
 export class NullExpression extends Expression {
-    readonly type = "Null";
+    readonly type = "NullExpression";
 }
 
 export class StringLiteral extends Expression {
-    readonly type = "String";
+    readonly type = "StringLiteral";
     public value: string;
 }
 
 export class BooleanLiteral extends Expression {
-    readonly type = "Boolean";
+    readonly type = "BooleanLiteral";
     public value: boolean;
 }
 
 export class NumberLiteral extends Expression {
-    readonly type = "Number";
+    readonly type = "NumberLiteral";
     public value: number;
 }
 
 export class BigIntLiteral extends Expression {
-    readonly type = "BigInt";
+    readonly type = "BigIntLiteral";
     public value: bigint;
 }
 
 export class TemplateLiteral extends Expression {
-    readonly type = "Template";
+    readonly type = "TemplateLiteral";
     public value: Expression[];
 }
 
@@ -256,5 +259,6 @@ export type ExpressionType =
     CoalesceExpression|
     ExistsExpression|
     Identifier |
-    PlaceholderExpression
+    PlaceholderExpression|
+    ArrowFunctionExpression
 ;

@@ -3,6 +3,7 @@ import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/MemberParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
+import { QuotedLiteral, TableLiteral } from "../query/ast/Expressions.js";
 
 
 /**
@@ -25,7 +26,12 @@ export default class EntityType {
     public readonly nonKeys: IColumn[] = [];
 
     public get fullyQualifiedName() {
-        return this.schema ? Query.quotedLiteral(this.schema, this.name) : Query.quotedLiteral(this.name);
+        return this.schema
+            ? TableLiteral.create({
+                schema: QuotedLiteral.create({literal: this.schema}) ,
+                name: QuotedLiteral.create({ literal: this.name })
+            })
+            : QuotedLiteral.create({ literal: this.name });
     }
 
     private fieldMap: Map<string, IColumn> = new Map();

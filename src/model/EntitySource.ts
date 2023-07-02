@@ -34,14 +34,20 @@ export class EntitySource<T = any> {
     }
 
     public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
-        const compiled = this.context.driver.compiler.compile(this, fx);
-        const expression = (p) => compiled.map((x) => typeof x === "function" ? x(p) : x);
-        const exp = PlaceholderExpression.create({ expression: () => ({ parameter, expression })});
+        const exp = this.context.driver.compiler.compileToExpression(this, parameter, fx);
         if (this.filter) {
             this.filter = BinaryExpression.create({ left: this.filter, operator: "AND", right: exp });
         } else {
             this.filter = exp;
         }
         return this as any as IEntityQuery<T>;
+    }
+
+    public toQuery() {
+        const filter = this.filter;
+        if(!filter) {
+            return "";
+        }
+        return this.context.driver.compiler.compileExpression(filter);
     }
 }

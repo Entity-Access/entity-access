@@ -6,10 +6,11 @@ export type ILambdaExpression<P = any, T = any, TR = any> = [input: P, x: (p: P)
 export type IFilterExpression<P = any, T = any> = [input: P, x: (p: P) => (s: T) => boolean];
 
 export interface IBaseQuery<T> {
-    where<P>(parameters: P, fx: IFilterExpression<P, T>);
+    where<P>(parameters: P, fx: (p: P) => (x: T) => boolean);
     enumerate(): AsyncGenerator<T>;
     firstOrFail(): Promise<T>;
     first(): Promise<T>;
+    toQuery(): { text: string, values: any[]};
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
