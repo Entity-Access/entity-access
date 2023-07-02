@@ -32,6 +32,10 @@ export default function () {
 
     assert.equal(`("x"."firstName" LIKE $1)`, r.text);
 
+    r = compiler.compile((p) => (x) => Sql.date.addDays(x.birthDate, p.days));
+
+    assert.equal(`("x"."birthDate" + ($1 * interval '1 day'))`, r.text);
+
     r = compiler.execute({name: "Akash"}, (p) => (x) => Sql.text.startsWith(x.firstName, p.name));
 
     assert.equal(`starts_with("x"."firstName", $1)`, r.text);
