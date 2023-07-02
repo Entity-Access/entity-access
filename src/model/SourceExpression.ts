@@ -39,7 +39,7 @@ export class SourceExpression {
                 return iterator[sourceSymbol] as SourceExpression;
             }
         }
-        const column = relation.field;
+        const column = relation.relation.fkColumn;
         const parameter = this.parameter + "." + property;
         const source = this.addSource(model, parameter);
         const join = JoinExpression.create({
@@ -64,9 +64,7 @@ export class SourceExpression {
         return source;
     }
 
-    addSource(type, parameter) {
-
-        const model = this.context.model.register(type)[modelSymbol];
+    addSource(model: EntityType, parameter) {
 
         this.map ??= new Map();
         const { context } = this;

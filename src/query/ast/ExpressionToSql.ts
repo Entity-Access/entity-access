@@ -116,7 +116,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                         if (body.type === "ArrowFunctionExpression") {
 
                             const param1 = body.params[0] as Identifier;
-                            const relatedSource = this.source.addSource(relation.relation.relatedTypeClass, param1);
+                            const relatedSource = this.source.addSource(relation.relation.relatedEntity, param1);
                             const relatedModel = relatedSource.model;
                             const targetKey = MemberExpression.create({
                                 target: Identifier.create({ value: target }),

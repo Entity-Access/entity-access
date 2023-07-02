@@ -96,7 +96,7 @@ export default class EntityType {
         // let us set inverse relations...
         const relatedType = SchemaRegistry.model(relation.relatedTypeClass);
         relation.relatedEntity = relatedType;
-        const inverseRelation = {
+        const inverseRelation: IEntityRelation = {
             name: relation.relatedName,
             foreignKey: "",
             relatedName: relation.name,
@@ -105,7 +105,7 @@ export default class EntityType {
             fkColumn,
             isCollection: true,
             relatedRelation: relation,
-            relatedType: this
+            relatedEntity: this
         };
         relatedType.relationMap.set(inverseRelation.name, inverseRelation);
         relatedType.relations.push(inverseRelation);
