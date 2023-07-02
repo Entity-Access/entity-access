@@ -3,14 +3,6 @@ import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, Coales
 
 export default abstract class Visitor<T = any> {
 
-    visitArray(ea: Expression[]) {
-        const r = [];
-        for (const iterator of ea) {
-            r.push(this.visit(iterator));
-        }
-        return r;
-    }
-
     visit(e1: Expression): T {
 
         const e = e1 as ExpressionType;

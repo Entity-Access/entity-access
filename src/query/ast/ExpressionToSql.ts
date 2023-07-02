@@ -1,11 +1,43 @@
+import QueryBuilder from "../../compiler/builder/QueryBuilder.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ISqlMethodTransformer, IStringTransformer } from "./IStringTransformer.js";
 import SqlLiteral from "./SqlLiteral.js";
 import Visitor from "./Visitor.js";
 
-export default class ExpressionToSql extends Visitor<string> {
+export type ITextOrFunction = string | ((p: any) => any);
+export type ITextOrFunctionArray = ITextOrFunction[];
 
-    public values: string[] = [];
+const prepare = (a: TemplateStringsArray, ... p: (ITextOrFunction | ITextOrFunctionArray)[]): ITextOrFunctionArray => {
+    const r = [];
+    for (let index = 0; index < a.length; index++) {
+        const element = a[index];
+        r.push(element);
+        if (index < p.length) {
+            const pi = p[index];
+            if (Array.isArray(pi)) {
+                r.push(... pi);
+                continue;
+            }
+            r.push(pi);
+        }
+    }
+    return r.flat(2);
+};
+
+const prepareJoin = (a: (ITextOrFunction | ITextOrFunctionArray)[], sep: string = ","): ITextOrFunctionArray => {
+    const r = [];
+    let first = true;
+    for (const iterator of a) {
+        if (!first) {
+            r.push(",");
+        }
+        first = false;
+        r.push(iterator);
+    }
+    return r.flat(2);
+};
+
+export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
     constructor(
         private root: string,
@@ -17,66 +49,72 @@ export default class ExpressionToSql extends Visitor<string> {
         super();
     }
 
-    visitValuesStatement(e: ValuesStatement): string {
-        const rows = [];
-        for (const rowValues of e.values) {
-            const row = this.visitArray(rowValues);
-            rows.push(`(${row.join(",")})`);
-        }
-        return `VALUES ${rows.join(",")}`;
+    visitArray(e: Expression[], sep = ","): ITextOrFunctionArray {
+        const r = e.map((x) => this.visit(x));
+        return prepareJoin(r, sep);
     }
 
-    visitTableLiteral(e: TableLiteral): string {
+
+    visitValuesStatement(e: ValuesStatement): ITextOrFunctionArray {
+        const rows = [];
+        for (const rowValues of e.values) {
+            rows.push(prepare `(${ this.visitArray(rowValues) })`);
+        }
+        return prepare `VALUES ${rows}`;
+
+    }
+
+    visitTableLiteral(e: TableLiteral): ITextOrFunctionArray {
         if (e.schema) {
-            return `${this.visit(e.schema)}.${this.visit(e.name)}`;
+            return prepare `${this.visit(e.schema)}.${this.visit(e.name)}`;
         }
         return this.visit(e.name);
     }
 
-    visitSelectStatement(e: SelectStatement): string {
-        const fields = this.visitArray(e.fields).join(",");
-        const joins = e.joins?.length > 0 ?  this.visitArray(e.joins) : "";
-        const orderBy = e.orderBy?.length > 0 ? ` ORDER BY ${this.visitArray(e.orderBy)}` : "";
+    visitSelectStatement(e: SelectStatement): ITextOrFunctionArray {
+        const fields = this.visitArray(e.fields);
+        const joins = e.joins?.length > 0 ?  this.visitArray(e.joins) : [];
+        const orderBy = e.orderBy?.length > 0 ? prepare ` ORDER BY ${this.visitArray(e.orderBy)}` : "";
         const source = this.visit(e.source);
-        const where = e.where ? ` WHERE ${this.visit(e.where)}` : "";
-        return `SELECT ${fields} FROM ${source} ${joins} ${where} ${orderBy}`;
+        const where = e.where ? prepare ` WHERE ${this.visit(e.where)}` : "";
+        return prepare `SELECT ${fields} FROM ${source} ${joins} ${where} ${orderBy}`;
     }
 
-    visitQuotedLiteral(e: QuotedLiteral): string {
-        return this.quotedLiteral(e.literal);
+    visitQuotedLiteral(e: QuotedLiteral): ITextOrFunctionArray {
+        return [this.quotedLiteral(e.literal)];
     }
 
-    visitExpressionAs(e: ExpressionAs): string {
-        return `${this.visit(e.expression)} AS ${this.visit(e.alias)}`;
+    visitExpressionAs(e: ExpressionAs): ITextOrFunctionArray {
+        return prepare `${this.visit(e.expression)} AS ${this.visit(e.alias)}`;
     }
 
-    visitConstant(e: Constant): string {
-        this.values.push(e.value);
-        return "$" + this.values.length;
+    visitConstant({value}: Constant): ITextOrFunctionArray {
+        return [() => value];
     }
 
-    visitBigIntLiteral(e: BigIntLiteral): string {
-        return e.value.toString();
+    visitBigIntLiteral({ value }: BigIntLiteral): ITextOrFunctionArray {
+        return [() => value];
     }
 
-    visitNumberLiteral(e: NumberLiteral): string {
-        return e.value.toString();
+    visitNumberLiteral( { value }: NumberLiteral): ITextOrFunctionArray {
+        return [() => value];
     }
 
-    visitStringLiteral(e: StringLiteral): string {
-        return this.escapeLiteral(e.value);
+    visitStringLiteral({ value }: StringLiteral): ITextOrFunctionArray {
+        const escapeLiteral = this.escapeLiteral;
+        return [() => escapeLiteral(value)];
     }
 
-    visitBooleanLiteral(e: BooleanLiteral): string {
-        return e.value ? "1" : "0";
+    visitBooleanLiteral( { value }: BooleanLiteral): ITextOrFunctionArray {
+        return [ () => value ? "1" : "0" ];
     }
 
-    visitTemplateLiteral(e: TemplateLiteral): string {
+    visitTemplateLiteral(e: TemplateLiteral): ITextOrFunctionArray {
         const args = this.visitArray(e.value);
-        return `CONCAT(${args.join(", ")})`;
+        return prepare `CONCAT(${args})`;
     }
 
-    visitCallExpression(e: CallExpression): string {
+    visitCallExpression(e: CallExpression): ITextOrFunctionArray {
         const args = this.visitArray(e.arguments);
         // let us check if we are using any of array extension methods...
         // .some alias .any
@@ -102,68 +140,72 @@ export default class ExpressionToSql extends Visitor<string> {
                     }
                 }
             }
-        }
 
-        const callee = this.visit(e.callee);
-        const transformedCallee = this.sqlMethodTranslator(callee, args);
-        if (transformedCallee) {
-            return transformedCallee;
-        }
-        return `${this.visit(e.callee)}(${args.join(",")})`;
-    }
-
-    visitIdentifier(e: Identifier): string {
-        // need to visit parameters
-        return e.value;
-    }
-
-    visitMemberExpression({ target, computed, property }: MemberExpression): string {
-        const identifier = target as Identifier;
-        if (identifier.type === "Identifier") {
-            if (identifier.value === this.root) {
-                // we have a parameter...
-                this.values.push(this.visit(property));
-                return "$" + this.values.length;
+            if (target === "Sql") {
+                const names = `${target}.${property}.${childProperty}`;
+                const transformedCallee = this.sqlMethodTranslator(names, args as any[]);
+                if (transformedCallee) {
+                    return [transformedCallee];
+                }
             }
-            if (identifier.value === this.target) {
+        }
+        return prepare `${this.visit(e.callee)}(${args})`;
+    }
+
+    visitIdentifier(e: Identifier): ITextOrFunctionArray {
+        // need to visit parameters
+        return [e.value];
+    }
+
+    visitMemberExpression(me: MemberExpression): ITextOrFunctionArray {
+        const chain = this.getPropertyChain(me);
+        if (chain) {
+            const [root, key ] = chain;
+            if (root === this.root) {
+                // we have a parameter...
+                return [(p) => p[key]];
+            }
+            if (root === this.target) {
                 // we have column name from table parameter
                 // we need to set quoted literal...
-                return `${this.quotedLiteral(this.target)}.${this.quotedLiteral(this.visit(property))}`;
+                return prepare `${this.quotedLiteral(this.target)}.${this.quotedLiteral(key)}`;
             }
         }
 
+        const { target, computed, property } = me;
+
         if (computed) {
-            return `${this.visit(target)}[${this.visit(property)}]`;
+            return prepare `${this.visit(target)}[${this.visit(property)}]`;
         }
-        return `${this.visit(target)}.${this.visit(property)}`;
+        return prepare `${this.visit(target)}.${this.visit(property)}`;
     }
 
-    visitNullExpression(e: NullExpression): string {
-        return "NULL";
+    visitNullExpression(e: NullExpression): ITextOrFunctionArray {
+        return ["NULL"];
     }
 
-    visitBinaryExpression(e: BinaryExpression): string {
-        return `(${this.visit(e.left)} ${e.operator} ${this.visit(e.right)})`;
+    visitBinaryExpression(e: BinaryExpression): ITextOrFunctionArray {
+        return prepare `(${this.visit(e.left)} ${e.operator} ${this.visit(e.right)})`;
     }
 
-    visitCoalesceExpression(e: CoalesceExpression): string {
+    visitCoalesceExpression(e: CoalesceExpression): ITextOrFunctionArray {
         const left = this.visit(e.left);
         const right = this.visit(e.right);
-        return `COALESCE(${left}, ${right})`;
+        return prepare `COALESCE(${left}, ${right})`;
     }
 
-    visitReturnUpdated(e: ReturnUpdated): string {
+    visitReturnUpdated(e: ReturnUpdated): ITextOrFunctionArray {
         if (!e) {
-            return "";
+            return [];
         }
         if (e.fields.length === 0) {
-            return "";
+            return [];
         }
         const fields = this.visitArray(e.fields).join(",");
-        return ` RETURNING ${fields}`;
+        return prepare ` RETURNING ${fields}`;
     }
 
-    visitInsertStatement(e: InsertStatement): string {
+    visitInsertStatement(e: InsertStatement): ITextOrFunctionArray {
         const returnValues = this.visit(e.returnValues);
         if (e.values instanceof ValuesStatement) {
 
@@ -173,20 +215,20 @@ export default class ExpressionToSql extends Visitor<string> {
                 if (row.length === 0) {
                     continue;
                 }
-                rows.push("(" + row.join(",") + ")");
+                rows.push(prepare `(${ row })`);
             }
 
             if (rows.length === 0) {
-                return `INSERT INTO ${this.visit(e.table)} ${returnValues}`;
+                return prepare `INSERT INTO ${this.visit(e.table)} ${returnValues}`;
             }
 
-            return `INSERT INTO ${this.visit(e.table)} (${this.walkJoin(e.values.fields)}) VALUES ${rows.join(",")} ${returnValues}`;
+            return prepare `INSERT INTO ${this.visit(e.table)} (${this.visitArray(e.values.fields)}) VALUES ${rows.join(",")} ${returnValues}`;
         }
-        return `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)} ${returnValues}`;
+        return prepare `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)} ${returnValues}`;
 
     }
 
-    visitUpdateStatement(e: UpdateStatement): string {
+    visitUpdateStatement(e: UpdateStatement): ITextOrFunctionArray {
 
         const table = this.visit(e.table);
 
@@ -194,40 +236,36 @@ export default class ExpressionToSql extends Visitor<string> {
 
         const set = this.visitArray(e.set);
 
-        return `UPDATE ${table} SET ${set.join(",")} WHERE ${where}`;
+        return prepare `UPDATE ${table} SET ${set.join(",")} WHERE ${where}`;
     }
 
-    visitDeleteStatement(e: DeleteStatement): string {
+    visitDeleteStatement(e: DeleteStatement): ITextOrFunctionArray {
         const table = this.visit(e.table);
         const where = this.visit(e.where);
-        return `DELETE ${table} WHERE ${where}`;
+        return prepare `DELETE ${table} WHERE ${where}`;
     }
 
-    visitJoinExpression(e: JoinExpression): string {
+    visitJoinExpression(e: JoinExpression): ITextOrFunctionArray {
         if(!e) {
-            return "";
+            return [];
         }
         const table = this.visit(e.source);
         const where = this.visit(e.where);
-        return ` ${e.joinType || "LEFT"} JOIN ${table} ON ${where}`;
+        return prepare ` ${e.joinType || "LEFT"} JOIN ${table} ON ${where}`;
     }
 
-    visitOrderByExpression(e: OrderByExpression): string {
+    visitOrderByExpression(e: OrderByExpression): ITextOrFunctionArray {
         if(!e) {
-            return "";
+            return [];
         }
         if (e.descending) {
-            return `${this.visit(e.target)} DESC`;
+            return prepare `${this.visit(e.target)} DESC`;
         }
-        return `${this.visit(e.target)}`;
+        return prepare `${this.visit(e.target)}`;
     }
 
-    visitExistsExpression(e: ExistsExpression): string {
-        return `EXISTS (${this.visit(e.target)})`;
-    }
-
-    walkJoin(e: Expression[], sep = ",\r\n\t"): string {
-        return e.map((i) => this.visit(i)).join(sep);
+    visitExistsExpression(e: ExistsExpression): ITextOrFunctionArray {
+        return prepare `EXISTS (${this.visit(e.target)})`;
     }
 
     private getPropertyChain(x: Expression) {

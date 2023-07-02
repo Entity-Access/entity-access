@@ -1,5 +1,5 @@
 import { IClassOf } from "../decorators/IClassOf.js";
-import ExpressionToSql from "../query/ast/ExpressionToSql.js";
+import ExpressionToSql, { ITextOrFunctionArray } from "../query/ast/ExpressionToSql.js";
 import { ISqlMethodTransformer, IStringTransformer } from "../query/ast/IStringTransformer.js";
 import { Expression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
@@ -39,14 +39,33 @@ export default class QueryCompiler {
     public compile(fx: (p) => (x) => any, source?: EntitySource) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
         const exp = new ExpressionToSql(param, target, this.quotedLiteral, this.escapeLiteral, this.sqlMethodTransformer);
-        const text = exp.visit(body);
-        return { text, values: exp.values };
+        const query = exp.visit(body);
+        return this.invoke(query);
     }
 
     public compileExpression(exp: Expression) {
         const toSql = new ExpressionToSql(void 0, void 0, this.quotedLiteral, this.escapeLiteral);
-        const text = toSql.visit(exp);
-        return { text, values:  toSql.values};
+        const query = toSql.visit(exp);
+        return this.invoke(query);
+    }
+
+    invoke(query: ITextOrFunctionArray, p: any = {}) {
+        let text = "";
+        const values = [];
+        for (const iterator of query) {
+            if (typeof iterator === "string") {
+                text += iterator;
+                continue;
+            }
+            let value = iterator;
+            if (typeof iterator === "function") {
+                value = iterator(p);
+            }
+
+            values.push(value);
+            text += "$" + values.length;
+        }
+        return { text, values };
     }
 
 }
