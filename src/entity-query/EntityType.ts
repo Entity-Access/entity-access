@@ -4,6 +4,7 @@ import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/MemberParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import { QuotedLiteral, TableLiteral } from "../query/ast/Expressions.js";
+import InstanceCache from "../common/cache/InstanceCache.js";
 
 
 /**
@@ -25,6 +26,7 @@ export default class EntityType {
 
     public readonly nonKeys: IColumn[] = [];
 
+    @InstanceCache
     public get fullyQualifiedName() {
         return this.schema
             ? TableLiteral.create({
