@@ -44,6 +44,12 @@ FROM "OrderItems" AS "O2"
  INNER JOIN "Orders" AS "O3" ON ("O2"."orderID" = "O3"."orderID")
 WHERE (("P1"."productID" = "O2"."productID") AND ("O3"."orderDate" > $4))))`;
 
+const productJoin = `SELECT
+"P1"."productID","P1"."name","P1"."ownerID"
+FROM "Products" AS "P1"
+ LEFT JOIN "Users" AS "U0" ON ("P1"."ownerID" = "U0"."userID")
+WHERE ("U0"."dateCreated" > $1)`;
+
 export default function() {
 
     const context = new ShoppingContext();
@@ -60,4 +66,8 @@ export default function() {
     query = old.where({ date: new Date()}, (p) => (x) => x.orderItems.some((o) => o.order.orderDate > p.date));
     r = query.toQuery();
     assertSqlMatch(sql3, r.text);
+
+    query = context.products.where({ date: new Date()}, (p) => (x) => x.owner.dateCreated > p.date);
+    r = query.toQuery();
+    assertSqlMatch(productJoin, r.text);
 }
