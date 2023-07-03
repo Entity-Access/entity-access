@@ -14,9 +14,17 @@ export default async function(this: TestConfig) {
 
     assert.notEqual(null, headphone);
 
-    const products = await context.products.where({}, (p) => (x) => x.productID > 0).count();
+    const products = await context.products.where({}, (p) => (x) => x.productID > 0)
+        .offset(2)
+        .limit(5)
+        .orderBy({}, (p) => (x) => x.name)
+        .toArray();
 
-    console.log(`Total products are ${products}`);
+    assert.equal(5, products.length);
+
+    const sorted = [ ... products].sort((a, b) => a.name.localeCompare(b.name));
+
+    assert.equal(products.join(","), sorted.join(","));
 
 
 }

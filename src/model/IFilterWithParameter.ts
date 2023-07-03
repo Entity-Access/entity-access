@@ -11,6 +11,8 @@ export interface IBaseQuery<T> {
     firstOrFail(): Promise<T>;
     first(): Promise<T>;
 
+    toArray(): Promise<T[]>;
+
     toQuery(): { text: string, values: any[]};
 
     limit<DT>(this: DT, limit: number): DT;
@@ -25,12 +27,12 @@ export interface IBaseQuery<T> {
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
 
-    thenBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
-    thenByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
+    thenBy<P>(parameters: P, fx: (p: P) => (x: T) => any);
+    thenByDescending<P>(parameters: P, fx: (p: P) => (x: T) => any);
 }
 
 export interface IEntityQuery<T> extends IBaseQuery<T> {
 
-    orderBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
-    orderByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
+    orderBy<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
+    orderByDescending<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
 }

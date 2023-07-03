@@ -14,10 +14,10 @@ export default class EntityQuery<T = any>
         return new EntityQuery(source);
     }
 
-    thenBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+    thenBy(parameters: any, fx: any): any {
         return this.orderBy(parameters, fx);
     }
-    thenByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+    thenByDescending(parameters: any, fx: any) {
         return this.orderByDescending(parameters, fx);
     }
     where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): any {
@@ -86,7 +86,7 @@ export default class EntityQuery<T = any>
     toQuery(): { text: string; values: any[]; } {
         return this.source.context.driver.compiler.compileExpression(this.source.select);
     }
-    orderBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+    orderBy(parameters: any, fx: any): any {
         const source = this.source.copy();
         const { select } = source;
         const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx as any);
@@ -96,7 +96,7 @@ export default class EntityQuery<T = any>
         }));
         return new EntityQuery(source);
     }
-    orderByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
+    orderByDescending(parameters: any, fx: any): any {
         const source = this.source.copy();
         const { select } = source;
         const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx as any);
