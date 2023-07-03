@@ -15,5 +15,5 @@ jobs:
       - run: npm install -D typescript
       - run: tsc
       - run: docker run -d --env POSTGRES_PASSWORD=abcd123 --expose 5432 --rm --name postgres-tester-1122 postgres:latest
-      - run: npm run test
+      - run: npm run test-db
       - run: docker stop postgres-tester-1122

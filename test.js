@@ -1,5 +1,11 @@
 import { readdir } from "fs/promises";
 import PostgreSqlDriver from "./dist/drivers/postgres/PostgreSqlDriver.js";
+import * as ports from "tcp-port-used";
+
+if (/\-\-db/.test(process.argv0)) {
+    // wait for ports to open...
+    await ports.waitUntilUsed(5432, void 0, 15000);
+}
 
 /**
  * @type Array<{ name: string, error: string }>

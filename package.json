@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --enable-source-maps ./test.js"
+    "test": "node --enable-source-maps ./test.js",
+    "test-db": "node --enable-source-maps ./test.js --db"
   },
   "type": "module",
   "author": "",
