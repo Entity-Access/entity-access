@@ -16,7 +16,8 @@
     "@web-atoms/unit-test": "^1.0.43",
     "pg": "^8.11.1",
     "pg-cursor": "^2.10.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "tcp-port-used": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.3.2",
