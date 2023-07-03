@@ -9,13 +9,7 @@ export default async function (this: TestConfig) {
         return;
     }
 
-    const connection = new PostgreSqlDriver({
-        host: "localhost",
-        port: 5432,
-        user: "postgres",
-        database: "postgres",
-        password: "abcd123"
-    });
+    const connection = this.driver;
 
     // create table...
     await connection.executeNonQuery(`SELECT 1;`);
