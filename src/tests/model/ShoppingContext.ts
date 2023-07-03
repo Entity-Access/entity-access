@@ -4,8 +4,13 @@ import ForeignKey from "../../decorators/ForeignKey.js";
 import Table from "../../decorators/Table.js";
 import PostgreSqlDriver from "../../drivers/postgres/PostgreSqlDriver.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
+import { Console } from "console";
 
 export class ShoppingContext extends EntityContext {
+
+    public categories = this.model.register(Category);
+
+    public productCategories = this.model.register(ProductCategory);
 
     public products = this.model.register(Product);
 
@@ -34,6 +39,19 @@ export class User {
 
 }
 
+@Table("Categories")
+export class Category {
+
+    @Column({ key: true, dataType: "Char", length: 200 })
+    public categoryID: string;
+
+    @Column({ length: 200 })
+    public name: string;
+
+    public productCategories: ProductCategory[];
+
+}
+
 
 @Table("Products")
 export class Product {
@@ -51,6 +69,8 @@ export class Product {
 
     public prices: ProductPrice[];
 
+    public categories: ProductCategory[];
+
     @ForeignKey({
         key: (product) => product.ownerID,
         related: User,
@@ -58,6 +78,34 @@ export class Product {
     })
     public owner: User;
 
+}
+
+
+@Table("ProductCategories")
+export class ProductCategory {
+
+    @Column({ key: true, dataType: "BigInt", autoGenerate: true })
+    public productCategoryID: number;
+
+    @Column({ dataType: "BigInt" })
+    public productID: number;
+
+    @Column({ dataType: "Char", length: 200})
+    public categoryID: string;
+
+    @ForeignKey({
+        key: (pc) => pc.productID,
+        related: Product,
+        relatedProperty: (c) => c.categories
+    })
+    public product: Product;
+
+    @ForeignKey({
+        key: (pc) => pc.categoryID,
+        related: Category,
+        relatedProperty: (c) => c.productCategories
+    })
+    public category: Category;
 }
 
 @Table("ProductPrices")

@@ -27,8 +27,31 @@ export async function createContext(driver: BaseDriver) {
 
 async function seed(context: ShoppingContext) {
     const now = new Date();
+
+    const headphones = context.categories.add({
+        name: "Headphones",
+        categoryID: "headphones"
+    });
+
+    const maleClothes = context.categories.add({
+        name: "Male Clothes",
+        categoryID: "clothes/male"
+    });
+
+    const femaleClothes = context.categories.add({
+        name: "Female Clothes",
+        categoryID: "clothes/female"
+    });
+
+    await context.saveChanges();
+
     context.products.add({
-        name: "Pillow",
+        name: "Jabber HeadPhones",
+        categories: [
+            context.productCategories.add({
+                categoryID: headphones.categoryID
+            })
+        ],
         prices: [
             context.productPrices.add({
                 active: true,
