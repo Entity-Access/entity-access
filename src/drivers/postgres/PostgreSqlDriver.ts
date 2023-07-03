@@ -100,16 +100,16 @@ export default class PostgreSqlDriver extends BaseDriver {
         return JSON.stringify(name);
     }
 
-    public async executeReader(command: IQuery): Promise<IDbReader> {
-        const connection = await this.getConnection();
+    public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
+        const connection = await this.getConnection(signal);
         const q = toQuery(command);
         console.log(`Executing ${q.text}`);
         const cursor = connection.query(new Cursor(q.text, q.values));
         return new DbReader(cursor, this.transaction ? void 0 : connection);
     }
 
-    public async executeNonQuery(command: IQuery) {
-        const connection = await this.getConnection();
+    public async executeNonQuery(command: IQuery, signal?: AbortSignal) {
+        const connection = await this.getConnection(signal);
         // we need to change parameter styles
         try {
             const q = toQuery(command);
@@ -149,12 +149,35 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 
 
-    private async getConnection() {
+    private async getConnection(signal?: AbortSignal) {
+
+        if (signal?.aborted) {
+            throw new Error("Aborted");
+        }
+
         if (this.transaction) {
             return this.transaction;
         }
         const client = new Client(this.config);
         await client.connect();
+        const row = await client.query("SELECT pg_backend_pid() as id");
+        const clientId = (row.rows as any).id;
+        // there is no support to kill the query running inside
+        if (signal) {
+            signal.addEventListener("abort", () => this.kill(clientId).catch((error) => console.error(error)));
+        }
         return client;
+    }
+
+    private async kill(id) {
+        const client = new Client(this.config);
+        try {
+            await client.connect();
+            await client.query("SELECT pg_cancel_backend($1)", [id]);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            await client.end();
+        }
     }
 }

@@ -22,7 +22,7 @@ export interface IDbConnectionString {
 }
 
 export interface IDbReader extends IDisposable {
-    next(min?: number): AsyncGenerator<IRecord, any, any>;
+    next(min?: number, signal?: AbortSignal): AsyncGenerator<IRecord, any, any>;
     dispose(): Promise<any>;
 }
 
@@ -48,9 +48,9 @@ export abstract class BaseDriver {
 
     public abstract escape(name: string);
 
-    public abstract executeReader(command: IQuery): Promise<IDbReader>;
+    public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
-    public abstract executeNonQuery(command: IQuery): Promise<any>;
+    public abstract executeNonQuery(command: IQuery, signal?: AbortSignal): Promise<any>;
 
     public abstract ensureDatabase(): Promise<any>;
 

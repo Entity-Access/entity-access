@@ -7,6 +7,13 @@ export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
     constructor (public readonly source: SourceExpression) {
     }
+
+    withSignal(signal: AbortSignal): any {
+        const source = this.source.copy();
+        source.signal = signal;
+        return new EntityQuery(source);
+    }
+
     thenBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>) {
         return this.orderBy(parameters, fx);
     }
@@ -29,25 +36,47 @@ export default class EntityQuery<T = any>
         }
         return new EntityQuery(source);
     }
-    async *enumerate(): AsyncGenerator<T, any, unknown> {
+
+    async toArray(): Promise<T[]> {
         const type = this.source.model?.typeClass;
         const query = this.source.context.driver.compiler.compileExpression(this.source.select);
         const reader = await this.source.context.driver.executeReader(query);
+        const results: T[] = [];
         try {
             for await (const iterator of reader.next(10)) {
                 Object.setPrototypeOf(iterator, type.prototype);
+                results.push(iterator as T);
+            }
+        } finally {
+            await reader.dispose();
+        }
+        return results;
+    }
+
+    async *enumerate(): AsyncGenerator<T, any, unknown> {
+        const type = this.source.model?.typeClass;
+        const signal = this.source.signal;
+        const query = this.source.context.driver.compiler.compileExpression(this.source.select);
+        const reader = await this.source.context.driver.executeReader(query, signal);
+        try {
+            for await (const iterator of reader.next(10, signal)) {
+                if (type) {
+                    Object.setPrototypeOf(iterator, type.prototype);
+                }
                 yield iterator as T;
             }
         } finally {
             await reader.dispose();
         }
     }
+
     async firstOrFail(): Promise<T> {
         for await(const iterator of this.enumerate()) {
             return iterator;
         }
         throw new Error(`No records found for ${this.source.model?.name || "Table"}`);
     }
+
     async first(): Promise<T> {
         for await(const iterator of this.enumerate()) {
             return iterator;

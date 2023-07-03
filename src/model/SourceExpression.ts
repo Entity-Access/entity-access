@@ -12,6 +12,7 @@ export class SourceExpression {
         return new SourceExpression(p);
     }
 
+    signal: AbortSignal;
     alias: string;
     parameter?: string;
     context: EntityContext;
