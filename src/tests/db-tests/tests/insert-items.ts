@@ -14,5 +14,9 @@ export default async function(this: TestConfig) {
 
     assert.notEqual(null, headphone);
 
+    const products = await context.products.where({}, (p) => (x) => x.productID > 0).count();
+
+    console.log(`Total products are ${products}`);
+
 
 }

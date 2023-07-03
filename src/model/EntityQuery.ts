@@ -1,4 +1,4 @@
-import { BinaryExpression, Expression, OrderByExpression, SelectStatement, TableSource } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement, TableSource } from "../query/ast/Expressions.js";
 import { EntitySource } from "./EntitySource.js";
 import { IOrderedEntityQuery, IEntityQuery, ILambdaExpression } from "./IFilterWithParameter.js";
 import { SourceExpression } from "./SourceExpression.js";
@@ -91,6 +91,37 @@ export default class EntityQuery<T = any>
         const { select } = source;
         select.offset = n;
         return new EntityQuery(source);
+    }
+
+    async count(parameters?:any, fx?: any): Promise<number> {
+        if (parameters !== void 0) {
+            return this.where(parameters, fx).count();
+        }
+
+        const source = this.source.copy();
+        const { select } = source;
+
+        select.fields = [
+            ExpressionAs.create({
+                expression: CallExpression.create({
+                    callee: Identifier.create({ value: "COUNT"}),
+                    arguments: [ Identifier.create({ value: "*"})]
+                }),
+                alias: QuotedLiteral.create({ literal: "count" })
+            })
+        ];
+
+        const query = this.source.context.driver.compiler.compileExpression(select);
+        const reader = await this.source.context.driver.executeReader(query);
+
+        try {
+            for await (const iterator of reader.next()) {
+                return iterator.count as number;
+            }
+        } finally {
+            await reader.dispose();
+        }
+
     }
 
 }

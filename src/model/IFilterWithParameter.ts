@@ -7,14 +7,18 @@ export type IFilterExpression<P = any, T = any> = [input: P, x: (p: P) => (s: T)
 
 export interface IBaseQuery<T> {
     enumerate(): AsyncGenerator<T>;
+
     firstOrFail(): Promise<T>;
     first(): Promise<T>;
+
     toQuery(): { text: string, values: any[]};
 
     limit<DT>(this: DT, limit: number): DT;
     offset<DT>(this: DT, offset: number): DT;
     where<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
 
+    count(): Promise<number>;
+    count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
