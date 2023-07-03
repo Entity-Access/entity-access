@@ -38,17 +38,9 @@ export default class EntityQuery<T = any>
     }
 
     async toArray(): Promise<T[]> {
-        const type = this.source.model?.typeClass;
-        const query = this.source.context.driver.compiler.compileExpression(this.source.select);
-        const reader = await this.source.context.driver.executeReader(query);
         const results: T[] = [];
-        try {
-            for await (const iterator of reader.next(10)) {
-                Object.setPrototypeOf(iterator, type.prototype);
-                results.push(iterator as T);
-            }
-        } finally {
-            await reader.dispose();
+        for await (const iterator of this.enumerate()) {
+            results.push(iterator);
         }
         return results;
     }
@@ -62,6 +54,10 @@ export default class EntityQuery<T = any>
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
                     Object.setPrototypeOf(iterator, type.prototype);
+                    // set identity...
+                    const entry = this.source.context.changeSet.getEntry(iterator, iterator);
+                    yield entry.entity;
+                    continue;
                 }
                 yield iterator as T;
             }
@@ -71,14 +67,14 @@ export default class EntityQuery<T = any>
     }
 
     async firstOrFail(): Promise<T> {
-        for await(const iterator of this.enumerate()) {
+        for await(const iterator of this.limit(1).enumerate()) {
             return iterator;
         }
         throw new Error(`No records found for ${this.source.model?.name || "Table"}`);
     }
 
     async first(): Promise<T> {
-        for await(const iterator of this.enumerate()) {
+        for await(const iterator of this.limit(1).enumerate()) {
             return iterator;
         }
         return null;

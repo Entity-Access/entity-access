@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestConfig } from "../../TestConfig.js";
-import { createContext } from "../../model/createContext.js";
+import { createContext, headPhoneCategory } from "../../model/createContext.js";
 
 export default async function(this: TestConfig) {
 
@@ -26,5 +26,12 @@ export default async function(this: TestConfig) {
 
     assert.equal(products.join(","), sorted.join(","));
 
+    // count all headphones...
+    let allHeadphones = await context.productCategories.where({ headPhoneCategory }, (p) => (x) => x.category.categoryID === p.headPhoneCategory).count();
 
+    assert.equal(6, allHeadphones);
+
+    allHeadphones = await context.products.where({ headPhoneCategory }, (p) => (x) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)).count();
+
+    assert.equal(6, allHeadphones);
 }

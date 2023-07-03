@@ -1,6 +1,7 @@
 import { IColumn } from "../decorators/IColumn.js";
 import EntityType from "../entity-query/EntityType.js";
 import type ChangeSet from "./ChangeSet.js";
+import { privateUpdateEntry } from "./ChangeSet.js";
 
 export interface IChanges {
     type: EntityType;
@@ -24,7 +25,7 @@ export default class ChangeEntry implements IChanges {
     original: any;
     status: "detached" | "attached" | "inserted" | "modified" | "deleted" | "unchanged";
 
-    modified: Map<string, IChange>;
+    modified: Map<IColumn, IChange>;
 
     changeSet: ChangeSet;
 
@@ -55,10 +56,10 @@ export default class ChangeEntry implements IChanges {
             const oldValue = original[iterator.columnName];
             const newValue = entity[iterator.name];
             if (entity[iterator.name] !== original[iterator.columnName]) {
-                let modifiedEntry = this.modified.get(iterator.name);
+                let modifiedEntry = this.modified.get(iterator);
                 if (!modifiedEntry) {
                     modifiedEntry = { column: iterator, oldValue, newValue };
-                    this.modified.set(iterator.name, modifiedEntry);
+                    this.modified.set(iterator, modifiedEntry);
                 }
             }
         }
@@ -88,6 +89,9 @@ export default class ChangeEntry implements IChanges {
         for (const iterator of this.pending) {
             iterator();
         }
+
+        // we will set the identity key
+        this.changeSet[privateUpdateEntry](this);
 
         this.pending.length = 0;
         this.original = { ... this.entity };
@@ -121,7 +125,7 @@ export default class ChangeEntry implements IChanges {
                 relatedChanges.pending.push(() => {
                     this.entity[fk.fkColumn.name] = related[rKey.name];
                 });
-                this.modified.set(iterator.name, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
                 continue;
             }
 

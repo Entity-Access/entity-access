@@ -220,7 +220,13 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
     }
 
     visitBinaryExpression(e: BinaryExpression): ITextOrFunctionArray {
-        return prepare `(${this.visit(e.left)} ${e.operator} ${this.visit(e.right)})`;
+        const left = e.left.type === "BinaryExpression"
+            ? prepare `(${this.visit(e.left)})`
+            : this.visit(e.left);
+        const right = e.right.type === "BinaryExpression"
+            ? prepare `(${this.visit(e.right)})`
+            : this.visit(e.right);
+        return prepare `${left} ${e.operator} ${right}`;
     }
 
     visitCoalesceExpression(e: CoalesceExpression): ITextOrFunctionArray {
@@ -271,7 +277,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
         const set = this.visitArray(e.set);
 
-        return prepare `UPDATE ${table} SET ${set.join(",")} WHERE ${where}`;
+        return prepare `UPDATE ${table} SET ${set} WHERE ${where}`;
     }
 
     visitDeleteStatement(e: DeleteStatement): ITextOrFunctionArray {

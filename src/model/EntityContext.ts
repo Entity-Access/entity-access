@@ -27,6 +27,13 @@ export default class EntityContext {
                         const r = await this.executeExpression(insert);
                         iterator.apply(r);
                         break;
+                    case "modified":
+                        if (iterator.modified.size > 0) {
+                            const update = this.driver.createUpdateExpression(iterator);
+                            await this.executeExpression(update);
+                        }
+                        iterator.apply({});
+                        break;
                 }
             }
         });

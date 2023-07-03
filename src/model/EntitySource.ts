@@ -50,6 +50,17 @@ export class EntitySource<T = any> {
         return item as T;
     }
 
+    public all(): IEntityQuery<T> {
+        const { model, context } = this;
+        const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+        return new EntityQuery<T>(SourceExpression.create({
+            alias: select.as.literal,
+            context,
+            model,
+            select
+        })) as IEntityQuery<T>;
+    }
+
     public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
         const { model, context } = this;
         const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());

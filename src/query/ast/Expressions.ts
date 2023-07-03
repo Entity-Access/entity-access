@@ -250,7 +250,7 @@ export class UpdateStatement extends Expression {
 
     readonly type = "UpdateStatement";
 
-    table: TableLiteral;
+    table: TableLiteral | QuotedLiteral;
 
     set: BinaryExpression[];
 

@@ -185,10 +185,11 @@ function addMaleClothes(context: ShoppingContext) {
     });
 }
 
+export const headPhoneCategory = "head-phones";
 function addHeadPhones(context: ShoppingContext, now: Date) {
     const category = context.categories.add({
         name: "Headphones",
-        categoryID: "head-phones"
+        categoryID: headPhoneCategory
     });
 
     const startDate = new Date();

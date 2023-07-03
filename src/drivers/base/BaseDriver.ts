@@ -1,7 +1,8 @@
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
-import { Constant, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
+import ChangeEntry from "../../model/ChangeEntry.js";
+import { BinaryExpression, Constant, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
@@ -93,6 +94,37 @@ export abstract class BaseDriver {
                 changes: "INSERTED",
                 fields: returnFields
             }),
+        });
+    }
+
+    createUpdateExpression(entry: ChangeEntry) {
+        const set = [] as BinaryExpression[];
+        for (const [key, change] of entry.modified) {
+            set.push(BinaryExpression.create({
+                left: QuotedLiteral.create({ literal: key.columnName}),
+                operator: "=",
+                right: Constant.create({ value: change.newValue ?? null })
+            }));
+        }
+        let where = null as Expression;
+        for (const iterator of entry.type.keys) {
+            const compare = BinaryExpression.create({
+                left: QuotedLiteral.create({ literal: iterator.columnName }),
+                operator: "=",
+                right: Constant.create({ value: entry.entity[iterator.name]})
+            });
+            where = !where
+                ? compare
+                : BinaryExpression.create({
+                    left: where,
+                    operator: "AND",
+                    right: compare
+                });
+        }
+        return UpdateStatement.create({
+            set,
+            table: entry.type.fullyQualifiedName,
+            where
         });
     }
 

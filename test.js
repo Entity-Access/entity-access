@@ -16,11 +16,12 @@ const port = Number(process.env.POSTGRES_PORT ?? 5432);
  */
 const results = [];
 
+let start = Date.now();
 
 export default class TestRunner {
 
     static get drivers() {
-        const database = "D" + Date.now();
+        const database = "D" + start++;
         return [
             new PostgreSqlDriver({
                 database,
