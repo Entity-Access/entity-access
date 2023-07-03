@@ -5,11 +5,11 @@ import * as ports from "tcp-port-used";
 const host = process.env.POSTGRES_HOST ?? "localhost";
 const port = Number(process.env.POSTGRES_PORT ?? 5432);
 
-if (process.argv.includes("test-db")) {
-    // wait for ports to open...
-    console.log("Waiting for port to be open");
-    await ports.waitUntilUsedOnHost(port, host, void 0, 15000);
-}
+// if (process.argv.includes("test-db")) {
+//     // wait for ports to open...
+//     console.log("Waiting for port to be open");
+//     await ports.waitUntilUsedOnHost(port, host, void 0, 15000);
+// }
 
 /**
  * @type Array<{ name: string, error: string }>
