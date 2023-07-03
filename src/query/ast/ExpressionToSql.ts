@@ -54,9 +54,11 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
         const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
+        const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
+        const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
         return prepare `SELECT
         ${fields}
-        FROM ${source}${as}${joins}${where}${orderBy}`;
+        FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
     }
 
     visitQuotedLiteral(e: QuotedLiteral): ITextOrFunctionArray {

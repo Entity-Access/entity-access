@@ -79,12 +79,18 @@ export default class EntityQuery<T = any>
         return new EntityQuery(source);
     }
 
-    skip<P>(parameters: P | number, fx?: (p: P) => (x: T) => number): any {
-        
+    limit(n: number): any {
+        const source = this.source.copy();
+        const { select } = source;
+        select.limit = n;
+        return new EntityQuery(source);
     }
 
-    take<P>(parameters: P | number, fx?: (p: P) => (x: T) => number): any {
-
+    offset(n: number): any {
+        const source = this.source.copy();
+        const { select } = source;
+        select.offset = n;
+        return new EntityQuery(source);
     }
 
 }

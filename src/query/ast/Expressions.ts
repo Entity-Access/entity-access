@@ -143,6 +143,10 @@ export class SelectStatement extends Expression {
 
     joins: JoinExpression[];
 
+    limit: number;
+
+    offset: number;
+
 }
 
 export class JoinExpression extends Expression {
