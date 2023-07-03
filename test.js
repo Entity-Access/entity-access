@@ -2,7 +2,7 @@ import { readdir } from "fs/promises";
 import PostgreSqlDriver from "./dist/drivers/postgres/PostgreSqlDriver.js";
 import * as ports from "tcp-port-used";
 
-if (/\-\-db/.test(process.argv0)) {
+if (process.argv.includes("test-db")) {
     // wait for ports to open...
     console.log("Waiting for port to be open");
     await ports.waitUntilUsed(5432, void 0, 15000);
