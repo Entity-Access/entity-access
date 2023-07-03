@@ -22,4 +22,6 @@ jobs:
       - run: npm install -D typescript
       - run: tsc
       - run: npm run test-db
-      - run: docker stop postgres-tester-1122
+        env:
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
