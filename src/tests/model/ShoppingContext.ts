@@ -3,25 +3,19 @@ import Column from "../../decorators/Column.js";
 import ForeignKey from "../../decorators/ForeignKey.js";
 import Table from "../../decorators/Table.js";
 import PostgreSqlDriver from "../../drivers/postgres/PostgreSqlDriver.js";
+import { BaseDriver } from "../../drivers/base/BaseDriver.js";
 
 export class ShoppingContext extends EntityContext {
 
     public products = this.model.register(Product);
+
+    public productPrices = this.model.register(ProductPrice);
 
     public orders = this.model.register(Order);
 
     public orderItems = this.model.register(OrderItem);
 
     public users = this.model.register(User);
-
-    constructor(name?) {
-        super(new PostgreSqlDriver({
-            host: "127.0.0.1",
-            database: name ?? "shopping",
-            password: "abcd123",
-            user: "postgres"
-        }));
-    }
 
 }
 
@@ -55,6 +49,8 @@ export class Product {
 
     public orderItems: OrderItem[];
 
+    public prices: ProductPrice[];
+
     @ForeignKey({
         key: (product) => product.ownerID,
         related: User,
@@ -62,6 +58,35 @@ export class Product {
     })
     public owner: User;
 
+}
+
+@Table("ProductPrices")
+export class ProductPrice {
+
+    @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
+    public priceID: number;
+
+    @Column()
+    public active: boolean;
+
+    @Column()
+    public startDate: Date;
+
+    @Column({ nullable: true})
+    public endDate?: Date;
+
+    public amount: number;
+
+    public productID: number;
+
+    @ForeignKey({
+        key: (productPrice) => productPrice.productID,
+        related: Product,
+        relatedProperty: (product) => product.prices
+    })
+    public product: Product;
+
+    public orderItems: OrderItem[];
 }
 
 @Table("Orders")
@@ -100,6 +125,9 @@ export class OrderItem {
     public productID: number;
 
     @Column()
+    public priceID: number;
+
+    @Column()
     public amount: number;
 
     @ForeignKey({
@@ -115,5 +143,13 @@ export class OrderItem {
         relatedProperty:(product) => product.orderItems
     })
     public product: Product;
+
+
+    @ForeignKey({
+        key: (orderItem) => orderItem.priceID,
+        related: ProductPrice,
+        relatedProperty: (productPrice) => productPrice.orderItems
+    })
+    public productPrice: ProductPrice;
 
 }

@@ -3,9 +3,9 @@ import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 import { Query } from "../../../query/Query.js";
 import { TestConfig } from "../../TestConfig.js";
 
-export default async function () {
+export default async function (this: TestConfig) {
 
-    if(!TestConfig.db) {
+    if(!this.db) {
         return;
     }
 

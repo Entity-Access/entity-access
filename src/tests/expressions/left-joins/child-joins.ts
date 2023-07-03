@@ -1,7 +1,8 @@
 import assert from "assert";
 import QueryCompiler from "../../../compiler/QueryCompiler.js";
-import { ShoppingContext } from "../../model1/ShoppingContext.js";
+import { ShoppingContext } from "../../model/ShoppingContext.js";
 import { assertSqlMatch, trimInternal } from "../trimInternal.js";
+import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 
 const sql1 = `SELECT
     "P1"."productID",
@@ -52,7 +53,7 @@ WHERE ("U0"."dateCreated" > $1)`;
 
 export default function() {
 
-    const context = new ShoppingContext();
+    const context = new ShoppingContext(new PostgreSqlDriver({}));
     let query = context.products.where({ productID: 1 }, (p) => (x) => x.orderItems.some((o) => o.productID === p.productID));
 
     let r = query.toQuery();

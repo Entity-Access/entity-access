@@ -1,7 +1,6 @@
-export class TestConfig {
-    static db = false;
-}
+import { BaseDriver } from "../drivers/base/BaseDriver.js";
 
-export default function() {
-    
+export class TestConfig {
+    db:boolean;
+    driver: BaseDriver;
 }

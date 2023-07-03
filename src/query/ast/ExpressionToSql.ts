@@ -257,7 +257,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                 return prepare `INSERT INTO ${this.visit(e.table)} ${returnValues}`;
             }
 
-            return prepare `INSERT INTO ${this.visit(e.table)} (${this.visitArray(e.values.fields)}) VALUES ${rows.join(",")} ${returnValues}`;
+            return prepare `INSERT INTO ${this.visit(e.table)} (${this.visitArray(e.values.fields)}) VALUES ${rows} ${returnValues}`;
         }
         return prepare `INSERT INTO ${this.visit(e.table)} ${this.visit(e.values)} ${returnValues}`;
 
