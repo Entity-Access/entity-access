@@ -39,8 +39,8 @@ export class SourceExpression {
     copy() {
         const r = { ... this } as SourceExpression;
         Object.setPrototypeOf(r, Object.getPrototypeOf(this));
-        r.map = this.map;
-        r.paramMap = this.paramMap;
+        r.map = new Map(this.map.entries());
+        r.paramMap = new Map(this.paramMap.entries());
         r.select = Expression.clone(this.select);
         return r;
     }
