@@ -5,16 +5,19 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: abcd123
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v3.2.0
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/        
-      - uses: addnab/docker-run-action@v3
-        with:
-          image: postgres:latest
-          options: --env POSTGRES_PASSWORD=abcd123 --expose 5432 --rm --name postgres-tester-1122
       - run: npm install
       - run: npm install -D typescript
       - run: tsc
