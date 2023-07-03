@@ -10,7 +10,7 @@ export default async function(this: TestConfig) {
 
     const context = await createContext(this.driver);
 
-    const headphone = await context.products.where({ name: "Jabber HeadPhones" }, (p) => (x) => x.name === p.name).first();
+    const headphone = await context.products.where({ name: "Jabber Head Phones" }, (p) => (x) => x.name === p.name).first();
 
     assert.notEqual(null, headphone);
 

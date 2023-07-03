@@ -90,7 +90,7 @@ export default class ChangeEntry implements IChanges {
         }
 
         this.pending.length = 0;
-
+        this.original = { ... this.entity };
         this.status = "unchanged";
         this.modified.clear();
     }
