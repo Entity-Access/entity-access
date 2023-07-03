@@ -11,6 +11,7 @@ export default async function (this: TestConfig) {
 
     const connection = this.driver;
 
+    await connection.ensureDatabase();
     // create table...
     await connection.executeNonQuery(`SELECT 1;`);
 
