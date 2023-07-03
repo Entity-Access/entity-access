@@ -8,7 +8,7 @@ const port = Number(process.env.POSTGRES_PORT ?? 5432);
 if (process.argv.includes("test-db")) {
     // wait for ports to open...
     console.log("Waiting for port to be open");
-    await ports.waitUntilUsed(5432, void 0, 15000);
+    await ports.waitUntilUsedOnHost(port, host, void 0, 15000);
 }
 
 /**
