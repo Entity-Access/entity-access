@@ -13,12 +13,26 @@ export interface IBaseQuery<T> {
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
+
+    skip(n: number): IOrderedEntityQuery<T>;
+    skip<P>(parameters: P, fx: (p: P) => (x: T) => number): IOrderedEntityQuery<T>;
+
+    take(n: number): IOrderedEntityQuery<T>;
+    take<P>(parameters: P, fx: (p: P) => (x: T) => number): IOrderedEntityQuery<T>;
+
     where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): IOrderedEntityQuery<T>;
     thenBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
     thenByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
 }
 
 export interface IEntityQuery<T> extends IBaseQuery<T> {
+
+    skip(n: number): IEntityQuery<T>;
+    skip<P>(parameters: P, fx: (p: P) => (x: T) => number): IEntityQuery<T>;
+
+    take(n: number): IEntityQuery<T>;
+    take<P>(parameters: P, fx: (p: P) => (x: T) => number): IEntityQuery<T>;
+
     where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): IEntityQuery<T>;
     orderBy<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
     orderByDescending<P, TR>(parameters: P, fx: ILambdaExpression<P, T, TR>);
