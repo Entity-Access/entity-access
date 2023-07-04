@@ -38,7 +38,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             if (iterator.nullable !== true) {
                 query += ` WHERE (${columnName} is not null)`;
             }
-            await driver.executeNonQuery(query);
+            await driver.executeQuery(query);
         }
     }
 
@@ -64,7 +64,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             if (typeof iterator.default === "string") {
                 def += " DEFAULT " + iterator.default;
             }
-            await driver.executeNonQuery(def + ";");
+            await driver.executeQuery(def + ";");
         }
 
     }
@@ -92,7 +92,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             fields.push(def);
         }
 
-        await driver.executeNonQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
+        await driver.executeQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
             CREATE TABLE ${name} (${fields.join(",")});
         END`);
 

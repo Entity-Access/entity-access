@@ -103,12 +103,13 @@ export default class PostgreSqlDriver extends BaseDriver {
         return new DbReader(cursor, this.transaction ? void 0 : connection);
     }
 
-    public async executeNonQuery(command: IQuery, signal?: AbortSignal) {
+    public async executeQuery(command: IQuery, signal?: AbortSignal) {
         const connection = await this.getConnection(signal);
         // we need to change parameter styles
         try {
             const q = toQuery(command);
-            await connection.query(q.text, q.values);
+            const result = await connection.query(q.text, q.values);
+            return result;
         } finally {
             if (!this.transaction) {
                 await connection.end();

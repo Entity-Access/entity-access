@@ -41,6 +41,11 @@ export interface IQueryTask {
     postExecution?: ((r: any) => Promise<any>);
 }
 
+export interface IQueryResult {
+    rows?: any[];
+    updated?: number;
+}
+
 export abstract class BaseDriver {
 
     abstract get compiler(): QueryCompiler;
@@ -49,7 +54,7 @@ export abstract class BaseDriver {
 
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
-    public abstract executeNonQuery(command: IQuery, signal?: AbortSignal): Promise<any>;
+    public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
 
     public abstract ensureDatabase(): Promise<any>;
 

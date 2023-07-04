@@ -37,7 +37,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             if (iterator.nullable !== true) {
                 query += ` WHERE (${columnName} is not null)`;
             }
-            await driver.executeNonQuery(query);
+            await driver.executeQuery(query);
         }
     }
 
@@ -61,7 +61,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             if (typeof iterator.default === "string") {
                 def += " DEFAULT " + iterator.default;
             }
-            await driver.executeNonQuery(def + ";");
+            await driver.executeQuery(def + ";");
         }
 
     }
@@ -89,7 +89,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             fields.push(def);
         }
 
-        await driver.executeNonQuery(`CREATE TABLE IF NOT EXISTS ${name} (${fields.join(",")})`);
+        await driver.executeQuery(`CREATE TABLE IF NOT EXISTS ${name} (${fields.join(",")})`);
 
     }
 

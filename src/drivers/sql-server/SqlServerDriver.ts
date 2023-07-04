@@ -44,31 +44,35 @@ export default class SqlServerDriver extends BaseDriver {
                 rq = rq.input("p" + id++, iterator);
             }
         }
+
         rq.stream = true;
 
-        const pending = [];
-        let ended = false;
-        let error = null;
-
-        let processPendingRows = () => void 0;
+        const state = {
+            pending: [],
+            ended: false,
+            error: null,
+            count: 0,
+            processPendingRows: () => void 0
+        };
 
         rq.on("row", (row) => {
-            pending.push(row);
-            processPendingRows();
+            state.pending.push(row);
+            state.count++;
+            state.processPendingRows();
         });
 
         rq.on("error", (e) => {
-            error = new Error(`Failed executing ${(command as any).text}\r\n${e.stack ?? e}`);
-            processPendingRows();
+            state.error = new Error(`Failed executing ${(command as any).text}\r\n${e.stack ?? e}`);
+            state.processPendingRows();
         });
 
         rq.on("done", () => {
-            ended = true;
-            processPendingRows();
+            state.ended = true;
+            state.processPendingRows();
         });
 
-        rq.query(command.text);
-
+        console.log(`Executing ${command.text}`);
+        void rq.query((command as any).text);
 
         return {
             async *next(min, s = signal) {
@@ -78,44 +82,32 @@ export default class SqlServerDriver extends BaseDriver {
                 });
 
                 do {
-                    const { rows, done } = await new Promise<{ rows?: any[], done?: boolean}>((resolve, reject) => {
+                    const r = await new Promise<{ rows?: any[], done?: boolean}>((resolve, reject) => {
 
-                        if (pending.length) {
-                            resolve({ rows: [].concat(pending)});
-                            pending.length = 0;
-                            return;
-                        }
-
-                        if (error) {
-                            reject(error);
-                            return;
-                        }
-
-                        if (ended) {
-                            resolve({ done: true });
-                            return;
-                        }
-
-                        processPendingRows = () => {
-                            if(pending.length) {
-                                resolve({ rows: [].concat(pending)});
-                                pending.length = 0;
+                        state.processPendingRows = () => {
+                            if(state.pending.length) {
+                                const rows = [... state.pending];
+                                state.pending.length = 0;
+                                resolve({ rows });
                                 return;
                             }
-                            if(error) {
-                                reject(error);
+                            if(state.error) {
+                                reject(state.error);
                                 return;
                             }
-                            if (ended) {
+                            if (state.ended) {
                                 resolve({ done: true });
                                 return;
                             }
                         };
+
+                        state.processPendingRows();
+
                     });
-                    if (rows) {
-                        yield *rows;
+                    if (r.rows?.length) {
+                        yield *r.rows;
                     }
-                    if (done) {
+                    if (r.done) {
                         break;
                     }
                 }  while(true);
@@ -123,28 +115,26 @@ export default class SqlServerDriver extends BaseDriver {
             dispose() {
                 // node sql server library does not
                 // required to be closed
-                
                 return Promise.resolve();
             },
         };
     }
-    public async executeNonQuery(command: IQuery, signal?: AbortSignal): Promise<any> {
+    public async executeQuery(command: IQuery, signal?: AbortSignal): Promise<any> {
         let rq = await this.newRequest();
         command = toQuery(command);
 
         if (command) {
-            let id = 0;
+            let id = 1;
             for (const iterator of command.values) {
-                const p = `@p${++id}`;
-                command.text = command.text.replace(new RegExp("^\\$" + id + "$", "g"), p);
-                rq = rq.input(p, iterator);
+                command.text = command.text.replace(/\$/, "@p");
+                rq = rq.input(`p${id++}`, iterator);
             }
         }
 
         try {
             console.log(command.text);
             const r = await rq.query(command.text);
-            return r.rowsAffected;
+            return { rows: r.recordset ?? [r.output], updated: r.rowsAffected [0]};
         } catch (error) {
             error = `Failed executing ${command.text}\r\n${error.stack ?? error}`;
             console.error(error);
