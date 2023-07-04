@@ -57,7 +57,7 @@ export default class SqlServerDriver extends BaseDriver {
             processPendingRows();
         });
 
-        rq.on("end", () => {
+        rq.on("done", () => {
             ended = true;
             processPendingRows();
         });
@@ -71,6 +71,7 @@ export default class SqlServerDriver extends BaseDriver {
 
                         if (pending.length) {
                             resolve({ rows: [].concat(pending)});
+                            pending.length = 0;
                             return;
                         }
 
@@ -80,13 +81,14 @@ export default class SqlServerDriver extends BaseDriver {
                         }
 
                         if (ended) {
-                            resolve({});
+                            resolve({ done: true });
                             return;
                         }
 
                         processPendingRows = () => {
                             if(pending.length) {
                                 resolve({ rows: [].concat(pending)});
+                                pending.length = 0;
                                 return;
                             }
                             if(error) {
@@ -94,7 +96,7 @@ export default class SqlServerDriver extends BaseDriver {
                                 return;
                             }
                             if (ended) {
-                                resolve({});
+                                resolve({ done: true });
                                 return;
                             }
                         };
