@@ -4,7 +4,7 @@ import { ISqlMethodTransformer, IStringTransformer, ITextOrFunctionArray } from 
 import { Expression, PlaceholderExpression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
-import PostgreSqlMethodTransformer from "./postgres/SqlMethodTransformer.js";
+import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
 import EntityType from "../entity-query/EntityType.js";
 import { EntitySource } from "../model/EntitySource.js";
 import { IEntityQuery } from "../model/IFilterWithParameter.js";

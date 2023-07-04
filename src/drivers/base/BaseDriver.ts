@@ -47,8 +47,6 @@ export abstract class BaseDriver {
 
     constructor(public readonly connectionString: IDbConnectionString) {}
 
-    public abstract escape(name: string);
-
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
     public abstract executeNonQuery(command: IQuery, signal?: AbortSignal): Promise<any>;
