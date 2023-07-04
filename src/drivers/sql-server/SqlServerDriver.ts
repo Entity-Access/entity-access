@@ -62,7 +62,7 @@ export default class SqlServerDriver extends BaseDriver {
             processPendingRows();
         });
 
-        rq.execute(command.text);
+        rq.query(command.text);
 
         return {
             async *next(min, s = signal) {
