@@ -40,7 +40,7 @@ export default class EntityContext {
     }
 
     private async executeExpression(expression: Expression) {
-        const { text, values } = QueryCompiler.instance.compileExpression(expression);
+        const { text, values } = this.driver.compiler.compileExpression(expression);
         const reader = await this.driver.executeReader({ text, values });
         try {
             for await (const r of reader.next()) {

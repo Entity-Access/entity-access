@@ -27,10 +27,13 @@
         "bytea",
         "datname",
         "Millis",
+        "nvarchar",
         "PGDATABASE",
         "PGHOST",
         "PGPASSWORD",
         "PGPORT",
-        "PGUSER"
+        "PGUSER",
+        "sysdatabases",
+        "varbinary"
     ]
 }

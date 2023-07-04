@@ -22,11 +22,15 @@ export default abstract class SqlServerMigrations extends Migrations {
             case "BigInt":
                 return "bigint";
             case "AsciiChar":
-            case "Char":
                 if (!iterator.length) {
-                    return "text";
+                    return "varchar(max)";
                 }
                 return "varchar";
+            case "Char":
+                if (!iterator.length) {
+                    return "nvarchar(max)";
+                }
+                return "nvarchar";
             case "DateTime":
                 return "DateTime2";
             case "DateTimeOffset":
@@ -48,7 +52,7 @@ export default abstract class SqlServerMigrations extends Migrations {
             case "JSONB":
                 return "jsonb";
             case "UUID":
-                return "uniqueidentifier";
+                return "UniqueIdentifier";
         }
         const a: never = iterator.dataType;
         throw new Error("Not Defined");

@@ -54,7 +54,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         for (const iterator of nonKeyColumns) {
             const columnName = SqlServerLiteral.quotedLiteral(iterator.columnName);
-            let def = `IF COL_LENGTH(${name}, ${columnName}) IS NULL ALTER TABLE ${name} ADD ${columnName} `;
+            let def = `IF COL_LENGTH(${ SqlServerLiteral.escapeLiteral(name)}, ${ SqlServerLiteral.escapeLiteral(columnName)}) IS NULL ALTER TABLE ${name} ADD ${columnName} `;
             def += this.getColumnDefinition(iterator);
             if (iterator.nullable === true) {
                 def += " NULL ";
@@ -84,7 +84,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         for (const iterator of keys) {
             let def = SqlServerLiteral.quotedLiteral(iterator.columnName) + " ";
             if (iterator.autoGenerate) {
-                def += "IDENTITY(1,1)";
+                def += this.getColumnDefinition(iterator) + " IDENTITY(1,1)";
             } else {
                 def += this.getColumnDefinition(iterator);
             }

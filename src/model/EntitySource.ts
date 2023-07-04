@@ -7,7 +7,7 @@ import TimedCache from "../common/cache/TimedCache.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
 import { SourceExpression } from "./SourceExpression.js";
 
-const modelCache = TimedCache.for<SelectStatement>();
+const modelCache = new TimedCache<any, SelectStatement>();
 
 export class EntitySource<T = any> {
 

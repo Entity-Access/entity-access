@@ -6,6 +6,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: $EntityAccess2023
+          MSSQL_PID: Express
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd SQL Server is now ready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
       postgres:
         # Docker Hub image
         image: postgres

@@ -40,14 +40,14 @@ export default class QueryCompiler {
 
     public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: SourceExpression) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new ExpressionToSql(source, param, target, this);
+        const exp = new this.expressionToSql(source, param, target, this);
         const query = exp.visit(body);
         return this.invoke(query, parameters);
     }
 
     public compileToExpression(source: SourceExpression, p: any, fx: (p1) => (x) => any) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new ExpressionToSql(source, param, target, this);
+        const exp = new this.expressionToSql(source, param, target, this);
         const visited = exp.visit(body);
         return PlaceholderExpression.create({
             expression: () => visited.map((x) => typeof x === "function" ? () => x(p) : x)
@@ -56,12 +56,12 @@ export default class QueryCompiler {
 
     public compile( source: SourceExpression , fx: (p) => (x) => any) {
         const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new ExpressionToSql(source, param, target, this);
+        const exp = new this.expressionToSql(source, param, target, this);
         return exp.visit(body);
     }
 
     public compileExpression(exp: Expression) {
-        const toSql = new ExpressionToSql(null, void 0, void 0, this);
+        const toSql = new this.expressionToSql(null, void 0, void 0, this);
         const query = toSql.visit(exp);
         return this.invoke(query);
     }

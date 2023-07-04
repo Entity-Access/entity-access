@@ -7,13 +7,20 @@ import SqlServerSqlMethodTransformer from "../../compiler/sql-server/SqlServerSq
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
 import { SqlServerLiteral } from "./SqlServerLiteral.js";
 import usingAsync from "../../common/usingAsync.js";
+import TimedCache from "../../common/cache/TimedCache.js";
 
 export type ISqlServerConnectionString = sql.config;
 
+const namedPool = new TimedCache<string, sql.ConnectionPool>();
+
 export default class SqlServerDriver extends BaseDriver {
+
     get compiler(): QueryCompiler {
-        return new SqlServerQueryCompiler();
+        return this.sqlQueryCompiler;
     }
+
+    private sqlQueryCompiler = new SqlServerQueryCompiler();
+    private transaction: sql.Transaction;
 
     constructor(private readonly config: ISqlServerConnectionString) {
         super({
@@ -27,16 +34,14 @@ export default class SqlServerDriver extends BaseDriver {
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
-        const client = await this.getConnection();
         command = toQuery(command);
+        let rq = await this.newRequest();
 
-        let rq = client.request();
         if (command) {
-            let id = 0;
+            let id = 1;
             for (const iterator of command.values) {
-                const p = `@p${++id}`;
-                command.text = command.text.replace(new RegExp("^\\$" + id + "$", "g"), p);
-                rq = rq.input(p, iterator);
+                command.text = command.text.replace(/\$/, "@p");
+                rq = rq.input("p" + id++, iterator);
             }
         }
         rq.stream = true;
@@ -53,7 +58,7 @@ export default class SqlServerDriver extends BaseDriver {
         });
 
         rq.on("error", (e) => {
-            error = e;
+            error = new Error(`Failed executing ${(command as any).text}\r\n${e.stack ?? e}`);
             processPendingRows();
         });
 
@@ -64,8 +69,14 @@ export default class SqlServerDriver extends BaseDriver {
 
         rq.query(command.text);
 
+
         return {
             async *next(min, s = signal) {
+
+                s?.addEventListener("abort", () => {
+                    rq.cancel();
+                });
+
                 do {
                     const { rows, done } = await new Promise<{ rows?: any[], done?: boolean}>((resolve, reject) => {
 
@@ -110,55 +121,57 @@ export default class SqlServerDriver extends BaseDriver {
                 }  while(true);
             },
             dispose() {
-                return client.close();
+                // node sql server library does not
+                // required to be closed
+                
+                return Promise.resolve();
             },
         };
     }
     public async executeNonQuery(command: IQuery, signal?: AbortSignal): Promise<any> {
-        const client = await this.getConnection();
-        return usingAsync(client, async () => {
+        let rq = await this.newRequest();
+        command = toQuery(command);
 
-            command = toQuery(command);
-
-            let rq = client.request();
-            if (command) {
-                let id = 0;
-                for (const iterator of command.values) {
-                    const p = `@p${++id}`;
-                    command.text = command.text.replace(new RegExp("^\\$" + id + "$", "g"), p);
-                    rq = rq.input(p, iterator);
-                }
+        if (command) {
+            let id = 0;
+            for (const iterator of command.values) {
+                const p = `@p${++id}`;
+                command.text = command.text.replace(new RegExp("^\\$" + id + "$", "g"), p);
+                rq = rq.input(p, iterator);
             }
+        }
 
-            try {
-                const r = await rq.query(command.text);
-                return r.rowsAffected;
-            } catch (error) {
-                throw new Error(`Failed executing ${command.text}\r\n${error.stack ?? error}`);
-            }
-        });
+        try {
+            console.log(command.text);
+            const r = await rq.query(command.text);
+            return r.rowsAffected;
+        } catch (error) {
+            error = `Failed executing ${command.text}\r\n${error.stack ?? error}`;
+            console.error(error);
+            throw new Error(error);
+        }
     }
+
     public ensureDatabase() {
         const create = async () => {
             const defaultDb = "master";
+
             const db = this.config.database;
             this.config.database = defaultDb;
-            const connection = await this.getConnection();
+
+            const connection = await this.newRequest();
             // @ts-expect-error readonly
             this.config = { ... this.config };
             this.config.database = db;
 
-            return usingAsync(connection, async () => {
-                const createSql = `IF NOT EXISTS (SELECT name FROM master.dbo.sysdatabases WHERE name = ${SqlServerLiteral.escapeLiteral(db)}) BEGIN
-                    CREATE DATABASE ${db};
-                END`;
-
-                try {
-                    await connection.query(createSql);
-                } catch(error) {
-                    throw new Error(`Failed executing: ${createSql}\r\n${error.stack ?? error}`);
-                }
-            });
+            const createSql = `IF NOT EXISTS (SELECT name FROM master.dbo.sysdatabases WHERE name = ${SqlServerLiteral.escapeLiteral(db)}) BEGIN
+                CREATE DATABASE ${db};
+            END`;
+            try {
+                await connection.query(createSql);
+            } catch(error) {
+                throw new Error(`Failed executing: ${createSql}\r\n${error.stack ?? error}`);
+            }
         };
         const value = create();
         Object.defineProperty(this, "ensureDatabase", {
@@ -167,17 +180,54 @@ export default class SqlServerDriver extends BaseDriver {
         return value;
     }
 
-    public runInTransaction<T = any>(fx?: () => Promise<T>): Promise<T> {
-        throw new Error("Method not implemented.");
+    public async runInTransaction<T = any>(fx?: () => Promise<T>): Promise<T> {
+        this.transaction = new sql.Transaction(await this.newConnection());
+        let rolledBack = false;
+        try {
+            this.transaction.on("rollback", (aborted) => rolledBack = aborted);
+            await this.transaction.begin();
+            const r = await fx();
+            await this.transaction.commit();
+            return r;
+        } catch (error) {
+            if (!rolledBack) {
+                try {
+                    await this.transaction.rollback();
+                } catch {
+                    // rolledBack isn't true sometimes...
+                }
+            }
+            throw new Error(error.stack ?? error);
+        } finally {
+            this.transaction = void 0;
+        }
     }
 
     public automaticMigrations(): Migrations {
         return new SqlServerAutomaticMigrations();
     }
 
-    protected async getConnection() {
-        const client = await sql.connect(this.config);
-        return client;
+    protected async newRequest() {
+
+        if (this.transaction) {
+            return this.transaction.request();
+        }
+        return (await this.newConnection()).request();
+    }
+
+    private newConnection() {
+        const key = this.config.server + "//" + this.config.database + "/" + this.config.user;
+        return namedPool.getOrCreateAsync(this.config.server + "://" + this.config.database,
+            () => {
+                const pool = new sql.ConnectionPool(this.config);
+                const oldClose = pool.close;
+                pool.close = ((c) => {
+                    namedPool.delete(key);
+                    return oldClose.call(pool, c);
+                }) as any;
+                return pool.connect();
+            }, 15000, (x) => x.close());
+
     }
 
 }
