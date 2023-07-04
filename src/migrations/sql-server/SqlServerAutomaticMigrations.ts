@@ -54,10 +54,12 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         for (const iterator of nonKeyColumns) {
             const columnName = SqlServerLiteral.quotedLiteral(iterator.columnName);
-            let def = `IF COL_LENGTH(${name}, ${columnName}) IS NULL ALTER TABLE ${name} ADD COLUMN ${columnName} `;
+            let def = `IF COL_LENGTH(${name}, ${columnName}) IS NULL ALTER TABLE ${name} ADD ${columnName} `;
             def += this.getColumnDefinition(iterator);
             if (iterator.nullable === true) {
                 def += " NULL ";
+            } else {
+                def += " NOT NULL ";
             }
             if (typeof iterator.default === "string") {
                 def += " DEFAULT " + iterator.default;
@@ -86,11 +88,13 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             } else {
                 def += this.getColumnDefinition(iterator);
             }
-            def += " primary key\r\n\t";
+            def += " NOT NULL primary key\r\n\t";
             fields.push(def);
         }
 
-        await driver.executeNonQuery(`IF OBJECT_ID(${name}) IS NULL CREATE TABLE ${name} (${fields.join(",")})`);
+        await driver.executeNonQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
+            CREATE TABLE ${name} (${fields.join(",")});
+        END`);
 
     }
 

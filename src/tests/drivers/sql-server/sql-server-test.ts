@@ -4,6 +4,6 @@ import { SqlServerLiteral } from "../../../drivers/sql-server/SqlServerLiteral.j
 
 export default function () {
 
-    assert.equal("'A\\'B'", SqlServerLiteral.escapeLiteral("A'B") );
+    assert.equal("N'A\\'B'", SqlServerLiteral.escapeLiteral("A'B") );
 
 }
