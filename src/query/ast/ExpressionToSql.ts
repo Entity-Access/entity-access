@@ -136,6 +136,20 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                                 })
                             });
 
+                            const entitySource = this.source.context.model.register(relatedSource.model.typeClass);
+                            // get filter ..
+                            const includeFilter = entitySource.filters?.include?.(targetType.typeClass);
+
+                            let bodyExpression = body.body;
+
+                            if(includeFilter) {
+                                bodyExpression = BinaryExpression.create({
+                                    left: bodyExpression,
+                                    operator: "=",
+                                    right: PlaceholderExpression.create({ expression: () => includeFilter })
+                                });
+                            }
+
                             const exists = ExistsExpression.create({
                                 target: SelectStatement.create({
                                     source: relatedModel.fullyQualifiedName,
@@ -151,7 +165,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
                                             right: relatedKey,
                                         }),
                                         operator: "AND",
-                                        right:body.body
+                                        right: bodyExpression
                                     })
                                 })
                             });

@@ -1,11 +1,12 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
-import { BinaryExpression, Expression, ExpressionAs, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { BinaryExpression, Expression, ExpressionAs, PlaceholderExpression, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import EntityQuery from "./EntityQuery.js";
 import TimedCache from "../common/cache/TimedCache.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
 import { SourceExpression } from "./SourceExpression.js";
+import { IClassOf } from "../decorators/IClassOf.js";
 
 const modelCache = new TimedCache<any, SelectStatement>();
 
@@ -16,7 +17,7 @@ export class EntitySource<T = any> {
         read?: () => IFilterExpression;
         modify?: () => IFilterExpression;
         delete?: () => IFilterExpression;
-        include?: () => IFilterExpression;
+        include?: (parent: IClassOf<any>) => IFilterExpression;
     } = {};
 
 
@@ -80,7 +81,14 @@ export class EntitySource<T = any> {
 
     public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
         const { model, context } = this;
-        const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+        let select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+
+        // assign default read filter
+        const filter = this.filters.read?.();
+        if ( filter) {
+            select = { ... select, where: PlaceholderExpression.create({ expression: () => filter}) };
+        }
+
         return new EntityQuery<T>(SourceExpression.create({
             alias: select.as.literal,
             context,
