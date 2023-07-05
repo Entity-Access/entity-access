@@ -43,4 +43,14 @@ export default function () {
     assert.equal(`starts_with("x"."firstName", $1)`, r.text);
     assert.equal("Akash", r.values[0]);
 
+    const code = "1235";
+    const key = 13434;
+    r = compiler.execute({name, code, key},
+        (p) => (x: KeyCode) =>
+            x.code === Sql.cast.asNumber(p.code) && x.key === Sql.cast.asText(p.key) );
+
+    assert.equal(`("x"."code" = ($1 ::double)) AND ("x"."key" = ($2 ::text))`, r.text);
+
 }
+
+type KeyCode = { name: string, code: number, key: string };

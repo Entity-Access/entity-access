@@ -2,6 +2,16 @@ export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;
 
+    cast: {
+        asNumber(a: any): number;
+        asInteger(a: any): number;
+        asBigInt(a: any): number;
+        asText(a: any): string;
+        asDate(a: any): Date;
+        asDateTime(a: any): Date;
+        asDecimal(a: any): number;
+    }
+
     text: {
         concat(... fragments: string[]): string;
         like(text: string, test: string): boolean;

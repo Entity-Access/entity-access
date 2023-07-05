@@ -6,6 +6,29 @@ export const SqlServerSqlHelper: ISqlHelpers = {
     in(a, array) {
         return prepareAny `${a} IN ${array}`;
     },
+    cast: {
+        asBigInt(a) {
+            return prepareAny `CAST(${a} as bigint)`;
+        },
+        asDate(a) {
+            return prepareAny `CAST(${a} as date)`;
+        },
+        asDateTime(a) {
+            return prepareAny `CAST(${a} as datetime2)`;
+        },
+        asInteger(a) {
+            return prepareAny `CAST(${a} as int)`;
+        },
+        asNumber(a) {
+            return prepareAny `CAST(${a} as double)`;
+        },
+        asText(a) {
+            return prepareAny `CAST(${a} as varchar(max))`;
+        },
+        asDecimal(a) {
+            return prepareAny `CAST(${a} as decimal(18,2))`;
+        },
+    },
     date: {
         addDays(d, n) {
             return prepareAny `DateAdd(DAY, ${d}, ${n})`;

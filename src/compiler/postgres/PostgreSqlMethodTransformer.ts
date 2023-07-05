@@ -6,6 +6,29 @@ export const PostgreSqlHelper: ISqlHelpers = {
     in(a, array) {
         return prepareAny `${a} IN ${array}`;
     },
+    cast: {
+        asBigInt(a) {
+            return prepareAny `(${a} ::bigint)`;
+        },
+        asDate(a) {
+            return prepareAny `(${a} ::date)`;
+        },
+        asDateTime(a) {
+            return prepareAny `(${a} ::timestamp)`;
+        },
+        asInteger(a) {
+            return prepareAny `(${a} ::int)`;
+        },
+        asNumber(a) {
+            return prepareAny `(${a} ::double)`;
+        },
+        asText(a) {
+            return prepareAny `(${a} ::text)`;
+        },
+        asDecimal(a) {
+            return prepareAny `(${a} ::decimal(18,2))`;
+        },
+    },
     date: {
         addDays(d, n) {
             return prepareAny `(${d} + (${n} * interval '1 day'))`;

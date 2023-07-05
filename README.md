@@ -52,11 +52,34 @@ Simple Query
 ```typescript
 const db = new ShoppingContext();
 
-/// first parameter is set of parameters to pass to the query
-/// the reason it is first, is to help in intellisense.
-
-/// second parameter is an arrow function which returns a filter
-const q = db.orders.where({ userID }, (params) => (order) => order.userID === p.userID);
+// find customer from orderID
+const q = db.customers
+    // first we will send parameters
+    .where({ orderID },
+        // second we will write an arrow
+        // accepting parameters
+        (p) =>
+            // this is the arrow which will
+            // be converted to SQL
+            // you can write very limited set of
+            // expressions in this arrow function
+            (x) => x.orders.some(
+                // This will results in exists or join
+                // based on relations declared
+                (order) => order.orderID === p.orderID );
+const customer = await q.first();
+```
+Above expression will result in following filter expression
+```sql
+    SELECT c.firstName, c.lastName, c.customerID
+    FROM customers as c
+    EXISTS (
+        SELECT 1
+        FROM Orders as o1
+        WHERE x.customerID = o1.orderID
+            AND o1.orderID = $1
+    )
+    LIMIT 1;
 ```
 
 Query with Like operator
@@ -124,40 +147,30 @@ class OrderItem {
 
 ### Compare operators
 
+Only handful of operators are supported as of now.
+1. Equality Both `==`, `===`, will result in simple `=` operator in SQL. There is no type check performed and no conversion is performed to speed up
+execution. However, typescript will give you warning and compilation for mismatch of operands and you can convert them as needed. But for conversion
+use only `Sql.*` functions.
+2. Above also applies for operators `!=` and `!==`, they will result in `<>` in SQL.
+3. `+`, `-`, `*`, `/` operators will be sent to SQL as it is.
+4. For precedence, we recommend using brackets in the arrow functions as there might be differences in underlying database engine's preferences and you may not get correct results.
+5. Template Literals, will be sent to SQL as concat, however, please use
+conversion of non string to string type if underlying provider does not support direct conversion.
+6. Conversion methods, `Sql.cast.as*` methods will provide conversion from any type to desired type. `Sql.cast.asText` will convert to number to text.
+
 #### Equality
 Both strict and non strict equality will result in
 simple equality comparison in SQL. Database provider
 may or may not convert them correctly, so we recommend
 using helper functions to convert before comparison.
 ```typescript
-    // find all customer from orderID
     const q = db.customers
-        // first we will send parameters
         .where({ orderID },
-            // second we will write an arrow
-            // accepting parameters
             (p) =>
-                // this is the arrow which will
-                // be converted to SQL
-                // you can write very limited set of
-                // expressions in this arrow function
                 (x) => x.orders.some(
-                    // This will results in exists or join
-                    // based on what level of nested
-                    // foreign key references are available
                     (order) => order.orderID === p.orderID )
         )
 
-```
-
-Above expression will result in following filter expression
-```sql
-    EXISTS (
-        SELECT 1
-        FROM Orders as o1
-        WHERE x.customerID = o1.orderID
-            AND o1.orderID = $1
-    )
 ```
 
 #### Like
