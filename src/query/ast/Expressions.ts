@@ -260,7 +260,7 @@ export class UpdateStatement extends Expression {
 
 export class DeleteStatement extends Expression {
     readonly type = "DeleteStatement";
-    table: TableLiteral;
+    table: TableLiteral | QuotedLiteral;
     where: Expression;
 }
 

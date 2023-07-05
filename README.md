@@ -38,6 +38,22 @@ db.orders.add({
 
 // save all in single transaction
 await db.saveChanges();
+
+
+const existingOrderItem1: OrderItem;
+const existingOrderItem2: OrderItem;
+
+existingOrderItem2.status = "cancelled";
+existingOrderItem1.status = "cancelled";
+// executes update statements in single transaction
+await db.saveChanges();
+
+
+db.orderItems.delete(existingOrderItem1);
+db.orderItems.delete(existingOrderItem2);
+// executes delete statements in single transaction
+await db.saveChanges();
+
 ```
 
 ### Arrow function based query features

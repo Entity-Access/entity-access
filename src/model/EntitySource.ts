@@ -47,7 +47,24 @@ export class EntitySource<T = any> {
             throw new Error("Entity is already attached to the context");
         }
         entry.status = "inserted";
-        return item as T;
+        return entry.entity;
+    }
+
+    /**
+     * Entity can only be deleted if all primary keys are present
+     * @param item entity to delete
+     */
+    public delete(item: Partial<T>) {
+        const p = Object.getPrototypeOf(item).constructor;
+        if (!p || p === Object) {
+            Object.setPrototypeOf(item, this.model.typeClass.prototype);
+        }
+        const entry = this.context.changeSet.getEntry(item);
+        if (entry.status !== "detached" && entry.status !== "unchanged") {
+            throw new Error("Entity is already attached to the context");
+        }
+        entry.status = "deleted";
+        return entry.entity;
     }
 
     public all(): IEntityQuery<T> {

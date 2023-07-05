@@ -42,6 +42,10 @@ export default class ChangeEntry implements IChanges {
 
     public detect() {
 
+        if (this.status === "deleted") {
+            return;
+        }
+
         const { type: { columns }, entity, original } = this;
 
         if (original === void 0) {
@@ -76,6 +80,15 @@ export default class ChangeEntry implements IChanges {
         // apply values to main entity
         // set status to unchanged
 
+        if(this.status === "deleted") {
+            // remove...
+            for (const iterator of this.pending) {
+                iterator();
+            }
+            this.changeSet[privateUpdateEntry](this);
+            return;
+        }
+
         // we will only apply the columns defined
         if (dbValues !== void 0) {
             for (const iterator of this.type.columns) {
@@ -95,6 +108,7 @@ export default class ChangeEntry implements IChanges {
 
         this.pending.length = 0;
         this.original = { ... this.entity };
+
         this.status = "unchanged";
         this.modified.clear();
     }
@@ -134,10 +148,12 @@ export default class ChangeEntry implements IChanges {
     }
 
     setupInverseProperties() {
+        const deleted = this.status === "deleted";
         for (const iterator of this.type.relations) {
             if (!iterator.isCollection) {
                 continue;
             }
+            const { relatedName } = iterator;
             const related = this.entity[iterator.name];
             if (related === void 0) {
                 continue;
@@ -148,7 +164,10 @@ export default class ChangeEntry implements IChanges {
                 }
                 continue;
             }
-            related[iterator.relatedName] = this.entity;
+            related[relatedName] = this.entity;
+            if (deleted) {
+                this.pending.push(() => delete related[relatedName]);
+            }
         }
     }
 }

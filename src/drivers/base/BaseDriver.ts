@@ -2,7 +2,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/ChangeEntry.js";
-import { BinaryExpression, Constant, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
@@ -47,7 +47,6 @@ export interface IQueryResult {
 }
 
 export abstract class BaseDriver {
-
     abstract get compiler(): QueryCompiler;
 
     constructor(public readonly connectionString: IDbConnectionString) {}
@@ -130,5 +129,31 @@ export abstract class BaseDriver {
             where
         });
     }
+
+    createDeleteExpression(type: EntityType, entity: any) {
+        let where: Expression;
+        for (const iterator of type.keys) {
+            const key = entity[iterator.name];
+            if (!key) {
+                return null;
+            }
+            const compare = BinaryExpression.create({
+                left: QuotedLiteral.create({ literal: iterator.columnName }),
+                operator: "=",
+                right: Constant.create({ value: key })
+            });
+            where = where
+                ? BinaryExpression.create({ left: where, operator: "AND", right: compare })
+                : compare;
+        }
+        if (!where) {
+            return null;
+        }
+        return DeleteStatement.create({
+            table: type.fullyQualifiedName,
+            where
+        });
+    }
+
 
 }

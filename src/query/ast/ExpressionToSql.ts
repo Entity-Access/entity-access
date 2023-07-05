@@ -283,7 +283,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
     visitDeleteStatement(e: DeleteStatement): ITextOrFunctionArray {
         const table = this.visit(e.table);
         const where = this.visit(e.where);
-        return prepare `DELETE ${table} WHERE ${where}`;
+        return prepare `DELETE FROM ${table} WHERE ${where}`;
     }
 
     visitJoinExpression(e: JoinExpression): ITextOrFunctionArray {

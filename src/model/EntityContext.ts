@@ -34,6 +34,13 @@ export default class EntityContext {
                         }
                         iterator.apply({});
                         break;
+                    case "deleted":
+                        const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
+                        if (deleteQuery) {
+                            await this.executeExpression(deleteQuery);
+                        }
+                        iterator.apply({});
+                        break;
                 }
             }
         });
@@ -42,7 +49,7 @@ export default class EntityContext {
     private async executeExpression(expression: Expression) {
         const { text, values } = this.driver.compiler.compileExpression(expression);
         const r = await this.driver.executeQuery({ text, values });
-        return r.rows[0];
+        return r.rows?.[0];
     }
 
 }

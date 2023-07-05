@@ -4,12 +4,6 @@ import ChangeEntry from "./ChangeEntry.js";
 import { IRecord } from "../drivers/base/BaseDriver.js";
 import IdentityService from "./IdentityService.js";
 
-const entrySymbol = Symbol("entry");
-
-const identitySymbol = Symbol("identity");
-
-const getEntityByIdentity = Symbol("getEntityByIdentity");
-
 export const privateUpdateEntry = Symbol("updateEntry");
 
 export default class ChangeSet {
@@ -32,6 +26,15 @@ export default class ChangeSet {
     [privateUpdateEntry](entry: ChangeEntry) {
         const jsonKey = IdentityService.getIdentity(entry.entity);
         if (jsonKey) {
+            if (entry.status === "deleted") {
+                this.identityMap.delete(jsonKey);
+                const index = this.entries.indexOf(entry);
+                if (index !== -1) {
+                    this.entries.splice(index, 1);
+                }
+                this.entryMap.delete(entry.entity);
+                return;
+            }
             this.identityMap.set(jsonKey, entry.entity);
         }
     }
@@ -62,7 +65,6 @@ export default class ChangeSet {
             original: original ? { ... original } : void 0,
             status: "unchanged"
         }, this);
-        entity[entrySymbol] = entry;
         this.entries.push(entry);
         this.entryMap.set(entity, entry);
         return entry;

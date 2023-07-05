@@ -34,4 +34,16 @@ export default async function(this: TestConfig) {
     allHeadphones = await context.products.where({ headPhoneCategory }, (p) => (x) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)).count();
 
     assert.equal(6, allHeadphones);
+
+    const first = await context.productCategories.where({ headPhoneCategory }, (p) => (x) => x.category.categoryID === p.headPhoneCategory).first();
+
+    // delete first one...
+    context.products.delete(first);
+
+    await context.saveChanges();
+
+    allHeadphones = await context.products.where({ headPhoneCategory }, (p) => (x) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)).count();
+
+    assert.equal(5, allHeadphones);
+
 }
