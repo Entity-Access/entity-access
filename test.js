@@ -1,9 +1,10 @@
 import { readdir } from "fs/promises";
 import PostgreSqlDriver from "./dist/drivers/postgres/PostgreSqlDriver.js";
+import SqlServerDriver from "./dist/drivers/sql-server/SqlServerDriver.js";
 import * as ports from "tcp-port-used";
 
 const host = process.env.POSTGRES_HOST ?? "localhost";
-const port = Number(process.env.POSTGRES_PORT ?? 5432);
+const postGresPort = Number(process.env.POSTGRES_PORT ?? 5432);
 
 // if (process.argv.includes("test-db")) {
 //     // wait for ports to open...
@@ -28,8 +29,21 @@ export default class TestRunner {
                 host,
                 user: "postgres",
                 password: "abcd123",
-                port
+                port: postGresPort
+            }),
+            new SqlServerDriver({
+                database,
+                host,
+                user: "sa",
+                password: "$EntityAccess2023",
+                port: 1433,
+                options: {
+                    encrypt: true, // for azure
+                    trustServerCertificate: true // change to true for local dev / self-signed certs
+                },
+                debug: true
             })
+
         ];
     }
 

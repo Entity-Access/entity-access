@@ -4,7 +4,7 @@ import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/ChangeEntry.js";
 import { BinaryExpression, Constant, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
-const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
+export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
 interface IDisposable {
     [disposableSymbol]?(): void;
@@ -41,17 +41,20 @@ export interface IQueryTask {
     postExecution?: ((r: any) => Promise<any>);
 }
 
+export interface IQueryResult {
+    rows?: any[];
+    updated?: number;
+}
+
 export abstract class BaseDriver {
 
     abstract get compiler(): QueryCompiler;
 
     constructor(public readonly connectionString: IDbConnectionString) {}
 
-    public abstract escape(name: string);
-
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
-    public abstract executeNonQuery(command: IQuery, signal?: AbortSignal): Promise<any>;
+    public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
 
     public abstract ensureDatabase(): Promise<any>;
 

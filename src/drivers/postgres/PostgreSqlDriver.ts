@@ -96,25 +96,20 @@ export default class PostgreSqlDriver extends BaseDriver {
         return new PostgresAutomaticMigrations();
     }
 
-    public escape(name: string) {
-        return JSON.stringify(name);
-    }
-
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
         const connection = await this.getConnection(signal);
         const q = toQuery(command);
-        console.log(`Executing ${q.text}`);
         const cursor = connection.query(new Cursor(q.text, q.values));
         return new DbReader(cursor, this.transaction ? void 0 : connection);
     }
 
-    public async executeNonQuery(command: IQuery, signal?: AbortSignal) {
+    public async executeQuery(command: IQuery, signal?: AbortSignal) {
         const connection = await this.getConnection(signal);
         // we need to change parameter styles
         try {
             const q = toQuery(command);
-            console.log(`Executing ${q.text}`);
-            await connection.query(q.text, q.values);
+            const result = await connection.query(q.text, q.values);
+            return result;
         } finally {
             if (!this.transaction) {
                 await connection.end();

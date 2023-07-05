@@ -13,7 +13,7 @@ export default async function (this: TestConfig) {
 
     await connection.ensureDatabase();
     // create table...
-    await connection.executeNonQuery(`SELECT 1;`);
+    await connection.executeQuery(`SELECT 1;`);
 
     // select items...
     const items = await connection.executeReader(`SELECT * FROM (VALUES (1, 1), (1, 1)) as V(ID, Value)`);
