@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node --enable-source-maps ./test.js",
-    "test-db": "node --enable-source-maps ./test.js test-db"
+    "test-db": "node --enable-source-maps ./test.js test-db",
+    "postversion": "git push --follow-tags"
   },
   "type": "module",
   "author": "",
