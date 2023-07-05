@@ -4,7 +4,7 @@ import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/ChangeEntry.js";
 import { BinaryExpression, Constant, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
-const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
+export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
 interface IDisposable {
     [disposableSymbol]?(): void;

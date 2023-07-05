@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
-import { BaseDriver, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
+import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
 import sql from "mssql";
 import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
 import SqlServerSqlMethodTransformer from "../../compiler/sql-server/SqlServerSqlMethodTransformer.js";
@@ -45,79 +46,7 @@ export default class SqlServerDriver extends BaseDriver {
             }
         }
 
-        rq.stream = true;
-
-        const state = {
-            pending: [],
-            ended: false,
-            error: null,
-            count: 0,
-            processPendingRows: () => void 0
-        };
-
-        rq.on("row", (row) => {
-            state.pending.push(row);
-            state.count++;
-            state.processPendingRows();
-        });
-
-        rq.on("error", (e) => {
-            state.error = new Error(`Failed executing ${(command as any).text}\r\n${e.stack ?? e}`);
-            state.processPendingRows();
-        });
-
-        rq.on("done", () => {
-            state.ended = true;
-            state.processPendingRows();
-        });
-
-        console.log(`Executing ${command.text}`);
-        void rq.query((command as any).text);
-
-        return {
-            async *next(min, s = signal) {
-
-                s?.addEventListener("abort", () => {
-                    rq.cancel();
-                });
-
-                do {
-                    const r = await new Promise<{ rows?: any[], done?: boolean}>((resolve, reject) => {
-
-                        state.processPendingRows = () => {
-                            if(state.pending.length) {
-                                const rows = [... state.pending];
-                                state.pending.length = 0;
-                                resolve({ rows });
-                                return;
-                            }
-                            if(state.error) {
-                                reject(state.error);
-                                return;
-                            }
-                            if (state.ended) {
-                                resolve({ done: true });
-                                return;
-                            }
-                        };
-
-                        state.processPendingRows();
-
-                    });
-                    if (r.rows?.length) {
-                        yield *r.rows;
-                    }
-                    if (r.done) {
-                        break;
-                    }
-                }  while(true);
-            },
-            dispose() {
-                // node sql server library does not
-                // required to be closed
-                return Promise.resolve();
-            },
-        };
+        return new SqlReader(rq, command);
     }
     public async executeQuery(command: IQuery, signal?: AbortSignal): Promise<any> {
         let rq = await this.newRequest();
@@ -218,6 +147,69 @@ export default class SqlServerDriver extends BaseDriver {
                 return pool.connect();
             }, 15000, (x) => x.close());
 
+    }
+
+}
+
+class SqlReader implements IDbReader {
+
+    private pending: any[] = [];
+    private error: any = null;
+    private count: number = 0;
+    private ended = false;
+    private processPendingRows: (... a: any[]) => any;
+
+    constructor(
+        private rq: sql.Request,
+        private command: { text: string, values?: any[]}) {}
+
+    async *next(min?: number, s?: AbortSignal) {
+        const command = this.command;
+        const rq = this.rq;
+        s?.addEventListener("abort", () => {
+            rq.cancel();
+        });
+
+        rq.stream = true;
+
+        rq.on("row", (row) => {
+            this.pending.push(row);
+            this.count++;
+            this.processPendingRows();
+        });
+
+        rq.on("error", (e) => {
+            this.error = new Error(`Failed executing ${command.text}\r\n${e.stack ?? e}`);
+            this.processPendingRows();
+        });
+
+        rq.on("done", () => {
+            this.ended = true;
+            this.processPendingRows();
+        });
+
+        console.log(`Executing ${(command as any).text}`);
+        void rq.query((command as any).text);
+
+        do {
+            if (this.pending.length > 0){
+                const copy = this.pending;
+                this.pending = [];
+                yield *copy;
+            }
+            if (this.ended) {
+                break;
+            }
+            await new Promise<any>((resolve, reject) => {
+                this.processPendingRows = resolve;
+            });
+        }  while(true);
+    }
+    dispose(): Promise<any> {
+        return Promise.resolve();
+    }
+    [disposableSymbol]?(): void {
+        this.dispose()?.catch((error) => console.error(error));
     }
 
 }
