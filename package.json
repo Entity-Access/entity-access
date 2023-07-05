@@ -9,8 +9,22 @@
     "postversion": "git push --follow-tags"
   },
   "type": "module",
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entity-access/entity-access.git"
+  },
+  "author": "Akash Kava",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/entity-access/entity-access/issues"
+  },
+  "keywords": [
+    "entity",
+    "framework",
+    "access",
+    "orm"
+  ],
+  "homepage": "https://github.com/entity-access/entity-access#readme",
   "dependencies": {
     "@babel/parser": "^7.22.5",
     "@babel/types": "^7.22.5",
