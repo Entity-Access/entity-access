@@ -4,19 +4,22 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 
 
 # Project Status
-1. Alpha
+1. Beta - Postgres Driver
+2. Alpha - Sql Server Driver
 
 ## Features
 1. Unit of Work and Repository Pattern
-2. Arrow function based query features
+2. Arrow function based query features with automatic joins.
 3. Automatic Migrations for missing schema - this is done for fast development and deployment.
 4. Sql functions such as LIKE
+5. Postgres Driver
+6. Sql Server Driver
+7. Automatic parameterization to safeguard sql injection attacks.
 
 ## Upcoming Features
-1. Postgres SQL Test cases
-2. Include
-3. OrderBy
-4. Projection - Split query mode only
+1. Include
+2. Projection - Split query mode only, single level only.
+3. GroupBy
 
 ### Unit of Work
 
@@ -69,6 +72,8 @@ const q = db.orders.where({ userName },
                 p.userName
             )
 );
+
+// note that the join will be performed automatically
 ```
 
 ### Typed Configurations
@@ -113,4 +118,130 @@ class OrderItem {
 
 }
 
+```
+
+## Query Examples
+
+### Compare operators
+
+#### Equality
+Both strict and non strict equality will result in
+simple equality comparison in SQL. Database provider
+may or may not convert them correctly, so we recommend
+using helper functions to convert before comparison.
+```typescript
+    // find all customer from orderID
+    const q = db.customers
+        // first we will send parameters
+        .where({ orderID },
+            // second we will write an arrow
+            // accepting parameters
+            (p) =>
+                // this is the arrow which will
+                // be converted to SQL
+                // you can write very limited set of
+                // expressions in this arrow function
+                (x) => x.orders.some(
+                    // This will results in exists or join
+                    // based on what level of nested
+                    // foreign key references are available
+                    (order) => order.orderID === p.orderID )
+        )
+
+```
+
+Above expression will result in following filter expression
+```sql
+    EXISTS (
+        SELECT 1
+        FROM Orders as o1
+        WHERE x.customerID = o1.orderID
+            AND o1.orderID = $1
+    )
+```
+
+#### Like
+
+To use `LIKE` operator, `Sql.text.like` method must be used
+as it is. Query compiler will only match everything starting
+with `Sql.` and it will inject available operator conversion.
+
+You don't have to worry about sql injection as each parameter
+passed will be sent as a sql parameter and not as a literal.
+
+```typescript
+    const prefix = `${name}%`;
+    db.customers.where({ prefix },
+        (p) =>
+            (customer) => Sql.text.like(customer.firstName, p.prefix)
+                || Sql.text.like(customer.lastName p.prefix)
+    )
+```
+
+#### Sql Text Functions
+For other sql text functions you can use `Sql.text.startsWith`, `Sql.text.endsWith`, `Sql.text.left`... etc as shown below.
+```typescript
+    db.customers.where({ prefix },
+        (p) =>
+            (customer) => Sql.text.startsWith(customer.firstName, p.prefix)
+                || Sql.text.startsWith(customer.lastName p.prefix)
+    )
+```
+
+#### Sql date functions
+Just as text functions you can also use date functions as shown below.
+```typescript
+    const year = (new Date()).getFullYear();
+    // get count of all orders of this year...
+    db.orders.where({ year },
+        (p) =>
+            (order) => Sql.date.yearOf(order.orderDate) === p.year
+    )
+
+    // above example is only for illustrations only, it will not use index.
+    // for index usage, please consider window function shown below.
+    const start:Date = /* start date */;
+    const end:Date = /* start date */;
+    // get count of all orders of this year...
+    db.orders.where({ start, end },
+        (p) =>
+            (order) => p.start <= order.orderDate && order.orderDate >= p.end
+    )
+
+```
+
+### OrderBy
+```typescript
+    q.orderBy({}, (p) => (x) => x.orderDate)
+    .thenBy({}, (p) => (x) => x.customer.firstName)
+```
+
+### Limit/Offset
+```typescript
+    q = q.orderByDescending({}, (p) => (x) => x.orderDate)
+    .thenBy({}, (p) => (x) => x.customer.firstName)
+    .limit(50)
+    .offset(50);
+```
+
+### Enumerate
+```typescript
+    for await(const product of q.enumerate()) {
+        //
+    }
+```
+
+### First / First or Fail
+```typescript
+    // it will return first product or null
+    const firstProduct = await q.first();
+
+    // it will throw and exception if product was not
+    // found
+    const firstProduct = await q.firstOrFail();
+```
+
+### Count
+```typescript
+    const total = await q.count();
 ```
