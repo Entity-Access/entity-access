@@ -89,7 +89,7 @@ export default class TestRunner {
 }
 
 
-await TestRunner.runAll("./dist/tests", true);
+await TestRunner.runAll("./dist/tests", false);
 
 let exitCode = 0;
 

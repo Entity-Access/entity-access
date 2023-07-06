@@ -1,5 +1,5 @@
-import { IColumn } from "../decorators/IColumn.js";
-import EntityType from "../entity-query/EntityType.js";
+import { IColumn } from "../../decorators/IColumn.js";
+import EntityType from "../../entity-query/EntityType.js";
 import type ChangeSet from "./ChangeSet.js";
 import { privateUpdateEntry } from "./ChangeSet.js";
 

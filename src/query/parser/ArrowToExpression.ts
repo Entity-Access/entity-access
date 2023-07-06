@@ -47,11 +47,15 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     public readonly leftJoins: string[] = [];
 
+    private targetStack: string[] = [];
+
     protected constructor(
         public param: string,
         public target: string
     ) {
         super();
+        this.targetStack.push("Sql");
+        this.targetStack.push(target);
     }
 
     visitBigIntLiteral({ value }: bpe.BigIntLiteral) {
@@ -130,6 +134,10 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitCallExpression({ callee, arguments: args }: bpe.CallExpression) {
+
+        // we need to sanitize callee
+        this.sanitize(callee);
+
         return CallExpression.create({
             callee: callee ? this.visit(callee) : void 0,
             arguments: args ? args.map((x) => this.visit(x)) : []
@@ -151,10 +159,44 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     visitArrowFunctionExpression(node: bpe.ArrowFunctionExpression): Expression {
         const params = node.params.map((x) => this.visit(x));
+        const names = this.getParameterNames(node.params);
+        this.targetStack.push(... names);
         const body = this.visit(node.body);
+        for (const name of names) {
+            this.targetStack.pop();
+        }
         return ArrowFunctionExpression.create({
             params,
             body
         });
     }
+
+    private getParameterNames(params: (bpe.Identifier | bpe.RestElement | bpe.Pattern)[]) {
+        const names = [];
+        for (const iterator of params) {
+            if (iterator.type === "Identifier") {
+                names.push(iterator.name);
+                continue;
+            }
+            throw new Error("Rest or Object pattern not yet supported");
+        }
+        return names;
+    }
+
+    private sanitize(node: bpe.Expression | bpe.V8IntrinsicIdentifier) {
+        switch(node.type) {
+            case "Identifier":
+                const name = node.name;
+                if (name === this.param || this.targetStack.includes(name)) {
+                    return;
+                }
+                throw new Error(`Unknown identifier ${name}`);
+                break;
+            case "MemberExpression":
+            case "OptionalMemberExpression":
+                return this.sanitize(node.object);
+        }
+        throw new Error(`Unexpected expression type ${node.type}`);
+    }
+
 }

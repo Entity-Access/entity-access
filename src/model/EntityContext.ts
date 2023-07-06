@@ -1,5 +1,5 @@
 import { BaseDriver } from "../drivers/base/BaseDriver.js";
-import ChangeSet from "./ChangeSet.js";
+import ChangeSet from "./changes/ChangeSet.js";
 import EntityModel from "./EntityModel.js";
 import { Expression } from "../query/ast/Expressions.js";
 import QueryCompiler from "../compiler/QueryCompiler.js";
