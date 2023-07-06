@@ -7,6 +7,7 @@ import VerificationSession from "./verification/VerificationSession.js";
 import EntityType from "../entity-query/EntityType.js";
 import EntityEvents from "./events/EntityEvents.js";
 import ChangeEntry from "./changes/ChangeEntry.js";
+import ContextEvents from "./events/ContextEvents.js";
 
 const isChanging = Symbol("isChanging");
 
@@ -15,7 +16,7 @@ export default class EntityContext {
     public readonly model = new EntityModel(this);
     public readonly changeSet = new ChangeSet(this);
 
-    public raiseEvents = true;
+    public raiseEvents: boolean;
 
     public verifyFilters = false;
 
@@ -23,30 +24,56 @@ export default class EntityContext {
         return this[isChanging];
     }
 
-    constructor(
-        public driver: BaseDriver
-    ) {
+    private postSaveChangesQueue: { task: () => any, order: number }[];
 
+    constructor(
+        public driver: BaseDriver,
+        private events?: ContextEvents
+    ) {
+        this.raiseEvents = !!this.events;
     }
 
     query<T>(type: IClassOf<T>) {
         return this.model.register(type).asQuery();
     }
 
-    public async saveChanges() {
+    public async saveChanges(signal?: AbortSignal) {
 
         if (this[isChanging]) {
-            return;
+            if (!this.raiseEvents) {
+                this.queuePostSaveTask(() => this.saveChangesWithoutEvents(signal));
+                return 0;
+            }
+            this.queuePostSaveTask(() => this.saveChanges(signal));
+            return 0;
         }
         try {
             this[isChanging] = true;
-            return await this.saveChangesInternal();
+            const r = await this.saveChangesInternal(signal);
+            const postSaveChanges = this.postSaveChangesQueue;
+            this.postSaveChangesQueue = void 0;
+            this[isChanging] = false;
+            if (postSaveChanges?.length) {
+                postSaveChanges.sort((a, b) => a.order - b.order);
+                for (const { task } of postSaveChanges) {
+                    const p = task();
+                    if (p?.then) {
+                        await p;
+                    }
+                }
+            }
+            return r;
         } finally {
             this[isChanging] = false;
         }
     }
 
-    async saveChangesInternal() {
+    public queuePostSaveTask(task: () => any, order = Number.MAX_SAFE_INTEGER) {
+        this.postSaveChangesQueue ??= [];
+        this.postSaveChangesQueue.push({ task, order });
+    }
+
+    async saveChangesInternal(signal?: AbortSignal) {
 
         this.changeSet.detectChanges();
 
@@ -86,31 +113,7 @@ export default class EntityContext {
             await verificationSession.verifyAsync();
         }
 
-        await this.driver.runInTransaction(async () => {
-            for (const iterator of this.changeSet.entries) {
-                switch(iterator.status) {
-                    case "inserted":
-                        const insert  = this.driver.createInsertExpression(iterator.type, iterator.entity);
-                        const r = await this.executeExpression(insert);
-                        iterator.apply(r);
-                        break;
-                    case "modified":
-                        if (iterator.modified.size > 0) {
-                            const update = this.driver.createUpdateExpression(iterator);
-                            await this.executeExpression(update);
-                        }
-                        iterator.apply({});
-                        break;
-                    case "deleted":
-                        const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
-                        if (deleteQuery) {
-                            await this.executeExpression(deleteQuery);
-                        }
-                        iterator.apply({});
-                        break;
-                }
-            }
-        });
+        await this.driver.runInTransaction(() => this.saveChangesWithoutEvents(signal));
 
         if (pending.length > 0) {
 
@@ -134,13 +137,39 @@ export default class EntityContext {
 
     }
 
-    private async executeExpression(expression: Expression) {
+    protected async saveChangesWithoutEvents(signal: AbortSignal) {
+        for (const iterator of this.changeSet.entries) {
+            switch (iterator.status) {
+                case "inserted":
+                    const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
+                    const r = await this.executeExpression(insert, signal);
+                    iterator.apply(r);
+                    break;
+                case "modified":
+                    if (iterator.modified.size > 0) {
+                        const update = this.driver.createUpdateExpression(iterator);
+                        await this.executeExpression(update, signal);
+                    }
+                    iterator.apply({});
+                    break;
+                case "deleted":
+                    const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
+                    if (deleteQuery) {
+                        await this.executeExpression(deleteQuery, signal);
+                    }
+                    iterator.apply({});
+                    break;
+            }
+        }
+    }
+
+    private async executeExpression(expression: Expression, signal: AbortSignal) {
         const { text, values } = this.driver.compiler.compileExpression(expression);
-        const r = await this.driver.executeQuery({ text, values });
+        const r = await this.driver.executeQuery({ text, values }, signal);
         return r.rows?.[0];
     }
 
     private getEventsFor(type: EntityType): EntityEvents<any> {
-        throw new Error("Method not implemented.");
+        return this.events?.for(type.typeClass);
     }
 }

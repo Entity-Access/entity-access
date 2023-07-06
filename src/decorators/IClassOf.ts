@@ -1,1 +1,1 @@
-export type IClassOf<T> = abstract new (... a: any[]) => T;
+export type IClassOf<T> = new (... a: any[]) => T;
