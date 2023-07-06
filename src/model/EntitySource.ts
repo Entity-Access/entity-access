@@ -69,32 +69,11 @@ export class EntitySource<T = any> {
     }
 
     public all(): IEntityQuery<T> {
-        const { model, context } = this;
-        const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
-        return new EntityQuery<T>(SourceExpression.create({
-            alias: select.as.literal,
-            context,
-            model,
-            select
-        })) as IEntityQuery<T>;
+        return this.asQuery();
     }
 
     public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
-        const { model, context } = this;
-        let select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
-
-        // assign default read filter
-        const filter = this.filters.read?.();
-        if ( filter) {
-            select = { ... select, where: PlaceholderExpression.create({ expression: () => filter}) };
-        }
-
-        return new EntityQuery<T>(SourceExpression.create({
-            alias: select.as.literal,
-            context,
-            model,
-            select
-        })).where(parameter, fx) as IEntityQuery<T>;
+        return this.asQuery().where(parameter, fx);
     }
 
     generateModel(): SelectStatement {
@@ -111,6 +90,18 @@ export class EntitySource<T = any> {
             as,
             fields,
         });
+    }
+
+    public asQuery() {
+        const { model, context } = this;
+        const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+        return new EntityQuery<T>(SourceExpression.create({
+            alias: select.as.literal,
+            context,
+            model,
+            select
+        })) as any as IEntityQuery<T>;
+
     }
 
     public toQuery() {
