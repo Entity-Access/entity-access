@@ -13,6 +13,10 @@ export default class TransformVisitor extends BabelVisitor<bpe.Node> {
         return this.visit(n as any);
     }
 
+    visitTemplateElement(node: bpe.TemplateElement): bpe.Node {
+        return node;
+    }
+
     visitObjectExpression(node: bpe.ObjectExpression): bpe.Node {
         return bpe.objectExpression(
             this.transform(node.properties)
@@ -28,7 +32,7 @@ export default class TransformVisitor extends BabelVisitor<bpe.Node> {
         return node;
     }
     visitTemplateLiteral(node: bpe.TemplateLiteral): bpe.Node {
-        return node;
+        return bpe.templateLiteral(this.transform(node.quasis), this.transform(node.expressions));
     }
     visitNumericLiteral(node: bpe.NumericLiteral): bpe.Node {
         return node;
@@ -65,7 +69,15 @@ export default class TransformVisitor extends BabelVisitor<bpe.Node> {
     }
 
     visitObjectProperty(node: bpe.ObjectProperty): bpe.Node {
-        return bpe.objectProperty(this.transform(node.key), this.transform(node.value), node.computed, node.shorthand, node.decorators);
+
+        let key = node.key;
+        if (node.key.type !== "Identifier") {
+            key = this.transform(key);
+        }
+
+        const value = this.transform(node.value);
+
+        return bpe.objectProperty(key, value, node.computed, node.shorthand, node.decorators);
     }
 
 }

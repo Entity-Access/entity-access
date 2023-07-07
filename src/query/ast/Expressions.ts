@@ -1,6 +1,6 @@
 import { IColumn } from "../../decorators/IColumn.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
-import { ITextOrFunctionArray } from "./IStringTransformer.js";
+import { ITextQuery } from "./IStringTransformer.js";
 import type EntityType from "../../entity-query/EntityType.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
@@ -70,7 +70,7 @@ export abstract class Expression {
 
 export class PlaceholderExpression extends Expression {
     readonly type = "PlaceholderExpression";
-    expression: () => ITextOrFunctionArray;
+    expression: () => ITextQuery;
 }
 
 export class BinaryExpression extends Expression {
@@ -212,8 +212,17 @@ export class BigIntLiteral extends Expression {
     public value: bigint;
 }
 
+export class TemplateElement extends Expression {
+    readonly type = "TemplateElement";
+    public value: {
+        raw: string;
+        cooked: string;
+    };
+}
+
 export class TemplateLiteral extends Expression {
     readonly type = "TemplateLiteral";
+    public quasis: TemplateElement[];
     public value: Expression[];
 }
 
@@ -304,5 +313,6 @@ export type ExpressionType =
     PlaceholderExpression |
     ArrowFunctionExpression |
     ConditionalExpression |
-    NewObjectExpression
+    NewObjectExpression |
+    TemplateElement
 ;

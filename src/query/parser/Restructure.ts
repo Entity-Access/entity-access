@@ -7,6 +7,10 @@ export default class Restructure extends TransformVisitor {
 
     private map: Map<string, bpe.Node> = new Map();
 
+    visitTemplateElement(node: bpe.TemplateElement): bpe.Node {
+        return node;
+    }
+
     visitArrowFunctionExpression(node: bpe.ArrowFunctionExpression): bpe.Node {
 
         // we need to restructure identifiers from destructure

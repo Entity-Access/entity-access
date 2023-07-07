@@ -33,6 +33,7 @@
         "PGPASSWORD",
         "PGPORT",
         "PGUSER",
+        "quasis",
         "sysdatabases",
         "varbinary"
     ]

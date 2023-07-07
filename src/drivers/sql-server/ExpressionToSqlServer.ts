@@ -1,10 +1,10 @@
 import ExpressionToSql from "../../query/ast/ExpressionToSql.js";
 import { Identifier, InsertStatement, OrderByExpression, ReturnUpdated, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
-import { ITextOrFunctionArray, prepare } from "../../query/ast/IStringTransformer.js";
+import { ITextQuery, prepare } from "../../query/ast/IStringTransformer.js";
 
 export default class ExpressionToSqlServer extends ExpressionToSql {
 
-    visitReturnUpdated(e: ReturnUpdated): ITextOrFunctionArray {
+    visitReturnUpdated(e: ReturnUpdated): ITextQuery {
         if (!e) {
             return [];
         }
@@ -22,7 +22,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         return prepare ` OUTPUT ${fields}`;
     }
 
-    visitInsertStatement(e: InsertStatement): ITextOrFunctionArray {
+    visitInsertStatement(e: InsertStatement): ITextQuery {
         const returnValues = this.visit(e.returnValues);
         if (e.values instanceof ValuesStatement) {
 
@@ -45,7 +45,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
     }
 
-    visitSelectStatement(e: SelectStatement): ITextOrFunctionArray {
+    visitSelectStatement(e: SelectStatement): ITextQuery {
         const fields = this.visitArray(e.fields, ",\n\t\t");
 
         const showTop = e.limit && !e.offset;

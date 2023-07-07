@@ -1,6 +1,6 @@
 import { IClassOf } from "../decorators/IClassOf.js";
 import ExpressionToSql from "../query/ast/ExpressionToSql.js";
-import { ISqlMethodTransformer, IStringTransformer, ITextOrFunctionArray } from "../query/ast/IStringTransformer.js";
+import { ISqlMethodTransformer, IStringTransformer, ITextQuery } from "../query/ast/IStringTransformer.js";
 import { Expression, PlaceholderExpression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
@@ -66,7 +66,7 @@ export default class QueryCompiler {
         return this.invoke(query);
     }
 
-    private invoke(query: ITextOrFunctionArray, p: any = {}) {
+    private invoke(query: ITextQuery, p: any = {}) {
         let text = "";
         const values = [];
         for (const iterator of query) {

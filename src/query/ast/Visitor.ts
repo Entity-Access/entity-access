@@ -1,4 +1,4 @@
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -64,9 +64,14 @@ export default abstract class Visitor<T = any> {
                 return this.visitConditionalExpression(e);
             case "NewObjectExpression":
                 return this.visitNewObjectExpression(e);
+            case "TemplateElement":
+                return this.visitTemplateElement(e);
         }
         const c: never = e;
         throw new Error(`${e1.type} Not implemented`);
+    }
+    visitTemplateElement(e: TemplateElement): T {
+        return;
     }
     visitNewObjectExpression(e: NewObjectExpression): T {
         return;

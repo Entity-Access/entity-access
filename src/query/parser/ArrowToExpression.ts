@@ -88,8 +88,22 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitTemplateLiteral(node: bpe.TemplateLiteral) {
-        const value = node.expressions.map((x) => this.visit(x));
+        // const value = node.expressions.map((x) => this.visit(x));
+        const value = [] as Expression[];
+        for (let index = 0; index < node.quasis.length; index++) {
+            const { value: { cooked }} = node.quasis[index];
+            if (cooked) {
+                value.push(StringLiteral.create({ value: cooked }));
+            }
+            if (index < node.expressions.length) {
+                value.push(this.visit(node.expressions[index]));
+            }
+        }
         return TemplateLiteral.create({ value });
+    }
+
+    visitTemplateElement(node: bpe.TemplateElement): Expression {
+        throw new NotSupportedError();
     }
 
     visitLogicalExpression(node: bpe.LogicalExpression): Expression {

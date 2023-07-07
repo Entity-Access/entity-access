@@ -1,14 +1,10 @@
-import { modelSymbol } from "../../common/symbols/symbols.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
-import type EntityType from "../../entity-query/EntityType.js";
-import type EntityContext from "../../model/EntityContext.js";
-import { EntitySource } from "../../model/EntitySource.js";
 import { SourceExpression } from "../../model/SourceExpression.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
-import { ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
+import { ITextQuery, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
-export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
+export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     private targets: Map<string, SourceExpression> = new Map();
 
@@ -25,13 +21,13 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         }
     }
 
-    visitArray(e: Expression[], sep = ","): ITextOrFunctionArray {
+    visitArray(e: Expression[], sep = ","): ITextQuery {
         const r = e.map((x) => this.visit(x));
         return prepareJoin(r, sep);
     }
 
 
-    visitValuesStatement(e: ValuesStatement): ITextOrFunctionArray {
+    visitValuesStatement(e: ValuesStatement): ITextQuery {
         const rows = [];
         for (const rowValues of e.values) {
             rows.push(prepare `(${ this.visitArray(rowValues) })`);
@@ -40,14 +36,14 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
     }
 
-    visitTableLiteral(e: TableLiteral): ITextOrFunctionArray {
+    visitTableLiteral(e: TableLiteral): ITextQuery {
         if (e.schema) {
             return prepare `${this.visit(e.schema)}.${this.visit(e.name)}`;
         }
         return this.visit(e.name);
     }
 
-    visitSelectStatement(e: SelectStatement): ITextOrFunctionArray {
+    visitSelectStatement(e: SelectStatement): ITextQuery {
         const fields = this.visitArray(e.fields, ",\n\t\t");
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const source = this.visit(e.source);
@@ -61,41 +57,41 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
     }
 
-    visitQuotedLiteral(e: QuotedLiteral): ITextOrFunctionArray {
+    visitQuotedLiteral(e: QuotedLiteral): ITextQuery {
         return [this.compiler.quotedLiteral(e.literal)];
     }
 
-    visitExpressionAs(e: ExpressionAs): ITextOrFunctionArray {
+    visitExpressionAs(e: ExpressionAs): ITextQuery {
         return prepare `${this.visit(e.expression)} AS ${this.visit(e.alias)}`;
     }
 
-    visitConstant({value}: Constant): ITextOrFunctionArray {
+    visitConstant({value}: Constant): ITextQuery {
         return [() => value];
     }
 
-    visitBigIntLiteral({ value }: BigIntLiteral): ITextOrFunctionArray {
+    visitBigIntLiteral({ value }: BigIntLiteral): ITextQuery {
         return [() => value];
     }
 
-    visitNumberLiteral( { value }: NumberLiteral): ITextOrFunctionArray {
+    visitNumberLiteral( { value }: NumberLiteral): ITextQuery {
         return [() => value];
     }
 
-    visitStringLiteral({ value }: StringLiteral): ITextOrFunctionArray {
+    visitStringLiteral({ value }: StringLiteral): ITextQuery {
         const escapeLiteral = this.compiler.escapeLiteral;
         return [() => escapeLiteral(value)];
     }
 
-    visitBooleanLiteral( { value }: BooleanLiteral): ITextOrFunctionArray {
+    visitBooleanLiteral( { value }: BooleanLiteral): ITextQuery {
         return [ () => value ? "1" : "0" ];
     }
 
-    visitTemplateLiteral(e: TemplateLiteral): ITextOrFunctionArray {
+    visitTemplateLiteral(e: TemplateLiteral): ITextQuery {
         const args = this.visitArray(e.value);
         return prepare `CONCAT(${args})`;
     }
 
-    visitCallExpression(e: CallExpression): ITextOrFunctionArray {
+    visitCallExpression(e: CallExpression): ITextQuery {
         // let us check if we are using any of array extension methods...
         // .some alias .any
         // .find alias .firstOrDefault
@@ -201,12 +197,12 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare `${this.visit(e.callee)}(${args})`;
     }
 
-    visitIdentifier(e: Identifier): ITextOrFunctionArray {
+    visitIdentifier(e: Identifier): ITextQuery {
         // need to visit parameters
         return [e.value];
     }
 
-    visitMemberExpression(me: MemberExpression): ITextOrFunctionArray {
+    visitMemberExpression(me: MemberExpression): ITextQuery {
         const chain = this.getPropertyChain(me);
         if (chain) {
             const [root, key ] = chain;
@@ -229,11 +225,11 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare `${this.visit(target)}.${this.visit(property)}`;
     }
 
-    visitNullExpression(e: NullExpression): ITextOrFunctionArray {
+    visitNullExpression(e: NullExpression): ITextQuery {
         return ["NULL"];
     }
 
-    visitBinaryExpression(e: BinaryExpression): ITextOrFunctionArray {
+    visitBinaryExpression(e: BinaryExpression): ITextQuery {
         const left = e.left.type === "BinaryExpression"
             ? prepare `(${this.visit(e.left)})`
             : this.visit(e.left);
@@ -243,7 +239,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare `${left} ${e.operator} ${right}`;
     }
 
-    visitConditionalExpression(e: ConditionalExpression): ITextOrFunctionArray {
+    visitConditionalExpression(e: ConditionalExpression): ITextQuery {
         const test = this.visit(e.test);
         const alternate = this.visit(e.alternate);
         const consequent = this.visit(e.consequent);
@@ -251,13 +247,13 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare `(CASE WHEN ${test} THEN ${consequent} ELSE ${alternate} END)`;
     }
 
-    visitCoalesceExpression(e: CoalesceExpression): ITextOrFunctionArray {
+    visitCoalesceExpression(e: CoalesceExpression): ITextQuery {
         const left = this.visit(e.left);
         const right = this.visit(e.right);
         return prepare `COALESCE(${left}, ${right})`;
     }
 
-    visitReturnUpdated(e: ReturnUpdated): ITextOrFunctionArray {
+    visitReturnUpdated(e: ReturnUpdated): ITextQuery {
         if (!e) {
             return [];
         }
@@ -268,7 +264,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare ` RETURNING ${fields}`;
     }
 
-    visitInsertStatement(e: InsertStatement): ITextOrFunctionArray {
+    visitInsertStatement(e: InsertStatement): ITextQuery {
         const returnValues = this.visit(e.returnValues);
         if (e.values instanceof ValuesStatement) {
 
@@ -291,7 +287,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
 
     }
 
-    visitUpdateStatement(e: UpdateStatement): ITextOrFunctionArray {
+    visitUpdateStatement(e: UpdateStatement): ITextQuery {
 
         const table = this.visit(e.table);
 
@@ -302,13 +298,17 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare `UPDATE ${table} SET ${set} WHERE ${where}`;
     }
 
-    visitDeleteStatement(e: DeleteStatement): ITextOrFunctionArray {
+    visitNewObjectExpression(e: NewObjectExpression): ITextQuery {
+        return prepare `FROM (${this.visitArray(e.properties)})`;
+    }
+
+    visitDeleteStatement(e: DeleteStatement): ITextQuery {
         const table = this.visit(e.table);
         const where = this.visit(e.where);
         return prepare `DELETE FROM ${table} WHERE ${where}`;
     }
 
-    visitJoinExpression(e: JoinExpression): ITextOrFunctionArray {
+    visitJoinExpression(e: JoinExpression): ITextQuery {
         if(!e) {
             return [];
         }
@@ -318,7 +318,7 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare ` ${e.joinType || "LEFT"} JOIN ${table}${as} ON ${where}`;
     }
 
-    visitOrderByExpression(e: OrderByExpression): ITextOrFunctionArray {
+    visitOrderByExpression(e: OrderByExpression): ITextQuery {
         if(!e) {
             return [];
         }
@@ -328,11 +328,11 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
         return prepare `${this.visit(e.target)}`;
     }
 
-    visitExistsExpression(e: ExistsExpression): ITextOrFunctionArray {
+    visitExistsExpression(e: ExistsExpression): ITextQuery {
         return prepare `EXISTS (${this.visit(e.target)})`;
     }
 
-    visitPlaceholderExpression(e: PlaceholderExpression): ITextOrFunctionArray {
+    visitPlaceholderExpression(e: PlaceholderExpression): ITextQuery {
         const p = e.expression();
         return prepare `${p}`;
     }

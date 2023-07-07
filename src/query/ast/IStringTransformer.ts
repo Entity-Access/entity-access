@@ -1,5 +1,5 @@
-export type ITextOrFunction = string | ((p: any) => any);
-export type ITextOrFunctionArray = ITextOrFunction[];
+export type ITextQueryFragment = string | ((p: any) => any) | { name: string, toString(): string };
+export type ITextQuery = ITextQueryFragment[];
 
 export type IStringTransformer = (s: string) => string;
 
@@ -46,7 +46,7 @@ const addNonEmptyFlat = (array: any[], item: any) => {
     array.push(item);
 };
 
-export const prepare = (a: TemplateStringsArray, ... p: (ITextOrFunction | ITextOrFunctionArray)[]): ITextOrFunctionArray => {
+export const prepare = (a: TemplateStringsArray, ... p: (ITextQueryFragment | ITextQuery)[]): ITextQuery => {
 
     const r = [];
     for (let index = 0; index < a.length; index++) {
@@ -60,7 +60,7 @@ export const prepare = (a: TemplateStringsArray, ... p: (ITextOrFunction | IText
     return r.flat(2);
 };
 
-export const prepareJoin = (a: (ITextOrFunction | ITextOrFunctionArray)[], sep: string = ","): ITextOrFunctionArray => {
+export const prepareJoin = (a: (ITextQueryFragment | ITextQuery)[], sep: string = ","): ITextQuery => {
     const r = [];
     let first = true;
     for (const iterator of a) {
