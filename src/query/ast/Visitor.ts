@@ -1,4 +1,4 @@
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, PartialExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -56,8 +56,6 @@ export default abstract class Visitor<T = any> {
                 return this.visitCoalesceExpression(e);
             case "ExistsExpression":
                 return this.visitExistsExpression(e);
-            case "PlaceholderExpression":
-                return this.visitPlaceholderExpression(e);
             case "ArrowFunctionExpression":
                 return this.visitArrowFunctionExpression(e);
             case "ConditionalExpression":
@@ -85,9 +83,6 @@ export default abstract class Visitor<T = any> {
         return;
     }
     visitArrowFunctionExpression(e: ArrowFunctionExpression): T {
-        return;
-    }
-    visitPlaceholderExpression(e: PlaceholderExpression): T {
         return;
     }
     visitExistsExpression(e: ExistsExpression): T {

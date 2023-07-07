@@ -244,7 +244,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             case "Identifier":
                 const name = node.name;
                 const scopedName = this.targetStack.get(name);
-                if (scopedName === null) {
+                if (scopedName === null || scopedName === void 0) {
                     throw new Error(`Unknown identifier ${name}`);
                 }
                 return;

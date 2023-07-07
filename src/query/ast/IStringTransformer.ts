@@ -1,4 +1,4 @@
-export type ITextQueryFragment = string | ((p: any) => any) | { name: string, toString(): string };
+export type ITextQueryFragment = string | ((p: any) => any) | { toString(): string };
 export type ITextQuery = ITextQueryFragment[];
 
 export type IStringTransformer = (s: string) => string;
@@ -7,14 +7,14 @@ export type ISqlMethodTransformer = (callee: string, args: string[]) => string;
 
 export class QueryParameter {
 
-    static create(name: string, quotedLiteral: (n: string) => string ) {
+    static create(name: () => string, quotedLiteral: (n: string) => string ) {
         return new QueryParameter(name, quotedLiteral);
     }
 
-    constructor(public name: string, public quotedLiteral: (n: string) => string) {}
+    constructor(public name: () => string, public quotedLiteral: (n: string) => string) {}
 
     toString() {
-        return this.quotedLiteral(this.name);
+        return this.quotedLiteral(this.name());
     }
 }
 

@@ -1,13 +1,13 @@
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { SourceExpression } from "../../model/SourceExpression.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, PartialExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
 export default class ExpressionToSql extends Visitor<ITextQuery> {
 
-    private targets: Map<string, SourceExpression> = new Map();
+    private targets: Map<ParameterExpression, SourceExpression> = new Map();
 
     constructor(
         private source: SourceExpression,
@@ -18,8 +18,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         super();
         if (source) {
             source.parameter = target;
-            this.targets.set(target.name, source);
         }
+        this.targets.set(root, source ?? null);
+        this.targets.set(target, source ?? null);
     }
 
     visitArray(e: Expression[], sep = ","): ITextQuery {
@@ -98,9 +99,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         // .find alias .firstOrDefault
 
         const targetProperty = this.getPropertyChain(e.callee as ExpressionType);
-        if (targetProperty?.length) {
-            const [ target , property, childProperty ] = targetProperty;
-            const existingTarget = this.targets.get(target);
+        if (targetProperty) {
+            const { parameter , identifier, chain } = targetProperty;
+            const existingTarget = this.targets.get(parameter);
             if (existingTarget) {
 
 
@@ -108,9 +109,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 // should be navigation...
                 const targetType = existingTarget.model;
                 const context = existingTarget.context;
-                const relation = targetType?.getProperty(property);
+                const relation = targetType?.getProperty(chain[0]);
                 if (relation) {
-                    if (/^(some|any)$/i.test(childProperty)) {
+                    if (/^(some|any)$/i.test(chain[1])) {
 
 
                         const body = e.arguments[0] as ExpressionType;
@@ -190,8 +191,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 }
             }
 
-            if (target === "Sql") {
-                const names = `${target}.${property}.${childProperty}`;
+            if (identifier?.value === "Sql") {
+                const names = `${identifier.value}.${chain.join(".")}`;
                 const argList = e.arguments.map((x) => this.visit(x));
                 const transformedCallee = this.compiler.sqlMethodTransformer(names, argList as any[]);
                 if (transformedCallee) {
@@ -216,18 +217,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitMemberExpression(me: MemberExpression): ITextQuery {
-        const chain = this.getPropertyChain(me);
-        if (chain) {
-            const [root, key ] = chain;
-            if (root === this.root) {
+        const propertyChain = this.getPropertyChain(me);
+        if (propertyChain) {
+            const { parameter, identifier, chain } = propertyChain;
+            if (parameter === this.root) {
                 // we have a parameter...
-                return [(p) => p[key]];
+                return [(p) => p[chain[0]]];
             }
-            const source = this.targets.get(root);
+            const source = this.targets.get(parameter);
             if (source) {
                 return [source.flatten(chain)];
             }
-            return [chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
+            return [ QueryParameter.create(() => parameter.name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
         }
 
         const { target, computed, property } = me;
@@ -345,17 +346,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return prepare `EXISTS (${this.visit(e.target)})`;
     }
 
-    visitPlaceholderExpression(e: PlaceholderExpression): ITextQuery {
-        const p = e.expression();
-        return prepare `${p}`;
-    }
-
-    private pushTarget(target: string, type: SourceExpression) {
+    private pushTarget(target: ParameterExpression, type: SourceExpression) {
         this.targets.set(target, type);
         return () => this.targets.delete(target);
     }
 
-    private getPropertyChain(x: Expression) {
+    private getPropertyChain(x: Expression): { identifier?: Identifier, parameter?: ParameterExpression, chain: string[] } {
         const chain = [];
         let start = x as ExpressionType;
         do {
@@ -369,14 +365,19 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             if (property.type !== "Identifier") {
                 return;
             }
-            chain.push(property.value);
+            chain.unshift(property.value);
+            if (target.type === "ParameterExpression") {
+                // chain.unshift(target);
+                if(!this.targets.has(target)) {
+                    return;
+                }
+                return { parameter: target, chain };
+            }
             if (target.type === "Identifier") {
-                chain.push(target.value);
-                break;
+                return { identifier: target, chain };
             }
             start = target;
         } while (true);
-        return chain.reverse();
     }
 
 

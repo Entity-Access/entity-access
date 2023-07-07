@@ -124,7 +124,7 @@ export class SourceExpression {
         const p = this.model.getProperty(property);
         const quotedLiteral = this.context.driver.compiler.quotedLiteral;
         if (others.length === 0) {
-            return `${ QueryParameter.create(this.alias.name, quotedLiteral)}.${quotedLiteral(p.field.columnName)}`;
+            return `${ QueryParameter.create(() => this.alias.name, quotedLiteral)}.${quotedLiteral(p.field.columnName)}`;
         }
 
         // this must be a navigation...

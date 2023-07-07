@@ -89,11 +89,6 @@ export abstract class Expression {
 
 }
 
-export class PlaceholderExpression extends Expression {
-    readonly type = "PlaceholderExpression";
-    expression: () => ITextQuery;
-}
-
 export class PartialExpression extends Expression {
     readonly type = "PartialExpression";
     query: ITextQuery;
@@ -145,6 +140,12 @@ export class ParameterExpression extends Expression {
      * Default value if any...
      */
     value: any;
+
+    quotedLiteral: (x: string) => string;
+
+    toString() {
+        return this.quotedLiteral?.(this.name) ?? this.name;
+    }
 }
 
 export class MemberExpression extends Expression {
@@ -345,7 +346,6 @@ export type ExpressionType =
     CoalesceExpression|
     ExistsExpression|
     Identifier |
-    PlaceholderExpression |
     ArrowFunctionExpression |
     ConditionalExpression |
     NewObjectExpression |
