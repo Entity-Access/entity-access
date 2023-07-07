@@ -145,7 +145,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 operator = "=";
                 break;
             default:
-                throw new Error(`Operator ${operator} not supported`);
+                throw new NotSupportedError(`Operator ${operator}`);
         }
         const left = this.visit(node.left);
         const right = this.visit(node.right);

@@ -31,18 +31,17 @@ export default class TestRunner {
                 password: "abcd123",
                 port: postGresPort
             }),
-            // new SqlServerDriver({
-            //     database,
-            //     host,
-            //     user: "sa",
-            //     password: "$EntityAccess2023",
-            //     port: 1433,
-            //     options: {
-            //         encrypt: true, // for azure
-            //         trustServerCertificate: true // change to true for local dev / self-signed certs
-            //     }
-            // })
-
+            new SqlServerDriver({
+                database,
+                host,
+                user: "sa",
+                password: "$EntityAccess2023",
+                port: 1433,
+                options: {
+                    encrypt: true, // for azure
+                    trustServerCertificate: true // change to true for local dev / self-signed certs
+                }
+            })
         ];
     }
 
@@ -93,15 +92,23 @@ const testDb = !process.argv.includes("no-db");
 await TestRunner.runAll("./dist/tests", testDb);
 
 let exitCode = 0;
+const failed = 0;
 
 for (const { error, name } of results) {
     if (error) {
         exitCode = 1;
+        failed++;
         console.error(`${name} failed`);
         console.error(error?.stack ?? error);
         continue;
     }
     console.log(`${name} executed.`);
+}
+
+if (exitCode === 0) {
+    console.log(`${results.length} tests ran successfully.`);
+} else {
+    console.log(`${failed} Tests out of ${results.length} failed.`);
 }
 
 process.exit(exitCode);

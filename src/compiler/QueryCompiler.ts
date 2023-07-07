@@ -70,15 +70,11 @@ export default class QueryCompiler {
         let text = "";
         const values = [];
         for (const iterator of query) {
-            if (typeof iterator === "string") {
+            if (typeof iterator !== "function") {
                 text += iterator;
                 continue;
             }
-            let value = iterator;
-            if (typeof iterator === "function") {
-                value = iterator(p);
-            }
-
+            const value = iterator(p);
             values.push(value);
             text += "$" + values.length;
         }
