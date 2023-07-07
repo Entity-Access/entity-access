@@ -84,13 +84,12 @@ export class EntitySource<T = any> {
 
     public asQuery() {
         const { model, context } = this;
-        const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
-        return new EntityQuery<T>(SourceExpression.create({
-            alias: select.as,
+        const selectStatement = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+        return new EntityQuery<T>({
             context,
-            model,
-            select
-        })) as any as IEntityQuery<T>;
+            type: model,
+            selectStatement
+        }) as any as IEntityQuery<T>;
 
     }
 

@@ -1,11 +1,22 @@
+import EntityType from "../entity-query/EntityType.js";
 import { BinaryExpression, CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement, TableSource } from "../query/ast/Expressions.js";
+import EntityContext from "./EntityContext.js";
 import { EntitySource } from "./EntitySource.js";
 import { IOrderedEntityQuery, IEntityQuery, ILambdaExpression } from "./IFilterWithParameter.js";
 import { SourceExpression } from "./SourceExpression.js";
 
 export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
-    constructor (public readonly source: SourceExpression) {
+
+    public context: EntityContext;
+    public type: EntityType;
+    public selectStatement: SelectStatement;
+    public signal?: AbortSignal;
+    constructor (p: Partial<EntityQuery<any>>
+    ) {
+        // lets clone select...
+        Object.setPrototypeOf(p, EntityQuery.prototype);
+        return p as EntityQuery;
     }
 
     select(p: any, fx: any): any {
@@ -13,15 +24,13 @@ export default class EntityQuery<T = any>
     }
 
     map(p: any, fx: any): any {
-        const source = this.source.copy();
-        const { select } = source;
+        // const source = this.source.copy();
+        // const { select } = source;
         // const exp = this.source.context.driver.compiler.compileToExpression(source, p, fx);
     }
 
     withSignal(signal: AbortSignal): any {
-        const source = this.source.copy();
-        source.signal = signal;
-        return new EntityQuery(source);
+        return new EntityQuery({ ... this });
     }
 
     thenBy(parameters: any, fx: any): any {
@@ -48,16 +57,16 @@ export default class EntityQuery<T = any>
     }
 
     async *enumerate(): AsyncGenerator<T, any, unknown> {
-        const type = this.source.model?.typeClass;
-        const signal = this.source.signal;
-        const query = this.source.context.driver.compiler.compileExpression(this.source.select);
-        const reader = await this.source.context.driver.executeReader(query, signal);
+        const type = this.type;
+        const signal = this.signal;
+        const query = this.context.driver.compiler.compileExpression(this.selectStatement);
+        const reader = await this.context.driver.executeReader(query, signal);
         try {
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
-                    Object.setPrototypeOf(iterator, type.prototype);
+                    Object.setPrototypeOf(iterator, type.typeClass.prototype);
                     // set identity...
-                    const entry = this.source.context.changeSet.getEntry(iterator, iterator);
+                    const entry = this.context.changeSet.getEntry(iterator, iterator);
                     yield entry.entity;
                     continue;
                 }
@@ -72,7 +81,7 @@ export default class EntityQuery<T = any>
         for await(const iterator of this.limit(1).enumerate()) {
             return iterator;
         }
-        throw new Error(`No records found for ${this.source.model?.name || "Table"}`);
+        throw new Error(`No records found for ${this.type?.name || "Table"}`);
     }
 
     async first(): Promise<T> {
@@ -82,7 +91,7 @@ export default class EntityQuery<T = any>
         return null;
     }
     toQuery(): { text: string; values: any[]; } {
-        return this.source.context.driver.compiler.compileExpression(this.source.select);
+        return this.context.driver.compiler.compileExpression(this.selectStatement);
     }
     orderBy(parameters: any, fx: any): any {
         return this.extend(parameters, fx, (select, target) => ({
@@ -103,17 +112,11 @@ export default class EntityQuery<T = any>
     }
 
     limit(n: number): any {
-        const source = this.source.copy();
-        const { select } = source;
-        select.limit = n;
-        return new EntityQuery(source);
+        return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, limit: n} });
     }
 
     offset(n: number): any {
-        const source = this.source.copy();
-        const { select } = source;
-        select.offset = n;
-        return new EntityQuery(source);
+        return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, offset: n} });
     }
 
     async count(parameters?:any, fx?: any): Promise<number> {
@@ -121,10 +124,7 @@ export default class EntityQuery<T = any>
             return this.where(parameters, fx).count();
         }
 
-        const source = this.source.copy();
-        const { select } = source;
-
-        select.fields = [
+        const select = { ... this.selectStatement, fields: [
             ExpressionAs.create({
                 expression: CallExpression.create({
                     callee: Identifier.create({ value: "COUNT"}),
@@ -132,10 +132,10 @@ export default class EntityQuery<T = any>
                 }),
                 alias: QuotedLiteral.create({ literal: "count" })
             })
-        ];
+        ] };
 
-        const query = this.source.context.driver.compiler.compileExpression(select);
-        const reader = await this.source.context.driver.executeReader(query);
+        const query = this.context.driver.compiler.compileExpression(select);
+        const reader = await this.context.driver.executeReader(query);
 
         try {
             for await (const iterator of reader.next()) {
@@ -148,13 +148,9 @@ export default class EntityQuery<T = any>
     }
 
     private extend(parameters: any, fx: any, map: (select: SelectStatement, exp: Expression) => SelectStatement) {
-
-        const { select } = this.source;
-        const exp = this.source.context.driver.compiler.compile(fx);
+        const exp = this.context.driver.compiler.compile(fx);
         exp.params[0].value = parameters;
-        const source = this.source.copy();
-        source.select = map(select, exp.body);
-        return new EntityQuery(source);
+        return new EntityQuery({ ... this, selectStatement: map(this.selectStatement, exp.body)});
     }
 
 }

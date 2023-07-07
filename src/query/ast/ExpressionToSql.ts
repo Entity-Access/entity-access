@@ -142,7 +142,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 query = entityEvents.includeFilter(query);
                             }
 
-                            let select = (query as EntityQuery).source.select;
+                            let select = (query as EntityQuery).selectStatement;
 
 
                             const join = BinaryExpression.create({
