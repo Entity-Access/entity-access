@@ -9,4 +9,8 @@ export default class ContextEvents {
         return this.map.get(type);
     }
 
+    public register<T>(type: IClassOf<T>, events: IClassOf<EntityEvents<T>>) {
+        this.map.set(type, events);
+    }
+
 }

@@ -6,7 +6,7 @@ export default class VerificationSession {
     constructor(private context: EntityContext) {}
 
     queueVerification(iterator: ChangeEntry) {
-        throw new Error("Method not implemented.");
+        const type = iterator.type;
     }
 
     async verifyAsync(): Promise<any> {
