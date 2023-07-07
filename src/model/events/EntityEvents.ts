@@ -1,3 +1,4 @@
+import Inject from "../../di/di.js";
 import type EntityContext from "../EntityContext.js";
 import { IEntityQuery } from "../IFilterWithParameter.js";
 import ChangeEntry from "../changes/ChangeEntry.js";
@@ -9,8 +10,6 @@ export interface IForeignKeyFilter {
 }
 
 export default abstract class EntityEvents<T> {
-
-    constructor(protected context: EntityContext) {}
 
     filter(query: IEntityQuery<T>) {
         return query;

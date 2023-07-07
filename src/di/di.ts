@@ -2,6 +2,7 @@ import { IDisposable, disposeDisposable } from "../common/IDisposable.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 
 import "reflect-metadata";
+import EntityContext from "../model/EntityContext.js";
 
 export type ServiceKind = "Singleton" | "Transient" | "Scoped";
 
@@ -19,10 +20,16 @@ export class ServiceProvider implements IDisposable {
 
     public static global = new ServiceProvider();
 
-    public static resolve<T>(serviceOwner: any, type: IClassOf<T>) {
+    public static resolve<T>(serviceOwner: any, type: IClassOf<T>): T {
         const sp = serviceOwner[serviceProvider] as ServiceProvider;
         return sp.resolve(type);
     }
+
+    static create<T>(serviceOwner, type: IClassOf<T>): T {
+        const sp = (serviceOwner[serviceProvider] ?? this.global) as ServiceProvider;
+        return sp.createFromType(type);
+    }
+
 
     private map: Map<any,any> = new Map();
     private disposables: IDisposable[];
@@ -34,9 +41,20 @@ export class ServiceProvider implements IDisposable {
 
     resolve(type) {
         let instance: any;
-        const sd = registrations.get(type);
+        let sd = registrations.get(type);
         if (!sd) {
-            throw new Error(`No service registered for ${type?.name ?? type}`);
+            // we need to go through all services
+            // to find the derived type
+            for (const [key, value] of registrations.entries()) {
+                if (key instanceof type) {
+                    // we found the match..
+                    registrations.set(type, { ... value, key: type });
+                    sd = value;
+                }
+            }
+            if (!sd) {
+                throw new Error(`No service registered for ${type?.name ?? type}`);
+            }
         }
         switch(sd.kind) {
             case "Scoped":
@@ -45,7 +63,7 @@ export class ServiceProvider implements IDisposable {
                 }
                 instance = this.map.get(type);
                 if (!instance) {
-                    instance = this.create(sd);
+                    instance = this.createFromDescriptor(sd);
                     this.map.set(type, instance);
                     instance[serviceProvider] = this;
                     if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
@@ -60,7 +78,7 @@ export class ServiceProvider implements IDisposable {
                 }
                 instance = sp.map.get(type);
                 if (!instance) {
-                    instance = sp.create(sd);
+                    instance = sp.createFromDescriptor(sd);
                     instance[serviceProvider] = sp;
                     sp.map.set(type, instance);
                     if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
@@ -69,7 +87,7 @@ export class ServiceProvider implements IDisposable {
                 }
                 return  instance;
             case "Transient":
-                instance = sp.create(sd);
+                instance = sp.createFromDescriptor(sd);
                 instance[serviceProvider] = sp;
                 return instance;
         }
@@ -89,16 +107,21 @@ export class ServiceProvider implements IDisposable {
         }
     }
 
-    private create(sd: IServiceDescriptor): any {
+    private createFromDescriptor(sd: IServiceDescriptor): any {
         if(sd.factory) {
             return sd.factory(this);
         }
-        const injectTypes = sd.key[injectServiceTypesSymbol] as any[];
+        return this.createFromType(sd.key);
+    }
+
+    private createFromType(type): any {
+        const injectTypes = type[injectServiceTypesSymbol] as any[];
         const injectServices = injectTypes
             ? injectTypes.map((x) => this.resolve(x))
             : [];
-        return new sd.key(... injectServices);
+        return new type(... injectServices);
     }
+
 }
 
 export interface IServiceDescriptor {

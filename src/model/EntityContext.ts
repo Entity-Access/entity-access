@@ -8,7 +8,7 @@ import EntityType from "../entity-query/EntityType.js";
 import EntityEvents from "./events/EntityEvents.js";
 import ChangeEntry from "./changes/ChangeEntry.js";
 import ContextEvents from "./events/ContextEvents.js";
-import Inject from "../di/di.js";
+import Inject, { ServiceProvider } from "../di/di.js";
 
 const isChanging = Symbol("isChanging");
 
@@ -178,6 +178,7 @@ export default class EntityContext {
     }
 
     private getEventsFor(type: EntityType): EntityEvents<any> {
-        return this.events?.for(type.typeClass);
+        const entityEventsType = this.events.for(type.typeClass);
+        return ServiceProvider.create(this, entityEventsType);
     }
 }
