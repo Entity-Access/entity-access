@@ -1,6 +1,6 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, Expression, ExpressionAs, Identifier, JoinExpression, MemberExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { BinaryExpression, Expression, ExpressionAs, Identifier, JoinExpression, MemberExpression, ParameterExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
 import { ITextQueryFragment, QueryParameter } from "../query/ast/IStringTransformer.js";
 import EntityContext from "./EntityContext.js";
 
@@ -13,8 +13,8 @@ export class SourceExpression {
     }
 
     signal: AbortSignal;
-    alias: string;
-    parameter?: string;
+    alias: ParameterExpression;
+    parameter?: ParameterExpression;
     context: EntityContext;
     model?: EntityType;
     include?: EntityType[];
@@ -59,31 +59,28 @@ export class SourceExpression {
             }
         }
         const column = relation.relation.fkColumn;
-        const parameter = this.parameter + "." + property;
+        const parameter = ParameterExpression.create({ name: this.parameter + "." + property});
         const source = this.addSource(model, parameter);
         const join = JoinExpression.create({
-            as: QuotedLiteral.create({ literal: source.alias}),
+            as: source.alias,
             joinType: column.nullable ? "LEFT" : "INNER",
             model,
             source: QuotedLiteral.create({ literal: model.name }),
-            where: BinaryExpression.create({
-                left: MemberExpression.create({
-                    target: Identifier.create({ value: this.alias }),
-                    property: Identifier.create({ value: column.columnName })
-                }),
-                operator: "=",
-                right: MemberExpression.create({
-                    target: Identifier.create({ value: source.alias }),
-                    property: Identifier.create({ value: model.keys[0].columnName })
-                })
-            })
+            where: Expression.logicalAnd(
+                Expression.member(
+                    this.alias,
+                    column.columnName),
+                Expression.member(
+                    source.alias,
+                    model.keys[0].columnName)
+            )
         });
         select.joins.push(join);
         join[sourceSymbol] = source;
         return source;
     }
 
-    addSource(model: EntityType, parameter: string) {
+    addSource(model: EntityType, parameter: ParameterExpression) {
 
         const { context } = this;
         const source = SourceExpression.create({
@@ -105,15 +102,15 @@ export class SourceExpression {
                 break;
             }
         }while (true);
-        source.alias = alias;
+        source.alias = ParameterExpression.create({ name: alias });
         this.map.set(alias, source);
-        this.paramMap.set(parameter, source);
+        this.paramMap.set(parameter.name, source);
         return source;
     }
 
     flatten(chain: string[]): ITextQueryFragment {
         const [start, ... others ] = chain;
-        if (start === this.parameter) {
+        if (start === this.parameter.name) {
             return this.prepareNames(others);
         }
         const mapped = this.paramMap.get(start);
@@ -127,7 +124,7 @@ export class SourceExpression {
         const p = this.model.getProperty(property);
         const quotedLiteral = this.context.driver.compiler.quotedLiteral;
         if (others.length === 0) {
-            return `${ QueryParameter.create(this.alias, quotedLiteral)}.${quotedLiteral(p.field.columnName)}`;
+            return `${ QueryParameter.create(this.alias.name, quotedLiteral)}.${quotedLiteral(p.field.columnName)}`;
         }
 
         // this must be a navigation...

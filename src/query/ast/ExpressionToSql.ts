@@ -1,7 +1,8 @@
 import QueryCompiler from "../../compiler/QueryCompiler.js";
+import EntityQuery from "../../model/EntityQuery.js";
 import { SourceExpression } from "../../model/SourceExpression.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
-import { ITextQuery, prepare, prepareJoin } from "./IStringTransformer.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, PartialExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
 export default class ExpressionToSql extends Visitor<ITextQuery> {
@@ -10,14 +11,14 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     constructor(
         private source: SourceExpression,
-        private root: string,
-        target: string,
+        public root: ParameterExpression,
+        public target: ParameterExpression,
         private compiler: QueryCompiler
     ) {
         super();
         if (source) {
             source.parameter = target;
-            this.targets.set(target, source);
+            this.targets.set(target.name, source);
         }
     }
 
@@ -115,62 +116,67 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                         const body = e.arguments[0] as ExpressionType;
                         if (body.type === "ArrowFunctionExpression") {
 
-                            const param1 = body.params[0] as Identifier;
-                            const relatedSource = this.source.addSource(relation.relation.relatedEntity, param1.value);
+                            const param1 = body.params[0];
+                            const relatedSource = this.source.addSource(relation.relation.relatedEntity, param1);
                             const relatedModel = relatedSource.model;
                             const targetKey = MemberExpression.create({
-                                target: Identifier.create({ value: target }),
+                                target: this.target,
                                 property: Identifier.create({
                                     value: targetType.keys[0].columnName
                                 })
                             });
 
                             const relatedKey = MemberExpression.create({
-                                target: Identifier.create({ value: param1.value }),
+                                target: param1,
                                 property: Identifier.create({
                                     value: relation.relation.fkColumn.columnName
                                 })
                             });
 
-                            const entitySource = this.source.context.model.register(relatedSource.model.typeClass);
-                            // get filter ..
-                            const includeFilter = entitySource.filters?.include?.(targetType.typeClass);
+                            let query = this.source.context.query(relatedSource.model.typeClass);
 
-                            let bodyExpression = body.body;
-
-                            if(includeFilter) {
-                                bodyExpression = BinaryExpression.create({
-                                    left: bodyExpression,
-                                    operator: "=",
-                                    right: PlaceholderExpression.create({ expression: () => includeFilter })
-                                });
+                            // check if we have filter...
+                            const entityEvents = this.source.context.eventsFor(relatedSource.model.typeClass, false);
+                            if (entityEvents) {
+                                query = entityEvents.includeFilter(query);
                             }
 
-                            const exists = ExistsExpression.create({
-                                target: SelectStatement.create({
-                                    source: relatedModel.fullyQualifiedName,
-                                    as: QuotedLiteral.create({ literal: relatedSource.alias }),
-                                    fields: [
-                                        ExpressionAs.create({ expression: NumberLiteral.create({ value: 1 }),
-                                        alias: QuotedLiteral.create({ literal: param1.value + "1" })
-                                    })],
-                                    where: BinaryExpression.create({
-                                        left: BinaryExpression.create({
-                                            left: targetKey,
-                                            operator: "=",
-                                            right: relatedKey,
-                                        }),
-                                        operator: "AND",
-                                        right: bodyExpression
-                                    })
-                                })
+                            let select = (query as EntityQuery).source.select;
+
+
+                            const join = BinaryExpression.create({
+                                left: targetKey,
+                                operator: "=",
+                                right: relatedKey
                             });
-                            const select = exists.target as SelectStatement;
+
+                            let where = select.where;
+
+                            if(where) {
+                                where = BinaryExpression.create({
+                                    left: select.where,
+                                    operator: "AND",
+                                    right: join
+                                });
+                            } else {
+                                where = join;
+                            }
+
+                            select = { ... select, where };
+
+                            select.fields = [
+                                Identifier.create({ value: "1"})
+                            ];
+
+                            const exists = ExistsExpression.create({
+                                target: select
+                            });
+
                             const dispose = this.pushTarget(param1.value, SourceExpression.create({
                                 context,
                                 select,
                                 parameter: param1.value,
-                                alias: select.as.literal,
+                                alias: select.as,
                                 model: relatedModel,
                                 parent: this.source
                             }));
@@ -200,6 +206,13 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     visitIdentifier(e: Identifier): ITextQuery {
         // need to visit parameters
         return [e.value];
+    }
+
+    visitParameterExpression({ name, value }: ParameterExpression): ITextQuery {
+        if (value !== void 0) {
+            return [() => value];
+        }
+        return [name];
     }
 
     visitMemberExpression(me: MemberExpression): ITextQuery {

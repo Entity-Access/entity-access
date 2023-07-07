@@ -15,7 +15,7 @@ export default abstract class EntityEvents<T> {
         return query;
     }
 
-    includeFilter(query: IEntityQuery<T>) {
+    includeFilter(query: IEntityQuery<T>, type?: any, key?: string) {
         return this.filter(query);
     }
 

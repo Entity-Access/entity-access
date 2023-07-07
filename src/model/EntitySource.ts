@@ -1,7 +1,7 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
-import { BinaryExpression, Expression, ExpressionAs, PlaceholderExpression, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { BinaryExpression, Expression, ExpressionAs, ParameterExpression, PlaceholderExpression, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import EntityQuery from "./EntityQuery.js";
 import TimedCache from "../common/cache/TimedCache.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
@@ -11,15 +11,6 @@ import { IClassOf } from "../decorators/IClassOf.js";
 const modelCache = new TimedCache<any, SelectStatement>();
 
 export class EntitySource<T = any> {
-
-
-    public readonly filters: {
-        read?: () => IFilterExpression;
-        modify?: () => IFilterExpression;
-        delete?: () => IFilterExpression;
-        include?: (parent: IClassOf<any>) => IFilterExpression;
-    } = {};
-
 
     get [modelSymbol]() {
         return this.model;
@@ -78,13 +69,13 @@ export class EntitySource<T = any> {
 
     generateModel(): SelectStatement {
         const source = this.model.fullyQualifiedName;
-        const as = QuotedLiteral.create({ literal: this.model.name[0] + "1" });
+        const as = Expression.parameter(this.model.name[0] + "1");
         const fields = this.model.columns.map((c) => c.name !== c.columnName
             ? ExpressionAs.create({
-                expression: QuotedLiteral.propertyChain(as.literal, c.columnName),
+                expression: Expression.member(as, c.columnName),
                 alias: QuotedLiteral.create({ literal: c.name })
             })
-            : QuotedLiteral.propertyChain(as.literal, c.columnName));
+            : Expression.member(as, c.columnName));
         return SelectStatement.create({
             source,
             as,
@@ -96,7 +87,7 @@ export class EntitySource<T = any> {
         const { model, context } = this;
         const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
         return new EntityQuery<T>(SourceExpression.create({
-            alias: select.as.literal,
+            alias: select.as,
             context,
             model,
             select

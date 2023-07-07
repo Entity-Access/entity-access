@@ -33,11 +33,20 @@ export default class EntityContext {
         @Inject
         private events?: ContextEvents
     ) {
-        this.raiseEvents = !!this.events;
+        this.raiseEvents = !!events;
+    }
+
+    eventsFor<T>(type: IClassOf<T>, fail = true): EntityEvents<T>{
+        const eventsClass = this.events?.for(type, fail);
+        if (!eventsClass) {
+            return null;
+        }
+        return ServiceProvider.resolve(this, eventsClass);
     }
 
     query<T>(type: IClassOf<T>) {
-        return this.model.register(type).asQuery();
+        const query = this.model.register(type).asQuery();
+        return query;
     }
 
     public async saveChanges(signal?: AbortSignal) {
@@ -87,32 +96,32 @@ export default class EntityContext {
 
         const verificationSession = new VerificationSession(this);
 
-        const pending = [] as { status: ChangeEntry["status"], change: ChangeEntry  }[];
+        const pending = [] as { status: ChangeEntry["status"], change: ChangeEntry , events: EntityEvents<any>  }[];
 
         for (const iterator of this.changeSet.entries) {
 
-            const events = this.getEventsFor(iterator.type);
+            const events = this.eventsFor(iterator.type.typeClass);
             switch(iterator.status) {
                 case "inserted":
                     await events.beforeInsert(iterator.entity, iterator);
                     if (this.verifyFilters) {
                         verificationSession.queueVerification(iterator);
                     }
-                    pending.push({ status: iterator.status, change: iterator });
+                    pending.push({ status: iterator.status, change: iterator, events });
                     continue;
                 case "deleted":
                     await events.beforeDelete(iterator.entity, iterator);
                     if (this.verifyFilters) {
                         verificationSession.queueVerification(iterator);
                     }
-                    pending.push({ status: iterator.status, change: iterator });
+                    pending.push({ status: iterator.status, change: iterator, events });
                     continue;
                 case "modified":
                     await events.beforeUpdate(iterator.entity, iterator);
                     if (this.verifyFilters) {
                         verificationSession.queueVerification(iterator);
                     }
-                    pending.push({ status: iterator.status, change: iterator });
+                    pending.push({ status: iterator.status, change: iterator, events });
                     continue;
             }
         }
@@ -125,10 +134,7 @@ export default class EntityContext {
 
         if (pending.length > 0) {
 
-            for (const { status, change, change: { entity} } of pending) {
-
-                const events = this.getEventsFor(change.type);
-
+            for (const { status, change, change: { entity}, events } of pending) {
                 switch(status) {
                     case "inserted":
                         await events.afterInsert(entity, entity);
@@ -177,8 +183,4 @@ export default class EntityContext {
         return r.rows?.[0];
     }
 
-    private getEventsFor(type: EntityType): EntityEvents<any> {
-        const entityEventsType = this.events.for(type.typeClass);
-        return ServiceProvider.create(this, entityEventsType);
-    }
 }

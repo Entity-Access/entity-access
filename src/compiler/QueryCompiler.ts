@@ -1,7 +1,7 @@
 import { IClassOf } from "../decorators/IClassOf.js";
 import ExpressionToSql from "../query/ast/ExpressionToSql.js";
 import { ISqlMethodTransformer, IStringTransformer, ITextQuery } from "../query/ast/IStringTransformer.js";
-import { Expression, PlaceholderExpression } from "../query/ast/Expressions.js";
+import { Expression, ParameterExpression, PlaceholderExpression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
@@ -9,6 +9,13 @@ import EntityType from "../entity-query/EntityType.js";
 import { EntitySource } from "../model/EntitySource.js";
 import { IEntityQuery } from "../model/IFilterWithParameter.js";
 import { SourceExpression } from "../model/SourceExpression.js";
+
+export class CompiledQuery {
+    constructor(
+        public root: ParameterExpression,
+        public target: ParameterExpression,
+        public textQuery: ITextQuery) {}
+}
 
 export default class QueryCompiler {
 
@@ -39,25 +46,22 @@ export default class QueryCompiler {
     }
 
     public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: SourceExpression) {
-        const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new this.expressionToSql(source, param, target, this);
+        const { params, target , body } = this.arrowToExpression.transform(fx);
+        const exp = new this.expressionToSql(source, params[0], target, this);
         const query = exp.visit(body);
         return this.invoke(query, parameters);
     }
 
-    public compileToExpression(source: SourceExpression, p: any, fx: (p1) => (x) => any) {
-        const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new this.expressionToSql(source, param, target, this);
-        const visited = exp.visit(body);
-        return PlaceholderExpression.create({
-            expression: () => visited.map((x) => typeof x === "function" ? () => x(p) : x)
-        });
+    public compile(fx: (p) => (x) => any) {
+        const { params, target , body } = this.arrowToExpression.transform(fx);
+        return { params, target, body };
     }
 
-    public compile( source: SourceExpression , fx: (p) => (x) => any) {
-        const { param, target , body } = this.arrowToExpression.transform(fx);
-        const exp = new this.expressionToSql(source, param, target, this);
-        return exp.visit(body);
+    public compileToSql( source: SourceExpression , fx: (p) => (x) => any) {
+        const { params, target , body } = this.arrowToExpression.transform(fx);
+        const exp = new this.expressionToSql(source, params[0], target, this);
+        const textQuery = exp.visit(body);
+        return new CompiledQuery(exp.root,exp.target,textQuery);
     }
 
     public compileExpression(exp: Expression) {

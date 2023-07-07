@@ -24,6 +24,27 @@ const flattenedSelf = Symbol("flattenedSelf");
 
 export abstract class Expression {
 
+    static parameter(name: string) {
+        return ParameterExpression.create({ name });
+    }
+
+    static identifier(name: string) {
+        return Identifier.create({ value: name });
+    }
+
+    static logicalAnd(left: Expression, right: Expression): BinaryExpression {
+        return BinaryExpression.create({ left, operator: "AND", right});
+    }
+
+    static member(target: Expression, identifier: string |Expression): MemberExpression {
+        return MemberExpression.create({
+            target,
+            property: typeof identifier === "string"
+                ? this.identifier(identifier)
+                : identifier
+        });
+    }
+
     static create<T extends Expression>(this: IClassOf<T>, p: Partial<Omit<T, "type">>) {
         (p as any).type = (this as any).name;
         Object.setPrototypeOf(p, this.prototype);
@@ -73,6 +94,11 @@ export class PlaceholderExpression extends Expression {
     expression: () => ITextQuery;
 }
 
+export class PartialExpression extends Expression {
+    readonly type = "PartialExpression";
+    query: ITextQuery;
+}
+
 export class BinaryExpression extends Expression {
 
     readonly type = "BinaryExpression";
@@ -112,6 +138,15 @@ export class CallExpression extends Expression {
     arguments: Expression[];
 }
 
+export class ParameterExpression extends Expression {
+    readonly type = "ParameterExpression";
+    name: string;
+    /**
+     * Default value if any...
+     */
+    value: any;
+}
+
 export class MemberExpression extends Expression {
     readonly type = "MemberExpression";
     target: Expression;
@@ -121,7 +156,7 @@ export class MemberExpression extends Expression {
 
 export class ArrowFunctionExpression extends Expression {
     readonly type = "ArrowFunctionExpression";
-    params: Expression[];
+    params: ParameterExpression[];
     body: Expression;
 }
 
@@ -133,7 +168,7 @@ export class SelectStatement extends Expression {
 
     source: TableSource;
 
-    as: QuotedLiteral;
+    as: ParameterExpression;
 
     fields: (Expression | QuotedLiteral | ExpressionAs)[];
 
@@ -165,7 +200,7 @@ export class JoinExpression extends Expression {
     readonly type = "JoinExpression";
     joinType: "LEFT" | "INNER";
     source: SelectStatement | QuotedLiteral | ExpressionAs;
-    as: QuotedLiteral;
+    as: QuotedLiteral | ParameterExpression;
     where: Expression;
     model: EntityType;
 }
@@ -314,5 +349,6 @@ export type ExpressionType =
     ArrowFunctionExpression |
     ConditionalExpression |
     NewObjectExpression |
+    ParameterExpression |
     TemplateElement
 ;

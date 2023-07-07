@@ -30,21 +30,13 @@ export default class EntityQuery<T = any>
     thenByDescending(parameters: any, fx: any) {
         return this.orderByDescending(parameters, fx);
     }
+
     where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): any {
 
-        const source = this.source.copy();
-        const { select } = source;
-        const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx);
-        if(!select.where) {
-            select.where = exp;
-        } else {
-            select.where = BinaryExpression.create({
-                left: select.where,
-                operator: "AND",
-                right: exp
-            });
-        }
-        return new EntityQuery(source);
+        return this.extend(parameters, fx, (select, body) => ({
+            ... select,
+            where: select.where ? Expression.logicalAnd(select.where, body): body
+        }));
     }
 
     async toArray(): Promise<T[]> {
@@ -93,25 +85,21 @@ export default class EntityQuery<T = any>
         return this.source.context.driver.compiler.compileExpression(this.source.select);
     }
     orderBy(parameters: any, fx: any): any {
-        const source = this.source.copy();
-        const { select } = source;
-        const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx as any);
-        select.orderBy ??= [];
-        select.orderBy.push(OrderByExpression.create({
-            target: exp
+        return this.extend(parameters, fx, (select, target) => ({
+            ... select,
+            orderBy: select.orderBy
+                ? [ ... select.orderBy, OrderByExpression.create({ target})]
+                : [OrderByExpression.create({ target})]
         }));
-        return new EntityQuery(source);
     }
     orderByDescending(parameters: any, fx: any): any {
-        const source = this.source.copy();
-        const { select } = source;
-        const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx as any);
-        select.orderBy ??= [];
-        select.orderBy.push(OrderByExpression.create({
-            target: exp,
-            descending: true
+        const descending = true;
+        return this.extend(parameters, fx, (select, target) => ({
+            ... select,
+            orderBy: select.orderBy
+                ? [ ... select.orderBy, OrderByExpression.create({ target, descending })]
+                : [OrderByExpression.create({ target, descending })]
         }));
-        return new EntityQuery(source);
     }
 
     limit(n: number): any {
@@ -157,6 +145,16 @@ export default class EntityQuery<T = any>
             await reader.dispose();
         }
 
+    }
+
+    private extend(parameters: any, fx: any, map: (select: SelectStatement, exp: Expression) => SelectStatement) {
+
+        const { select } = this.source;
+        const exp = this.source.context.driver.compiler.compile(fx);
+        exp.params[0].value = parameters;
+        const source = this.source.copy();
+        source.select = map(select, exp.body);
+        return new EntityQuery(source);
     }
 
 }
