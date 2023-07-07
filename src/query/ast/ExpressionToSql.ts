@@ -4,7 +4,7 @@ import type EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
 import { EntitySource } from "../../model/EntitySource.js";
 import { SourceExpression } from "../../model/SourceExpression.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextOrFunctionArray, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
@@ -241,6 +241,14 @@ export default class ExpressionToSql extends Visitor<ITextOrFunctionArray> {
             ? prepare `(${this.visit(e.right)})`
             : this.visit(e.right);
         return prepare `${left} ${e.operator} ${right}`;
+    }
+
+    visitConditionalExpression(e: ConditionalExpression): ITextOrFunctionArray {
+        const test = this.visit(e.test);
+        const alternate = this.visit(e.alternate);
+        const consequent = this.visit(e.consequent);
+
+        return prepare `(CASE WHEN ${test} THEN ${consequent} ELSE ${alternate} END)`;
     }
 
     visitCoalesceExpression(e: CoalesceExpression): ITextOrFunctionArray {

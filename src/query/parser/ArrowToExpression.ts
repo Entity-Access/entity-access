@@ -1,10 +1,11 @@
 import { parseExpression } from "@babel/parser";
-import { ArrowFunctionExpression, BinaryExpression, CallExpression, CoalesceExpression, Constant, Expression, Identifier, MemberExpression, NullExpression, NumberLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, BinaryExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, QuotedLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import EntityType from "../../entity-query/EntityType.js";
 import { EntitySource } from "../../model/EntitySource.js";
 import Restructure from "./Restructure.js";
+import { NotSupportedError } from "./NotSupportedError.js";
 
 type IQueryFragment = string | { name?: string, value?: any };
 type IQueryFragments = IQueryFragment[];
@@ -176,10 +177,36 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitObjectExpression(node: bpe.ObjectExpression): Expression {
-        throw new Error("Method not implemented.");
+        const properties = [] as ExpressionAs[];
+        for (const iterator of node.properties) {
+            switch(iterator.type) {
+                case "ObjectProperty":
+                    switch(iterator.key.type) {
+                        case "Identifier":
+                            properties.push( ExpressionAs.create({
+                                alias: QuotedLiteral.create({ literal: iterator.key.name}),
+                                expression: this.visit(iterator.value)
+                            }) );
+                            break;
+                        default:
+                            throw new NotSupportedError();
+                    }
+                    continue;
+                default:
+                    throw new NotSupportedError();
+            }
+        }
+        return NewObjectExpression.create({
+            properties
+        });
     }
+
     visitConditionalExpression(node: bpe.ConditionalExpression): Expression {
-        throw new Error("Method not implemented.");
+        return ConditionalExpression.create({
+            test: this.visit(node.test),
+            consequent: this.visit(node.consequent),
+            alternate: this.visit(node.alternate)
+        });
     }
 
     private getParameterNames(params: (bpe.Identifier | bpe.RestElement | bpe.Pattern)[]) {

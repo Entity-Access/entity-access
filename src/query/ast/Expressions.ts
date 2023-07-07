@@ -149,6 +149,18 @@ export class SelectStatement extends Expression {
 
 }
 
+export class NewObjectExpression extends Expression {
+    readonly type = "NewObjectExpression";
+    properties: ExpressionAs[];
+}
+
+export class ConditionalExpression extends Expression {
+    readonly type = "ConditionalExpression";
+    test: Expression;
+    consequent: Expression;
+    alternate: Expression;
+}
+
 export class JoinExpression extends Expression {
     readonly type = "JoinExpression";
     joinType: "LEFT" | "INNER";
@@ -289,6 +301,8 @@ export type ExpressionType =
     CoalesceExpression|
     ExistsExpression|
     Identifier |
-    PlaceholderExpression|
-    ArrowFunctionExpression
+    PlaceholderExpression |
+    ArrowFunctionExpression |
+    ConditionalExpression |
+    NewObjectExpression
 ;
