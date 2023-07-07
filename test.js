@@ -92,7 +92,7 @@ const testDb = !process.argv.includes("no-db");
 await TestRunner.runAll("./dist/tests", testDb);
 
 let exitCode = 0;
-const failed = 0;
+let failed = 0;
 
 for (const { error, name } of results) {
     if (error) {

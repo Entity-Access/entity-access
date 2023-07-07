@@ -15,7 +15,7 @@ export default class EntityQuery<T = any>
     map(p: any, fx: any): any {
         const source = this.source.copy();
         const { select } = source;
-        const exp = this.source.context.driver.compiler.compileToExpression(source, p, fx);
+        // const exp = this.source.context.driver.compiler.compileToExpression(source, p, fx);
     }
 
     withSignal(signal: AbortSignal): any {

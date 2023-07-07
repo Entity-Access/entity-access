@@ -247,7 +247,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 if (scopedName === null) {
                     throw new Error(`Unknown identifier ${name}`);
                 }
-                break;
+                return;
             case "MemberExpression":
             case "OptionalMemberExpression":
                 return this.sanitize(node.object);
