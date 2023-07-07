@@ -8,6 +8,7 @@ import EntityType from "../entity-query/EntityType.js";
 import EntityEvents from "./events/EntityEvents.js";
 import ChangeEntry from "./changes/ChangeEntry.js";
 import ContextEvents from "./events/ContextEvents.js";
+import Inject from "../di/di.js";
 
 const isChanging = Symbol("isChanging");
 
@@ -27,7 +28,9 @@ export default class EntityContext {
     private postSaveChangesQueue: { task: () => any, order: number }[];
 
     constructor(
+        @Inject
         public driver: BaseDriver,
+        @Inject
         private events?: ContextEvents
     ) {
         this.raiseEvents = !!this.events;
@@ -47,6 +50,13 @@ export default class EntityContext {
             this.queuePostSaveTask(() => this.saveChanges(signal));
             return 0;
         }
+
+        this.changeSet.detectChanges();
+
+        if(!this.raiseEvents) {
+            return this.saveChangesWithoutEvents(signal);
+        }
+
         try {
             this[isChanging] = true;
             const r = await this.saveChangesInternal(signal);
@@ -74,8 +84,6 @@ export default class EntityContext {
     }
 
     async saveChangesInternal(signal?: AbortSignal) {
-
-        this.changeSet.detectChanges();
 
         const verificationSession = new VerificationSession(this);
 

@@ -1,6 +1,8 @@
 import { IDisposable, disposeDisposable } from "../common/IDisposable.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 
+import "reflect-metadata";
+
 export type ServiceKind = "Singleton" | "Transient" | "Scoped";
 
 const registrations = new Map<any,IServiceDescriptor>();
