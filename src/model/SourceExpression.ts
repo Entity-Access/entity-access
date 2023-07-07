@@ -12,7 +12,6 @@ export class SourceExpression {
         return new SourceExpression(p);
     }
 
-    signal: AbortSignal;
     alias: ParameterExpression;
     parameter?: ParameterExpression;
     context: EntityContext;

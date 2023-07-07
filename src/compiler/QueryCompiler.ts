@@ -4,7 +4,8 @@ import { Expression, ParameterExpression } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
-import { SourceExpression } from "../model/SourceExpression.js";
+import EntityQuery from "../model/EntityQuery.js";
+
 
 export class CompiledQuery {
     constructor(
@@ -41,7 +42,7 @@ export default class QueryCompiler {
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 
-    public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: SourceExpression) {
+    public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: EntityQuery) {
         const { params, target , body } = this.arrowToExpression.transform(fx);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const query = exp.visit(body);
@@ -53,14 +54,14 @@ export default class QueryCompiler {
         return { params, target, body };
     }
 
-    public compileToSql( source: SourceExpression , fx: (p) => (x) => any) {
+    public compileToSql( source: EntityQuery , fx: (p) => (x) => any) {
         const { params, target , body } = this.arrowToExpression.transform(fx);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const textQuery = exp.visit(body);
         return new CompiledQuery(exp.root,exp.target,textQuery);
     }
 
-    public compileExpression(exp: Expression, source?: SourceExpression, root?: ParameterExpression, target?: ParameterExpression) {
+    public compileExpression(exp: Expression, source?: EntityQuery, root?: ParameterExpression, target?: ParameterExpression) {
         const toSql = new this.expressionToSql(source ?? null, root, target, this);
         const query = toSql.visit(exp);
         return this.invoke(query);

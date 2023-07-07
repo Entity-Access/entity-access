@@ -5,7 +5,6 @@ import { Expression, ExpressionAs, QuotedLiteral, SelectStatement } from "../que
 import EntityQuery from "./EntityQuery.js";
 import TimedCache from "../common/cache/TimedCache.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
-import { SourceExpression } from "./SourceExpression.js";
 
 const modelCache = new TimedCache<any, SelectStatement>();
 

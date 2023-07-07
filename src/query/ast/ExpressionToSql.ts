@@ -1,26 +1,29 @@
 import QueryCompiler from "../../compiler/QueryCompiler.js";
+import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
-import { SourceExpression } from "../../model/SourceExpression.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
+export interface IMappingModel {
+    parameter: ParameterExpression;
+    model?: EntityType;
+    replace?: Expression;
+}
+
 export default class ExpressionToSql extends Visitor<ITextQuery> {
 
-    private targets: Map<ParameterExpression, SourceExpression> = new Map();
+    private targets: Map<ParameterExpression, IMappingModel> = new Map();
 
     constructor(
-        private source: SourceExpression,
+        private source: EntityQuery,
         public root: ParameterExpression,
         public target: ParameterExpression,
         private compiler: QueryCompiler
     ) {
         super();
-        if (source) {
-            source.parameter = target;
-        }
-        this.targets.set(root, source ?? null);
-        this.targets.set(target, source ?? null);
+        this.targets.set(root, { parameter: root, replace: root });
+        this.targets.set(target, { parameter: target, replace: source.selectStatement.as});
     }
 
     visitArray(e: Expression[], sep = ","): ITextQuery {
@@ -108,18 +111,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 // calling method on property...
                 // should be navigation...
                 const targetType = existingTarget.model;
-                const context = existingTarget.context;
+                const context = this.source.context;
                 const relation = targetType?.getProperty(chain[0]);
                 if (relation) {
                     if (/^(some|any)$/i.test(chain[1])) {
-
 
                         const body = e.arguments[0] as ExpressionType;
                         if (body.type === "ArrowFunctionExpression") {
 
                             const param1 = body.params[0];
-                            const relatedSource = this.source.addSource(relation.relation.relatedEntity, param1);
-                            const relatedModel = relatedSource.model;
+                            const relatedModel = relation.relation.relatedEntity;
+                            const relatedType = relatedModel.typeClass;
+                            this.targets.set(param1, { parameter: param1, model: relatedModel, replace: param1 });
                             const targetKey = MemberExpression.create({
                                 target: this.target,
                                 property: Identifier.create({
@@ -134,10 +137,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 })
                             });
 
-                            let query = this.source.context.query(relatedSource.model.typeClass);
+                            let query = this.source.context.query(relatedType);
 
                             // check if we have filter...
-                            const entityEvents = this.source.context.eventsFor(relatedSource.model.typeClass, false);
+                            const entityEvents = this.source.context.eventsFor(relatedType, false);
                             if (entityEvents) {
                                 query = entityEvents.includeFilter(query);
                             }
@@ -173,17 +176,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 target: select
                             });
 
-                            const dispose = this.pushTarget(param1.value, SourceExpression.create({
-                                context,
-                                select,
-                                parameter: param1.value,
-                                alias: select.as,
-                                model: relatedModel,
-                                parent: this.source
-                            }));
-
                             const r = this.visit(exists);
-                            dispose();
+                            this.targets.delete(param1);
                             return r;
                         }
 
@@ -209,7 +203,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return [e.value];
     }
 
-    visitParameterExpression({ name, value }: ParameterExpression): ITextQuery {
+    visitParameterExpression(pe: ParameterExpression): ITextQuery {
+        const { name, value } = pe;
         if (value !== void 0) {
             return [() => value];
         }
@@ -226,6 +221,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             }
             const source = this.targets.get(parameter);
             if (source) {
+                // add joins..
                 return [source.flatten(chain)];
             }
             return [ QueryParameter.create(() => parameter.name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
@@ -344,11 +340,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitExistsExpression(e: ExistsExpression): ITextQuery {
         return prepare `EXISTS (${this.visit(e.target)})`;
-    }
-
-    private pushTarget(target: ParameterExpression, type: SourceExpression) {
-        this.targets.set(target, type);
-        return () => this.targets.delete(target);
     }
 
     private getPropertyChain(x: Expression): { identifier?: Identifier, parameter?: ParameterExpression, chain: string[] } {

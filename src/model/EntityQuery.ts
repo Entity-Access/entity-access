@@ -1,9 +1,7 @@
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement, TableSource } from "../query/ast/Expressions.js";
+import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
 import EntityContext from "./EntityContext.js";
-import { EntitySource } from "./EntitySource.js";
-import { IOrderedEntityQuery, IEntityQuery, ILambdaExpression } from "./IFilterWithParameter.js";
-import { SourceExpression } from "./SourceExpression.js";
+import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
 
 export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
