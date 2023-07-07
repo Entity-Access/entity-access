@@ -4,6 +4,7 @@ import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import EntityType from "../../entity-query/EntityType.js";
 import { EntitySource } from "../../model/EntitySource.js";
+import Restructure from "./Restructure.js";
 
 type IQueryFragment = string | { name?: string, value?: any };
 type IQueryFragments = IQueryFragment[];
@@ -11,7 +12,10 @@ type IQueryFragments = IQueryFragment[];
 export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     public static transform(fx: (p: any) => (x: any) => any) {
-        const node = parseExpression(fx.toString());
+
+        const rs = new Restructure();
+
+        const node = rs.visit(parseExpression(fx.toString()));
         if (node.type !== "ArrowFunctionExpression") {
             throw new Error("Expecting an arrow function");
         }
@@ -169,6 +173,13 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             params,
             body
         });
+    }
+
+    visitObjectExpression(node: bpe.ObjectExpression): Expression {
+        throw new Error("Method not implemented.");
+    }
+    visitConditionalExpression(node: bpe.ConditionalExpression): Expression {
+        throw new Error("Method not implemented.");
     }
 
     private getParameterNames(params: (bpe.Identifier | bpe.RestElement | bpe.Pattern)[]) {

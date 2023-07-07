@@ -8,6 +8,16 @@ export default class EntityQuery<T = any>
     constructor (public readonly source: SourceExpression) {
     }
 
+    select(p: any, fx: any): any {
+        return this.map(p, fx);
+    }
+
+    map(p: any, fx: any): any {
+        const source = this.source.copy();
+        const { select } = source;
+        const exp = this.source.context.driver.compiler.compileToExpression(source, p, fx);
+    }
+
     withSignal(signal: AbortSignal): any {
         const source = this.source.copy();
         source.signal = signal;

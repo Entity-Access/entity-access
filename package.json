@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test-plain": "node --enable-source-maps ./test.js no-db",
     "test": "node --enable-source-maps ./test.js",
-    "test-db": "node --enable-source-maps ./test.js test-db",
     "postversion": "git push --follow-tags"
   },
   "type": "module",
