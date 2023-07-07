@@ -1,7 +1,7 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import EntityType from "../entity-query/EntityType.js";
 import { BinaryExpression, Expression, ExpressionAs, Identifier, JoinExpression, MemberExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
-import { ITextQueryFragment } from "../query/ast/IStringTransformer.js";
+import { ITextQueryFragment, QueryParameter } from "../query/ast/IStringTransformer.js";
 import EntityContext from "./EntityContext.js";
 
 const sourceSymbol = Symbol("source");
@@ -127,7 +127,7 @@ export class SourceExpression {
         const p = this.model.getProperty(property);
         const quotedLiteral = this.context.driver.compiler.quotedLiteral;
         if (others.length === 0) {
-            return `${quotedLiteral(this.alias)}.${quotedLiteral(p.field.columnName)}`;
+            return `${ QueryParameter.create(this.alias, quotedLiteral)}.${quotedLiteral(p.field.columnName)}`;
         }
 
         // this must be a navigation...

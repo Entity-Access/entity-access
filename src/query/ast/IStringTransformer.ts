@@ -5,6 +5,18 @@ export type IStringTransformer = (s: string) => string;
 
 export type ISqlMethodTransformer = (callee: string, args: string[]) => string;
 
+export class QueryParameter {
+
+    static create(name: string, quotedLiteral: (n: string) => string ) {
+        return new QueryParameter(name, quotedLiteral);
+    }
+
+    constructor(public name: string, public quotedLiteral: (n: string) => string) {}
+
+    toString() {
+        return this.quotedLiteral(this.name);
+    }
+}
 
 export const prepareAny = (a: TemplateStringsArray, ... p: any[]): any => {
     const r = [];
