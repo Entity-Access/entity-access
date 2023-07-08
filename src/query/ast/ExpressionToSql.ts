@@ -59,7 +59,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const source = this.visit(e.source);
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
-        const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
+        const as = e.as ? prepare ` AS ${this.compiler.quotedLiteral(e.as.name)}` : "";
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
@@ -230,6 +230,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             if (parameter === this.root) {
                 // we have a parameter...
                 return [(p) => p[chain[0]]];
+            }
+            if (parameter.value) {
+                const value = parameter.value;
+                return [() => value];
             }
             return [ QueryParameter.create(() => parameter.name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
         }
