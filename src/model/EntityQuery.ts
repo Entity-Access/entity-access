@@ -132,7 +132,9 @@ export default class EntityQuery<T = any>
             })
         ] };
 
-        const query = this.context.driver.compiler.compileExpression(this, select);
+        const nq = new EntityQuery({ ... this, selectStatement: select });
+
+        const query = this.context.driver.compiler.compileExpression(nq, select);
         const reader = await this.context.driver.executeReader(query);
 
         try {

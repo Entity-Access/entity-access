@@ -55,14 +55,14 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitSelectStatement(e: SelectStatement): ITextQuery {
-        const fields = this.visitArray(e.fields, ",\n\t\t");
-        const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
-        const source = this.visit(e.source);
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
-        const as = e.as ? prepare ` AS ${this.compiler.quotedLiteral(e.as.name)}` : "";
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
+        const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
+        const source = this.visit(e.source);
+        const as = e.as ? prepare ` AS ${this.compiler.quotedLiteral(e.as.name)}` : "";
+        const fields = this.visitArray(e.fields, ",\n\t\t");
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
@@ -129,9 +129,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             const relatedModel = relation.relation.relatedEntity;
                             const relatedType = relatedModel.typeClass;
                             let query = this.source.context.query(relatedType);
-                            let select = (query as EntityQuery).selectStatement;
+                            let select = { ... (query as EntityQuery).selectStatement };
 
                             const replaceParam = this.createParameter(this.source.selectStatement, relatedModel.name[0]);
+                            select.as = replaceParam;
 
                             this.targets.set(param1, { parameter: param1, model: relatedModel, replace: replaceParam });
                             this.targets.set(select.as, { parameter: param1, model: relatedModel, replace: replaceParam });
@@ -174,7 +175,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 where = join;
                             }
 
-                            select = { ... select, where };
+                            select.where = where;
 
                             select.fields = [
                                 Identifier.create({ value: "1"})
@@ -233,7 +234,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             }
             if (parameter.value) {
                 const value = parameter.value;
-                return [() => value];
+                return [() => value[chain[0]]];
             }
             return [ QueryParameter.create(() => parameter.name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
         }
@@ -335,7 +336,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
         const table = this.visit(e.source);
         const where = this.visit(e.where);
-        const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
+        const as = e.as ? prepare ` AS ${ e.as.type === "QuotedLiteral"
+            ? this.compiler.quotedLiteral(e.as.literal)
+            : this.compiler.quotedLiteral((e.as as any).name)}` : "";
         return prepare ` ${e.joinType || "LEFT"} JOIN ${table}${as} ON ${where}`;
     }
 
@@ -432,7 +435,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         while(chain.length > 1) {
             const property = chain.shift();
             const propertyInfo = type.getProperty(property);
-            if (!propertyInfo.relation || propertyInfo.relation?.isCollection) {
+            if (!propertyInfo.relation || propertyInfo.relation.isCollection) {
                 return pc;
             }
 
@@ -442,9 +445,11 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 return pc;
             }
 
+            const { fkColumn } = relation;
+
             const join = select.joins.find((x) => x.model === relation.relatedEntity);
             if (!join) {
-                const joinType = relation.fkColumn.nullable ? "LEFT" : "INNER";
+                const joinType = fkColumn.nullable ? "LEFT" : "INNER";
                 const joinParameter = this.createParameter(select, relation.relatedEntity.name[0]);
                 select.joins.push(JoinExpression.create({
                     as: joinParameter,
@@ -452,13 +457,13 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     model: relation.relatedEntity,
                     source: Expression.quotedLiteral(relation.relatedEntity.name),
                     where: Expression.equal(
-                        Expression.member(parameter, property),
-                        Expression.member(joinParameter, relation.relatedKey)
+                        Expression.member(parameter, fkColumn.columnName),
+                        Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
                     )
                 }));
                 parameter = joinParameter;
                 type = relation.relatedEntity;
-                this.targets.set(parameter, { parameter, model: type});
+                this.targets.set(parameter, { parameter, model: type, replace: parameter});
             }
         }
 
