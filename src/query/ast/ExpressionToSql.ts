@@ -355,6 +355,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
      * @returns Property Chain
      */
     private getPropertyChain(x: Expression): IPropertyChain {
+
+        // first replace root parameters
+        if (x.type === "MemberExpression") {
+            x = this.replaceParameters(x as MemberExpression);
+        }
+
         const chain = [];
         let me = (x as ExpressionType).type === "MemberExpression"
             ? x as MemberExpression
@@ -405,15 +411,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         // check if we have parameter..
         let { parameter } = pc;
-        if (!parameter || pc.chain.length <= 1 || !this.source) {
+        if (!parameter) {
             return pc;
         }
-
-        if(this.targets.has(parameter)) {
-            if (pc.chain.length <= 1) {
-                return pc;
-            }
-        } else {
+        if (pc.chain.length <= 1 || !this.source) {
             return pc;
         }
 
@@ -460,5 +461,19 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return { parameter, chain };
     }
 
+    private replaceParameters(x: MemberExpression): Expression {
+        const { target, property } = x;
+        if (target.type === "ParameterExpression") {
+            const replace = this.targets.get(target as ParameterExpression);
+            if (replace && replace.replace !== target) {
+                return Expression.member(replace.replace, property);
+            }
+            return x;
+        }
+        if (target.type === "MemberExpression") {
+            return Expression.member(this.replaceParameters(target as MemberExpression), property);
+        }
+        return x;
+    }
 
 }
