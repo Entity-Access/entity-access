@@ -24,6 +24,10 @@ const flattenedSelf = Symbol("flattenedSelf");
 
 export abstract class Expression {
 
+    static quotedLiteral(name: string) {
+        return QuotedLiteral.create({ literal: name });
+    }
+
     static parameter(name: string) {
         return ParameterExpression.create({ name });
     }
@@ -43,6 +47,10 @@ export abstract class Expression {
                 ? this.identifier(identifier)
                 : identifier
         });
+    }
+
+    static equal(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "="});
     }
 
     static create<T extends Expression>(this: IClassOf<T>, p: Partial<Omit<T, "type">>) {
@@ -182,6 +190,9 @@ export class SelectStatement extends Expression {
     limit: number;
 
     offset: number;
+
+    // name holds string
+    names: string;
 
 }
 

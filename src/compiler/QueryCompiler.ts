@@ -1,6 +1,6 @@
 import ExpressionToSql from "../query/ast/ExpressionToSql.js";
 import { ISqlMethodTransformer, IStringTransformer, ITextQuery } from "../query/ast/IStringTransformer.js";
-import { Expression, ParameterExpression } from "../query/ast/Expressions.js";
+import { Expression, ParameterExpression, SelectStatement } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
@@ -61,8 +61,8 @@ export default class QueryCompiler {
         return new CompiledQuery(exp.root,exp.target,textQuery);
     }
 
-    public compileExpression(exp: Expression, source?: EntityQuery, root?: ParameterExpression, target?: ParameterExpression) {
-        const toSql = new this.expressionToSql(source ?? null, root, target, this);
+    public compileExpression(source: EntityQuery, exp: Expression) {
+        const toSql = new this.expressionToSql(source ?? null, null, (exp as SelectStatement)?.as ?? source?.selectStatement?.as, this);
         const query = toSql.visit(exp);
         return this.invoke(query);
     }

@@ -57,7 +57,7 @@ export default class EntityQuery<T = any>
     async *enumerate(): AsyncGenerator<T, any, unknown> {
         const type = this.type;
         const signal = this.signal;
-        const query = this.context.driver.compiler.compileExpression(this.selectStatement);
+        const query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
         const reader = await this.context.driver.executeReader(query, signal);
         try {
             for await (const iterator of reader.next(10, signal)) {
@@ -89,7 +89,7 @@ export default class EntityQuery<T = any>
         return null;
     }
     toQuery(): { text: string; values: any[]; } {
-        return this.context.driver.compiler.compileExpression(this.selectStatement);
+        return this.context.driver.compiler.compileExpression(this, this.selectStatement);
     }
     orderBy(parameters: any, fx: any): any {
         return this.extend(parameters, fx, (select, target) => ({
@@ -132,7 +132,7 @@ export default class EntityQuery<T = any>
             })
         ] };
 
-        const query = this.context.driver.compiler.compileExpression(select);
+        const query = this.context.driver.compiler.compileExpression(this, select);
         const reader = await this.context.driver.executeReader(query);
 
         try {

@@ -78,6 +78,7 @@ export class EntitySource<T = any> {
             source,
             as,
             fields,
+            names: JSON.stringify([as.name])
         });
     }
 
@@ -97,6 +98,6 @@ export class EntitySource<T = any> {
         if(!filter) {
             return "";
         }
-        return this.context.driver.compiler.compileExpression(filter);
+        return this.context.driver.compiler.compileExpression( this.asQuery() as any, filter);
     }
 }

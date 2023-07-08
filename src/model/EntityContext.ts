@@ -178,7 +178,7 @@ export default class EntityContext {
     }
 
     private async executeExpression(expression: Expression, signal: AbortSignal) {
-        const { text, values } = this.driver.compiler.compileExpression(expression);
+        const { text, values } = this.driver.compiler.compileExpression(null, expression);
         const r = await this.driver.executeQuery({ text, values }, signal);
         return r.rows?.[0];
     }

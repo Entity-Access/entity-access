@@ -5,6 +5,12 @@ import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, Coales
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import Visitor from "./Visitor.js";
 
+interface IPropertyChain {
+    identifier?: Identifier,
+    parameter?: ParameterExpression,
+    chain: string[]
+}
+
 export interface IMappingModel {
     parameter: ParameterExpression;
     model?: EntityType;
@@ -23,7 +29,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     ) {
         super();
         this.targets.set(root, { parameter: root, replace: root });
-        this.targets.set(target, { parameter: target, replace: source.selectStatement.as});
+        this.targets.set(target, { parameter: target, replace: source?.selectStatement.as});
     }
 
     visitArray(e: Expression[], sep = ","): ITextQuery {
@@ -219,11 +225,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 // we have a parameter...
                 return [(p) => p[chain[0]]];
             }
-            const source = this.targets.get(parameter);
-            if (source) {
-                // add joins..
-                return [source.flatten(chain)];
-            }
             return [ QueryParameter.create(() => parameter.name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
         }
 
@@ -342,33 +343,106 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return prepare `EXISTS (${this.visit(e.target)})`;
     }
 
-    private getPropertyChain(x: Expression): { identifier?: Identifier, parameter?: ParameterExpression, chain: string[] } {
+    /**
+     * This will also create and replace joins if query is provided.
+     * @param x MemberExpression
+     * @returns Property Chain
+     */
+    private getPropertyChain(x: Expression): IPropertyChain {
         const chain = [];
-        let start = x as ExpressionType;
-        do {
+        let me = (x as ExpressionType).type === "MemberExpression"
+            ? x as MemberExpression
+            : void 0;
+        while(me) {
 
-            if (start.type !== "MemberExpression") {
-                return;
-            }
-
-            const target = start.target as ExpressionType;
-            const property = start.property as ExpressionType;
+            const target = me.target as ExpressionType;
+            const property = me.property as ExpressionType;
             if (property.type !== "Identifier") {
                 return;
             }
             chain.unshift(property.value);
             if (target.type === "ParameterExpression") {
-                // chain.unshift(target);
                 if(!this.targets.has(target)) {
                     return;
                 }
-                return { parameter: target, chain };
+                return this.flatten({ parameter: target, chain });
             }
             if (target.type === "Identifier") {
-                return { identifier: target, chain };
+                return this.flatten({ identifier: target, chain });
             }
-            start = target;
-        } while (true);
+            me = target.type === "MemberExpression"
+                ? target as MemberExpression
+                : void 0;
+        };
+    }
+
+    private flatten(pc: IPropertyChain) : IPropertyChain {
+
+        const createParameter = (s: SelectStatement, prefix: string) => {
+            const names = JSON.parse(s.names ?? "[]") as string[];
+            let i = 0;
+            while(true) {
+                const name = `${prefix}${i++}`;
+                if (names.includes(name)) {
+                    continue;
+                }
+                names.push(name);
+                s.names = JSON.stringify(names);
+                return ParameterExpression.create({ name });
+            }
+        };
+
+        if (!pc) {
+            return pc;
+        }
+
+        // check if we have parameter..
+        let { parameter } = pc;
+        if (!parameter || pc.chain.length <= 1 || !this.source) {
+            return pc;
+        }
+
+        if(this.targets.has(parameter) && pc.chain.length <= 1) {
+            return pc;
+        }
+
+        const chain = [ ... pc.chain];
+
+        let type = this.source.type;
+        const select = this.source.selectStatement;
+
+        while(chain.length > 1) {
+            const property = chain.shift();
+            const propertyInfo = type.getProperty(property);
+            if (!propertyInfo.relation) {
+                return pc;
+            }
+
+            const relation = propertyInfo.relation;
+            // check if relation is optional...
+            if (!relation.fkColumn) {
+                return pc;
+            }
+
+            const join = select.joins.find((x) => x.model === relation.relatedEntity);
+            if (!join) {
+                const joinType = relation.fkColumn.nullable ? "LEFT" : "INNER";
+                const joinParameter = createParameter(select, relation.relatedEntity.name[0]);
+                select.joins.push(JoinExpression.create({
+                    as: joinParameter,
+                    model: relation.relatedEntity,
+                    source: Expression.quotedLiteral(relation.relatedEntity.name),
+                    where: Expression.equal(
+                        Expression.member(parameter, property),
+                        Expression.member(joinParameter, relation.relatedKey)
+                    )
+                }));
+                parameter = joinParameter;
+                type = relation.relatedEntity;
+            }
+        }
+
+        return { parameter, chain };
     }
 
 
