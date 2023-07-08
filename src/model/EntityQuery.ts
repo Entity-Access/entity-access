@@ -28,7 +28,7 @@ export default class EntityQuery<T = any>
     }
 
     withSignal(signal: AbortSignal): any {
-        return new EntityQuery({ ... this });
+        return new EntityQuery({ ... this, signal });
     }
 
     thenBy(parameters: any, fx: any): any {
@@ -146,7 +146,7 @@ export default class EntityQuery<T = any>
     }
 
     private extend(parameters: any, fx: any, map: (select: SelectStatement, exp: Expression) => SelectStatement) {
-        const exp = this.context.driver.compiler.compile(fx);
+        const exp = this.context.driver.compiler.compile(this, fx);
         exp.params[0].value = parameters;
         return new EntityQuery({ ... this, selectStatement: map(this.selectStatement, exp.body)});
     }

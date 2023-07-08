@@ -2,6 +2,7 @@ import { IColumn } from "../../decorators/IColumn.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
 import { ITextQuery } from "./IStringTransformer.js";
 import type EntityType from "../../entity-query/EntityType.js";
+import ImmutableObject from "../../common/ImmutableObject.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
 

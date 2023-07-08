@@ -5,6 +5,7 @@ import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
 import EntityQuery from "../model/EntityQuery.js";
+import ReplaceParameter from "../query/ast/ReplaceParameter.js";
 
 
 export class CompiledQuery {
@@ -43,19 +44,19 @@ export default class QueryCompiler {
     }
 
     public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: EntityQuery) {
-        const { params, target , body } = this.arrowToExpression.transform(fx);
+        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.as);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const query = exp.visit(body);
         return this.invoke(query, parameters);
     }
 
-    public compile(fx: (p) => (x) => any) {
-        const { params, target , body } = this.arrowToExpression.transform(fx);
+    public compile(source: EntityQuery, fx: (p) => (x) => any) {
+        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.as);
         return { params, target, body };
     }
 
     public compileToSql( source: EntityQuery , fx: (p) => (x) => any) {
-        const { params, target , body } = this.arrowToExpression.transform(fx);
+        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.as);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const textQuery = exp.visit(body);
         return new CompiledQuery(exp.root,exp.target,textQuery);

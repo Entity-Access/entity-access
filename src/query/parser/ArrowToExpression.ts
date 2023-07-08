@@ -12,7 +12,7 @@ type IQueryFragments = IQueryFragment[];
 
 export default class ArrowToExpression extends BabelVisitor<Expression> {
 
-    public static transform(fx: (p: any) => (x: any) => any) {
+    public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression) {
 
         const rs = new Restructure();
 
@@ -40,11 +40,11 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             throw new Error("Expecting an identifier");
         }
 
-        const target = ParameterExpression.create({ name: firstTarget.name});
+        target ??= ParameterExpression.create({ name: firstTarget.name});
 
         body = body.body;
 
-        const visitor = new this(params, target);
+        const visitor = new this(params, target, firstTarget.name);
         return {
             params,
             target,
@@ -58,14 +58,15 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     protected constructor(
         public params: ParameterExpression[],
-        public target: ParameterExpression
+        public target: ParameterExpression,
+        targetName: string
     ) {
         super();
         this.targetStack.set("Sql", "Sql");
         for (const iterator of params) {
             this.targetStack.set(iterator.name, iterator);
         }
-        this.targetStack.set(target.name, target);
+        this.targetStack.set(targetName ?? target.name, target);
     }
 
     visitBigIntLiteral({ value }: bpe.BigIntLiteral) {
@@ -195,6 +196,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             names.push(iterator.name);
             const p = ParameterExpression.create({ value: iterator.name });
             this.targetStack.set(iterator.name, p);
+            params.push(p);
         }
         const body = this.visit(node.body);
         for (const name of names) {
