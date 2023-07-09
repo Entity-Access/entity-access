@@ -1,8 +1,9 @@
 import { IDisposable, disposeDisposable } from "../common/IDisposable.js";
-import { IClassOf } from "../decorators/IClassOf.js";
+import { IAbstractClassOf, IClassOf } from "../decorators/IClassOf.js";
 
 import "reflect-metadata";
 import EntityContext from "../model/EntityContext.js";
+import { BaseDriver } from "../drivers/base/BaseDriver.js";
 
 export type ServiceKind = "Singleton" | "Transient" | "Scoped";
 
@@ -39,23 +40,25 @@ export class ServiceProvider implements IDisposable {
         this[parentServiceProvider] = parent;
     }
 
+    add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
+        const sd = this.getRegistration(type);
+        this.map.set(type, instance);
+        return instance;
+    }
+
+
+    createScope() {
+        return new ServiceProvider(this);
+    }
+
+    create<T>(type: IClassOf<T>): T {
+        return this.createFromType(type);
+    }
+
+
     resolve(type) {
-        let instance: any;
-        let sd = registrations.get(type);
-        if (!sd) {
-            // we need to go through all services
-            // to find the derived type
-            for (const [key, value] of registrations.entries()) {
-                if (key instanceof type) {
-                    // we found the match..
-                    registrations.set(type, { ... value, key: type });
-                    sd = value;
-                }
-            }
-            if (!sd) {
-                throw new Error(`No service registered for ${type?.name ?? type}`);
-            }
-        }
+        let instance;
+        const sd = this.getRegistration(type);
         switch(sd.kind) {
             case "Scoped":
                 if (!this[parentServiceProvider]) {
@@ -105,6 +108,25 @@ export class ServiceProvider implements IDisposable {
         for (const iterator of disposables) {
             disposeDisposable(iterator);
         }
+    }
+
+    private getRegistration(type: any) {
+        let sd = registrations.get(type);
+        if (!sd) {
+            // we need to go through all services
+            // to find the derived type
+            for (const [key, value] of registrations.entries()) {
+                if (key instanceof type) {
+                    // we found the match..
+                    registrations.set(type, { ...value, key: type });
+                    sd = value;
+                }
+            }
+            if (!sd) {
+                throw new Error(`No service registered for ${type?.name ?? type}`);
+            }
+        }
+        return sd;
     }
 
     private createFromDescriptor(sd: IServiceDescriptor): any {
