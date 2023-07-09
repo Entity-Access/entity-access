@@ -127,6 +127,7 @@ export class ProductPrice {
 
     public amount: number;
 
+    @Column({})
     public productID: number;
 
     @ForeignKey({

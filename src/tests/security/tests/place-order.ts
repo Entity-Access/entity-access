@@ -1,7 +1,10 @@
 import { ServiceProvider } from "../../../di/di.js";
 import { BaseDriver } from "../../../drivers/base/BaseDriver.js";
+import ContextEvents from "../../../model/events/ContextEvents.js";
 import { TestConfig } from "../../TestConfig.js";
 import { ShoppingContext } from "../../model/ShoppingContext.js";
+import { createContext } from "../../model/createContext.js";
+import { ShoppingContextEvents } from "../ShoppingContextEvents.js";
 
 export default async function(this: TestConfig) {
 
@@ -11,6 +14,7 @@ export default async function(this: TestConfig) {
     try {
 
         scope.add(BaseDriver, this.driver);
+        scope.add(ContextEvents, new ShoppingContextEvents());
         const context = scope.create(ShoppingContext);
 
         // get first headphone...
@@ -37,7 +41,8 @@ export default async function(this: TestConfig) {
 
 
 async function createUser(config: TestConfig) {
-    const context = new ShoppingContext(config.driver);
+    const context = await createContext(config.driver);
+    config.driver.connectionString.database = context.driver.connectionString.database;
     const user = context.users.add({
         dateCreated: new Date()
     });

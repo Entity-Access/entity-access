@@ -6,10 +6,8 @@ const status = statusPublished;
 
 export async function createContext(driver: BaseDriver) {
 
-    const rn = "d" + Date.now();
     const copy = { ... driver } as BaseDriver;
     (copy as any).connectionString = { ... driver.connectionString };
-    copy.connectionString.database = rn;
     Object.setPrototypeOf(copy, Object.getPrototypeOf(driver));
     const context = new ShoppingContext(copy);
 
