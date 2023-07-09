@@ -41,7 +41,7 @@ export class ServiceProvider implements IDisposable {
     }
 
     add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
-        const sd = this.getRegistration(type);
+        const sd = this.getRegistration(type, true);
         this.map.set(type, instance);
         return instance;
     }
@@ -110,9 +110,16 @@ export class ServiceProvider implements IDisposable {
         }
     }
 
-    private getRegistration(type: any) {
+    private getRegistration(type: any, add = false) {
         let sd = registrations.get(type);
         if (!sd) {
+
+            if (add) {
+                const registration: IServiceDescriptor = { key: type, kind: "Scoped"};
+                registrations.set(type, registration);
+                return registration;
+            }
+
             // we need to go through all services
             // to find the derived type
             for (const [key, value] of registrations.entries()) {
