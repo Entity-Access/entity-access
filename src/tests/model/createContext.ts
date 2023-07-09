@@ -1,6 +1,8 @@
 import { IClassOf } from "../../decorators/IClassOf.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
-import { ShoppingContext } from "./ShoppingContext.js";
+import { ShoppingContext, statusPublished } from "./ShoppingContext.js";
+
+const status = statusPublished;
 
 export async function createContext(driver: BaseDriver) {
 
@@ -48,6 +50,7 @@ function addFemaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "White T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -64,6 +67,7 @@ function addFemaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "Red T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -80,6 +84,7 @@ function addFemaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "Blue T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -96,6 +101,7 @@ function addFemaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "Pink T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -122,6 +128,7 @@ function addMaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "White T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -138,6 +145,7 @@ function addMaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "Red T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -154,6 +162,7 @@ function addMaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "Blue T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -170,6 +179,7 @@ function addMaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "Pink T-Shirt",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -197,6 +207,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Jabber Head Phones",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -213,6 +224,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Sony Head Phones",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -229,6 +241,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Sony Head Phones Black",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -245,6 +258,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Sony Head Phones Blue",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -261,6 +275,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Jabber Head Phones Black",
+        status,
         categories: [
             context.productCategories.add({
                 category
@@ -277,6 +292,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Jabber Head Phones Blue",
+        status,
         categories: [
             context.productCategories.add({
                 category

@@ -5,7 +5,7 @@ import { assertSqlMatch, trimInternal } from "../trimInternal.js";
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 
 const sql1 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
 WHERE EXISTS (SELECT
 1
@@ -13,7 +13,7 @@ FROM "OrderItems" AS "O0"
 WHERE ("P1"."productID" = "O0"."productID") AND ("O0"."productID" = $1))`;
 
 const sql2 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
 WHERE EXISTS (SELECT
 1
@@ -24,7 +24,7 @@ FROM "OrderItems" AS "O2"
 WHERE ("P1"."productID" = "O2"."productID") AND ("O2"."amount" > $2))`;
 
 const sql3 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
 WHERE EXISTS (SELECT
 1
@@ -35,7 +35,7 @@ FROM "OrderItems" AS "O2"
 WHERE ("P1"."productID" = "O2"."productID") AND ("O2"."order"."orderDate" > $2))`;
 
 const productJoin = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
  LEFT JOIN "Users" AS "U0" ON "P1"."ownerID" = "U0"."userID"
 WHERE "U0"."dateCreated" > $1`;
