@@ -41,8 +41,9 @@ export class ServiceProvider implements IDisposable {
     }
 
     add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
-        const sd = this.getRegistration(type, true);
+        this.getRegistration(type, true);
         this.map.set(type, instance);
+        instance[serviceProvider] = this;
         return instance;
     }
 
@@ -148,7 +149,9 @@ export class ServiceProvider implements IDisposable {
         const injectServices = injectTypes
             ? injectTypes.map((x) => this.resolve(x))
             : [];
-        return new type(... injectServices);
+        const instance = new type(... injectServices);
+        instance[serviceProvider] = this;
+        return instance;
     }
 
 }

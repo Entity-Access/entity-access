@@ -45,7 +45,7 @@ export default class EntityContext {
             }
             return null;
         }
-        return ServiceProvider.resolve(this, eventsClass);
+        return ServiceProvider.create(this, eventsClass);
     }
 
     query<T>(type: IClassOf<T>) {

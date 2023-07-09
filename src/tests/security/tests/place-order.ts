@@ -5,6 +5,7 @@ import { TestConfig } from "../../TestConfig.js";
 import { ShoppingContext } from "../../model/ShoppingContext.js";
 import { createContext } from "../../model/createContext.js";
 import { ShoppingContextEvents } from "../ShoppingContextEvents.js";
+import { UserInfo } from "../events/UserInfo.js";
 
 export default async function(this: TestConfig) {
 
@@ -12,10 +13,13 @@ export default async function(this: TestConfig) {
 
     const scope = ServiceProvider.global.createScope();
     try {
-
+        const user = new UserInfo();
+        user.userID = customer.userID;
         scope.add(BaseDriver, this.driver);
+        scope.add(UserInfo, user);
         scope.add(ContextEvents, new ShoppingContextEvents());
         const context = scope.create(ShoppingContext);
+        context.verifyFilters = true;
 
         // get first headphone...
         const headPhone = await context.products.all().firstOrFail();
@@ -27,7 +31,8 @@ export default async function(this: TestConfig) {
             orderItems: [
                 context.orderItems.add({
                     product: headPhone,
-                    productPrice: headPhonePrice
+                    productPrice: headPhonePrice,
+                    amount: headPhonePrice.amount,
                 })
             ]
         });

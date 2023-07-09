@@ -61,7 +61,6 @@ export default class SqlServerDriver extends BaseDriver {
         }
 
         try {
-            console.log(command.text);
             const r = await rq.query(command.text);
             return { rows: r.recordset ?? [r.output], updated: r.rowsAffected [0]};
         } catch (error) {
@@ -188,7 +187,6 @@ class SqlReader implements IDbReader {
             this.processPendingRows();
         });
 
-        console.log(`Executing ${(command as any).text}`);
         void rq.query((command as any).text);
 
         do {

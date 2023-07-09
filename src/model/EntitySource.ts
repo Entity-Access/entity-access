@@ -27,7 +27,7 @@ export class EntitySource<T = any> {
 
     }
 
-    public add(item: Partial<T>) {
+    public add(item: Partial<T>): T {
         const p = Object.getPrototypeOf(item).constructor;
         if (!p || p === Object) {
             Object.setPrototypeOf(item, this.model.typeClass.prototype);

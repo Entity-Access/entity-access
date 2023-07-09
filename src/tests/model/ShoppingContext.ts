@@ -125,6 +125,7 @@ export class ProductPrice {
     @Column({ nullable: true})
     public endDate?: Date;
 
+    @Column({ })
     public amount: number;
 
     @Column({})
