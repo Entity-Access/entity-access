@@ -10,6 +10,7 @@ import ChangeEntry from "./changes/ChangeEntry.js";
 import ContextEvents from "./events/ContextEvents.js";
 import Inject, { ServiceProvider } from "../di/di.js";
 import EntityAccessError from "../common/EntityAccessError.js";
+import Logger from "../common/Logger.js";
 
 const isChanging = Symbol("isChanging");
 
@@ -32,7 +33,9 @@ export default class EntityContext {
         @Inject
         public driver: BaseDriver,
         @Inject
-        private events?: ContextEvents
+        private events?: ContextEvents,
+        @Inject
+        private logger?: Logger
     ) {
         this.raiseEvents = !!events;
     }
