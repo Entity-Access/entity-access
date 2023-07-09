@@ -39,6 +39,9 @@ export default async function(this: TestConfig) {
 
         await context.saveChanges();
 
+    } catch (e) {
+        console.error(`Failed for driver ${this.driver.connectionString.user}`);
+        console.error(e.stack ?? e);
     } finally {
         scope.dispose();
     }
