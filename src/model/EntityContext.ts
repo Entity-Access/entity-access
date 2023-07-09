@@ -9,6 +9,7 @@ import EntityEvents from "./events/EntityEvents.js";
 import ChangeEntry from "./changes/ChangeEntry.js";
 import ContextEvents from "./events/ContextEvents.js";
 import Inject, { ServiceProvider } from "../di/di.js";
+import EntityAccessError from "../common/EntityAccessError.js";
 
 const isChanging = Symbol("isChanging");
 
@@ -39,6 +40,9 @@ export default class EntityContext {
     eventsFor<T>(type: IClassOf<T>, fail = true): EntityEvents<T>{
         const eventsClass = this.events?.for(type, fail);
         if (!eventsClass) {
+            if (fail) {
+                EntityAccessError.throw(`No rules defined for ${type}`);
+            }
             return null;
         }
         return ServiceProvider.resolve(this, eventsClass);
@@ -105,21 +109,21 @@ export default class EntityContext {
                 case "inserted":
                     await events.beforeInsert(iterator.entity, iterator);
                     if (this.verifyFilters) {
-                        verificationSession.queueVerification(iterator);
+                        verificationSession.queueVerification(iterator, events);
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
                     continue;
                 case "deleted":
                     await events.beforeDelete(iterator.entity, iterator);
                     if (this.verifyFilters) {
-                        verificationSession.queueVerification(iterator);
+                        verificationSession.queueVerification(iterator, events);
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
                     continue;
                 case "modified":
                     await events.beforeUpdate(iterator.entity, iterator);
                     if (this.verifyFilters) {
-                        verificationSession.queueVerification(iterator);
+                        verificationSession.queueVerification(iterator, events);
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
                     continue;

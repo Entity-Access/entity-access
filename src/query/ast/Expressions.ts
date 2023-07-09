@@ -25,6 +25,25 @@ const flattenedSelf = Symbol("flattenedSelf");
 
 export abstract class Expression {
 
+    static as(expression: Expression, alias: QuotedLiteral | string) {
+        if (typeof alias === "string") {
+            alias = Expression.quotedLiteral(alias);
+        }
+        return ExpressionAs.create({
+            expression,
+            alias
+        });
+    }
+
+    static templateLiteral(value: Expression[]) {
+        return TemplateLiteral.create({ value });
+    }
+
+
+    static constant(value: string) {
+        return Constant.create({ value });
+    }
+
     static quotedLiteral(name: string) {
         return QuotedLiteral.create({ literal: name });
     }
@@ -176,7 +195,7 @@ export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
 
-    source: TableSource;
+    source: TableSource | ValuesStatement;
 
     as: ParameterExpression;
 
