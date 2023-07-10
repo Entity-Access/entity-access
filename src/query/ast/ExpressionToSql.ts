@@ -20,7 +20,7 @@ export interface IMappingModel {
 
 export default class ExpressionToSql extends Visitor<ITextQuery> {
 
-    private targets: Map<ParameterExpression, IMappingModel> = new Map();
+    protected targets: Map<ParameterExpression, IMappingModel> = new Map();
 
     constructor(
         private source: EntityQuery,

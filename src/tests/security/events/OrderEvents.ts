@@ -28,12 +28,6 @@ export class OrderEvents extends EntityEvents<Order> {
         // user can only modify placed orders
         return query.where({ userID }, (p) => (x) => x.customerID === p.userID);
     }
-
-    onForeignKeyFilter(filter: ForeignKeyFilter<Order>): IEntityQuery<any> {
-        if (filter.is((x) => x.customer)) {
-            return filter.read();
-        }
-    }
 }
 
 export class OrderItemEvents extends EntityEvents<OrderItem> {

@@ -16,18 +16,11 @@ export default class VerificationSession {
 
     private select: SelectStatement;
 
-    private field: Expression;
+    private field: ConditionalExpression[];
 
     constructor(private context: EntityContext) {
-        const source = ValuesStatement.create({
-            values: [
-                [Identifier.create({ value: "1"})]
-            ],
-            as: QuotedLiteral.create({ literal: "a"})
-        });
-        this.select = SelectStatement.create({
-            source
-        });
+
+        this.select = SelectStatement.create({});
     }
 
     queueVerification(change: ChangeEntry, events: EntityEvents<any>) {
@@ -84,8 +77,11 @@ export default class VerificationSession {
             name: relation.name,
             fkName: relation.fkColumn.name
         });
-        const query = events.onForeignKeyFilter(fk);
-        if (!query) {
+        let query = events.onForeignKeyFilter(fk);
+        if (query === void 0) {
+            query = fk.read();
+        }
+        if (query === null) {
             return;
         }
 
@@ -95,7 +91,7 @@ export default class VerificationSession {
             Expression.constant(value)
         );
         const typeName  = TypeInfo.nameOfType(type);
-        this.addError(query as EntityQuery, compare , `Unable to access entity ${typeName} through foreign key ${TypeInfo.nameOfType(change.type)}.${relation.name}`);
+        this.addError(query as EntityQuery, compare , `Unable to access entity ${typeName} through foreign key ${TypeInfo.nameOfType(change.type)}.${relation.name}.\n`);
     }
 
     queueEntityKey(change: ChangeEntry, keys: KeyValueArray, events: EntityEvents<any>) {
@@ -117,14 +113,25 @@ export default class VerificationSession {
                 : test;
         }
         const typeName = TypeInfo.nameOfType(type);
-        this.addError(query  as EntityQuery, compare, `Unable to access entity ${typeName}`);
+        this.addError(query  as EntityQuery, compare, `Unable to access entity ${typeName}.\n`);
     }
 
     async verifyAsync(): Promise<any> {
+        if (!this.field?.length) {
+            return;
+        }
         this.select.fields =[
-            Expression.as(this.field, "error")
+            Expression.as(Expression.templateLiteral(this.field), "error")
         ];
         this.select.as = ParameterExpression.create({ name: "x"});
+        const source = ValuesStatement.create({
+            values: [
+                [Identifier.create({ value: "1"})]
+            ],
+            as: QuotedLiteral.create({ literal: "a"}),
+            fields: [QuotedLiteral.create({ literal: "a"})]
+        });
+        this.select.source = source;
         const compiler = this.context.driver.compiler;
         const query = compiler.compileExpression(null, this.select);
         const logger = ServiceProvider.resolve(this.context, Logger);
@@ -156,14 +163,10 @@ export default class VerificationSession {
             test: ExistsExpression.create({
                 target: select
             }),
-            consequent: Expression.constant(error),
-            alternate: Expression.constant("")
+            consequent: Expression.constant(""),
+            alternate: Expression.constant(error),
         });
 
-        if (this.field) {
-            this.field = Expression.templateLiteral([this.field, text]);
-        } else {
-            this.field = text;
-        }
+        (this.field ??=[]).push(text);
     }
 }

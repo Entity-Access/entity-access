@@ -8,7 +8,7 @@ import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerA
 import { SqlServerLiteral } from "./SqlServerLiteral.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 
-export type ISqlServerConnectionString = sql.config;
+export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
 const namedPool = new TimedCache<string, sql.ConnectionPool>();
 
@@ -22,14 +22,8 @@ export default class SqlServerDriver extends BaseDriver {
     private transaction: sql.Transaction;
 
     constructor(private readonly config: ISqlServerConnectionString) {
-        super({
-            database: config.database,
-            host: config.server ??= (config as any).host,
-            port: config.port,
-            password: config.password,
-            user: config.user,
-            ... config,
-        });
+        super(config);
+        config.server = config.host;
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
@@ -132,10 +126,11 @@ export default class SqlServerDriver extends BaseDriver {
     }
 
     private newConnection() {
-        const key = this.config.server + "//" + this.config.database + "/" + this.config.user;
-        return namedPool.getOrCreateAsync(this.config.server + "://" + this.config.database,
+        const config = this.config;
+        const key = config.server + "//" + config.database + "/" + config.user;
+        return namedPool.getOrCreateAsync(config.server + "://" + config.database,
             () => {
-                const pool = new sql.ConnectionPool(this.config);
+                const pool = new sql.ConnectionPool(config);
                 const oldClose = pool.close;
                 pool.close = ((c) => {
                     namedPool.delete(key);

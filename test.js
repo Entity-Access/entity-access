@@ -24,13 +24,13 @@ export default class TestRunner {
     static get drivers() {
         const database = "D" + start++;
         return [
-            new PostgreSqlDriver({
-                database,
-                host,
-                user: "postgres",
-                password: "abcd123",
-                port: postGresPort
-            }),
+            // new PostgreSqlDriver({
+            //     database,
+            //     host,
+            //     user: "postgres",
+            //     password: "abcd123",
+            //     port: postGresPort
+            // }),
             new SqlServerDriver({
                 database,
                 host,
