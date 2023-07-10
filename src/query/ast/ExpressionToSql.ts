@@ -138,7 +138,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 // calling method on property...
                 // should be navigation...
                 const targetType = existingTarget.model;
-                const context = this.source.context;
                 const relation = targetType?.getProperty(chain[0]);
                 if (relation) {
                     if (/^(some|any)$/i.test(chain[1])) {

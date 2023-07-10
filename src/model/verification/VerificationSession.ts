@@ -68,7 +68,7 @@ export default class VerificationSession {
     queueEntityForeignKey(change: ChangeEntry, relation: IEntityRelation, value) {
         const relatedModel = relation.relatedEntity;
         const type = relation.relatedEntity.typeClass;
-        const events = this.context.eventsFor(type);
+        const events = this.context.eventsFor(change.type.typeClass);
         const context = this.context;
         const fk = new ForeignKeyFilter({
             context,
@@ -79,7 +79,7 @@ export default class VerificationSession {
         });
         let query = events.onForeignKeyFilter(fk);
         if (query === void 0) {
-            query = fk.read();
+            query = fk.modify();
         }
         if (query === null) {
             return;
