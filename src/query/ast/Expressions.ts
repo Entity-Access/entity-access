@@ -1,6 +1,7 @@
 import { IClassOf } from "../../decorators/IClassOf.js";
 import { ITextQuery } from "./IStringTransformer.js";
 import type EntityType from "../../entity-query/EntityType.js";
+import DebugStringVisitor from "./DebugStringVisitor.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
 
@@ -74,6 +75,13 @@ export abstract class Expression {
     static create<T extends Expression>(this: IClassOf<T>, p: Partial<Omit<T, "type">>) {
         (p as any).type = (this as any).name;
         Object.setPrototypeOf(p, this.prototype);
+        Object.defineProperty(p, "debugView", {
+            get() {
+                return DebugStringVisitor.expressionToString(this);
+            },
+            enumerable: true,
+            configurable: true
+        });
         return p as T;
     }
 

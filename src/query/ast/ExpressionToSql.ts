@@ -488,6 +488,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 parameter = joinParameter;
                 type = relation.relatedEntity;
                 this.targets.set(parameter, { parameter, model: type, replace: parameter});
+                pc.parameter = parameter;
+                pc.chain = [ ... chain ];
             }
         }
 

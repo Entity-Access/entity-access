@@ -43,7 +43,7 @@ export class OrderItemEvents extends EntityEvents<OrderItem> {
 
         // user can access orders placed by the user or orders with products owned by user
 
-        return query.where({ userID }, (p) => (x) => x.order.customerID === p.userID || x.order.orderItems.some((item) => item.product.ownerID === p.userID));
+        return query.where({ userID }, (p) => (x) => x.order.customerID === p.userID || x.product.ownerID === p.userID);
     }
 
     modify(query: IEntityQuery<OrderItem>): IEntityQuery<OrderItem> {
