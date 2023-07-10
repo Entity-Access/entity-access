@@ -490,6 +490,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 this.targets.set(parameter, { parameter, model: type, replace: parameter});
                 pc.parameter = parameter;
                 pc.chain = [ ... chain ];
+            } else {
+                pc.parameter = parameter = join.as as ParameterExpression;
+                type = join.model;
+                pc.chain = [... chain];
             }
         }
 

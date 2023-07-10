@@ -69,10 +69,11 @@ export default class VerificationSession {
         const relatedModel = relation.relatedEntity;
         const type = relation.relatedEntity.typeClass;
         const events = this.context.eventsFor(change.type.typeClass);
+        const relatedEvents = this.context.eventsFor(relation.relatedEntity.typeClass);
         const context = this.context;
         const fk = new ForeignKeyFilter({
             context,
-            events,
+            events: relatedEvents,
             type: relatedModel,
             name: relation.name,
             fkName: relation.fkColumn.name
