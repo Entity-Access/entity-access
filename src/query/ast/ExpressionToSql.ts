@@ -75,7 +75,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
 
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
-        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
@@ -148,15 +148,30 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             const param1 = body.params[0];
                             const relatedModel = relation.relation.relatedEntity;
                             const relatedType = relatedModel.typeClass;
-                            let query = this.source.context.query(relatedType);
-                            const select = { ... (query as EntityQuery).selectStatement };
 
-                            const replaceParam = this.createParameter(this.source.selectStatement, relatedModel.name[0]);
-                            select.as = replaceParam;
+                            let select: SelectStatement;
+
+                            if (this.source?.context) {
+                                let query = this.source.context.query(relatedType);
+                                // check if we have filter...
+                                const entityEvents = this.source.context.eventsFor(relatedType, false);
+                                if (entityEvents) {
+                                    query = entityEvents.includeFilter(query);
+                                }
+                                select = { ... (query as EntityQuery).selectStatement };
+                                select.fields = [
+                                    Identifier.create({ value: "1"})
+                                ];
+                            } else {
+                                select = relatedModel.selectOneNumber();
+                            }
+
+                            const replaceParam = this.createParameter(select, relatedModel.name[0]);
 
                             this.targets.set(param1, { parameter: param1, model: relatedModel, replace: replaceParam });
                             this.targets.set(select.as, { parameter: param1, model: relatedModel, replace: replaceParam });
                             this.targets.set(replaceParam, { parameter: param1, model: relatedModel, replace: replaceParam });
+                            select.as = replaceParam;
                             const targetKey = MemberExpression.create({
                                 target: this.target,
                                 property: Identifier.create({
@@ -170,12 +185,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                     value: relation.relation.fkColumn.columnName
                                 })
                             });
-
-                            // check if we have filter...
-                            const entityEvents = this.source.context.eventsFor(relatedType, false);
-                            if (entityEvents) {
-                                query = entityEvents.includeFilter(query);
-                            }
 
 
                             const join = Expression.logicalAnd(
@@ -196,10 +205,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             }
 
                             select.where = where;
-
-                            select.fields = [
-                                Identifier.create({ value: "1"})
-                            ];
 
                             const exists = ExistsExpression.create({
                                 target: select

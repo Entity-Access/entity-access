@@ -61,30 +61,19 @@ export class EntitySource<T = any> {
         return this.asQuery();
     }
 
+    public filtered(mode: "read" | "modify" = "read"): IEntityQuery<T> {
+        const query = this.asQuery();
+        const events = this.context.eventsFor(this.model.typeClass, true);
+        return mode === "modify" ? events.modify(query) : events.filter(query);
+    }
+
     public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
         return this.asQuery().where(parameter, fx);
     }
 
-    generateModel(): SelectStatement {
-        const source = this.model.fullyQualifiedName;
-        const as = Expression.parameter(this.model.name[0] + "1");
-        const fields = this.model.columns.map((c) => c.name !== c.columnName
-            ? ExpressionAs.create({
-                expression: Expression.member(as, c.columnName),
-                alias: QuotedLiteral.create({ literal: c.name })
-            })
-            : Expression.member(as, c.columnName));
-        return SelectStatement.create({
-            source,
-            as,
-            fields,
-            names: JSON.stringify([as.name])
-        });
-    }
-
     public asQuery() {
         const { model, context } = this;
-        const selectStatement = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+        const selectStatement = this.model.selectAllFields();
         selectStatement.model = model;
         return new EntityQuery<T>({
             context,

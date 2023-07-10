@@ -77,7 +77,9 @@ export const prepareJoin = (a: (ITextQueryFragment | ITextQuery)[], sep: string 
     let first = true;
     for (const iterator of a) {
         if (!first) {
-            r.push(",");
+            if (sep) {
+                r.push(sep);
+            }
         }
         first = false;
         addNonEmptyFlat(r, iterator);

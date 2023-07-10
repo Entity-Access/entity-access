@@ -21,8 +21,32 @@ export default async function(this: TestConfig) {
     } catch(error) {
 
     }
+
+    await getNewOrders.call(this);
+
 }
 
+async function getNewOrders(this: TestConfig) {
+    const scope = ServiceProvider.global.createScope();
+    try {
+        const user = new UserInfo();
+        user.userID = 1;
+        scope.add(Logger, Logger.instance);
+        scope.add(BaseDriver, this.driver);
+        scope.add(UserInfo, user);
+        scope.add(ContextEvents, new ShoppingContextEvents());
+        const context = scope.create(ShoppingContext);
+        context.verifyFilters = true;
+
+        const order = await context.orders.all().first();
+
+        order.orderDate = new Date();
+        await context.saveChanges();
+
+    } finally {
+        scope.dispose();
+    }
+}
 
 async function addNewOrder(this: TestConfig, customer: User, userID?) {
     const scope = ServiceProvider.global.createScope();
@@ -53,6 +77,15 @@ async function addNewOrder(this: TestConfig, customer: User, userID?) {
         });
 
         await context.saveChanges();
+
+        // lets filter the orders
+
+        const f = context.orders.filtered();
+        const myOrders = await f.count();
+        assert.equal(1, myOrders);
+
+        const all = await context.orders.all().count();
+        assert.notEqual(all, myOrders);
 
     } finally {
         scope.dispose();

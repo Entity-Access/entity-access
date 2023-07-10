@@ -3,7 +3,7 @@ import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/NameParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
-import { QuotedLiteral, TableLiteral } from "../query/ast/Expressions.js";
+import { Expression, ExpressionAs, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 
 
@@ -39,6 +39,9 @@ export default class EntityType {
     private fieldMap: Map<string, IColumn> = new Map();
     private columnMap: Map<string, IColumn> = new Map();
     private relationMap: Map<string, IEntityRelation> = new Map();
+
+    private selectAll: SelectStatement;
+    private selectOne: SelectStatement;
 
     public getProperty(name: string) {
         const field = this.fieldMap.get(name);
@@ -113,4 +116,44 @@ export default class EntityType {
 
     }
 
+    public selectAllFields() {
+        if (this.selectAll) {
+            return { ... this.selectAll };
+        }
+        const source = this.fullyQualifiedName;
+        const as = Expression.parameter(this.name[0] + "1");
+        const fields = this.columns.map((c) => c.name !== c.columnName
+            ? ExpressionAs.create({
+                expression: Expression.member(as, c.columnName),
+                alias: QuotedLiteral.create({ literal: c.name })
+            })
+            : Expression.member(as, c.columnName));
+        this.selectAll = SelectStatement.create({
+            source,
+            model: this,
+            as,
+            fields,
+            names: JSON.stringify([as.name])
+        });
+        return { ... this.selectAll };
+    }
+
+    public selectOneNumber() {
+        if (this.selectOne) {
+            return { ... this.selectOne };
+        }
+        const source = this.fullyQualifiedName;
+        const as = Expression.parameter(this.name[0] + "1");
+        const fields = [
+            Expression.identifier("1")
+        ];
+        this.selectOne = SelectStatement.create({
+            source,
+            model: this,
+            as,
+            fields,
+            names: JSON.stringify([as.name])
+        });
+        return { ... this.selectOne };
+    }
 }

@@ -26,7 +26,7 @@ export class OrderEvents extends EntityEvents<Order> {
         }
         const { userID } = this.user;
         // user can only modify placed orders
-        return query.where({ userID }, (p) => (x) => x.customerID === p.userID);
+        return query.where({ userID }, (p) => (x) => x.customerID === p.userID || x.orderItems.some((item) => item.product.ownerID === p.userID));
     }
 }
 
