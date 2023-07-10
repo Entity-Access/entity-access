@@ -1,6 +1,8 @@
+import { RegisterSingleton } from "../di/di.js";
 import { IDisposable } from "./IDisposable.js";
 
 /* eslint-disable no-console */
+@RegisterSingleton
 export default class Logger implements IDisposable {
 
     public static instance = new Logger();

@@ -1,3 +1,6 @@
+import Logger from "../common/Logger.js";
+import { DisposableScope } from "../common/usingAsync.js";
+import { ServiceProvider } from "../di/di.js";
 import EntityType from "../entity-query/EntityType.js";
 import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
 import EntityContext from "./EntityContext.js";
@@ -55,11 +58,17 @@ export default class EntityQuery<T = any>
     }
 
     async *enumerate(): AsyncGenerator<T, any, unknown> {
-        const type = this.type;
-        const signal = this.signal;
-        const query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
-        const reader = await this.context.driver.executeReader(query, signal);
+        const logger = ServiceProvider.resolve(this.context, Logger);
+        const scope = new DisposableScope();
+        const session = logger.newSession();
+        let query: { text: string, values: any[]};
         try {
+            scope.register(session);
+            const type = this.type;
+            const signal = this.signal;
+            query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
+            const reader = await this.context.driver.executeReader(query, signal);
+            scope.register(reader);
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
                     Object.setPrototypeOf(iterator, type.typeClass.prototype);
@@ -70,8 +79,11 @@ export default class EntityQuery<T = any>
                 }
                 yield iterator as T;
             }
+        } catch(error) {
+            session.error(`Failed executing ${query?.text}\n${error.stack ?? error}`);
+            throw error;
         } finally {
-            await reader.dispose();
+            await scope.dispose();
         }
     }
 

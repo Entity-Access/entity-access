@@ -10,6 +10,7 @@ export type ServiceKind = "Singleton" | "Transient" | "Scoped";
 const registrations = new Map<any,IServiceDescriptor>();
 
 export const injectServiceTypesSymbol = Symbol("injectServiceTypes");
+export const injectServiceKeysSymbol = Symbol("injectServiceKeys");
 
 const registrationsSymbol = Symbol("registrations");
 
@@ -22,7 +23,7 @@ export class ServiceProvider implements IDisposable {
     public static global = new ServiceProvider();
 
     public static resolve<T>(serviceOwner: any, type: IClassOf<T>): T {
-        const sp = serviceOwner[serviceProvider] as ServiceProvider;
+        const sp = (serviceOwner[serviceProvider] ?? this.global) as ServiceProvider;
         return sp.resolve(type);
     }
 
@@ -151,6 +152,16 @@ export class ServiceProvider implements IDisposable {
             : [];
         const instance = new type(... injectServices);
         instance[serviceProvider] = this;
+        // initialize properties...
+        const keys = type.prototype[injectServiceKeysSymbol];
+        if (keys) {
+            for (const key in keys) {
+                if (Object.prototype.hasOwnProperty.call(keys, key)) {
+                    const element = keys[key];
+                    instance[key] = this.resolve(element);
+                }
+            }
+        }
         return instance;
     }
 
@@ -181,14 +192,15 @@ export default function Inject(target, key, index?: number) {
         return;
     }
 
+    const pType = (Reflect as any).getMetadata("design:type", target, key);
+    (target[injectServiceKeysSymbol] ??= {})[key] = pType;
     Object.defineProperty(target, key, {
         get() {
-            const plist = (Reflect as any).getMetadata("design:type", target, key);
-            const result = ServiceProvider.resolve(this, plist);
+            const result = ServiceProvider.resolve(this, pType);
             // get is compatible with AtomWatcher
             // as it will ignore getter and it will
             // not try to set a binding refresher
-            Object.defineProperty(this, key, {
+            Object.defineProperty(target, key, {
                 get: () => result
             });
             return result;

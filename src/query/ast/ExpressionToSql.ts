@@ -60,7 +60,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
-        const source = this.visit(e.source);
+        const source = e.source.type === "ValuesStatement"
+            ? prepare `(${this.visit(e.source)})`
+            : this.visit(e.source);
         const as = e.as ? prepare ` AS ${this.compiler.quotedLiteral(e.as.name)}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
         return prepare `SELECT

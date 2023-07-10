@@ -4,10 +4,8 @@ import Migrations from "../../migrations/Migrations.js";
 import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
 import sql from "mssql";
 import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
-import SqlServerSqlMethodTransformer from "../../compiler/sql-server/SqlServerSqlMethodTransformer.js";
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
 import { SqlServerLiteral } from "./SqlServerLiteral.js";
-import usingAsync from "../../common/usingAsync.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 
 export type ISqlServerConnectionString = sql.config;

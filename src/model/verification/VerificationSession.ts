@@ -1,7 +1,7 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
 import { IEntityRelation } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
-import { ConditionalExpression, Constant, ExistsExpression, Expression, Identifier, QuotedLiteral, SelectStatement, TemplateLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
+import { ConditionalExpression, Constant, ExistsExpression, Expression, Identifier, ParameterExpression, QuotedLiteral, SelectStatement, TemplateLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
 import EntityContext from "../EntityContext.js";
 import EntityQuery from "../EntityQuery.js";
 import ChangeEntry from "../changes/ChangeEntry.js";
@@ -66,10 +66,10 @@ export default class VerificationSession {
                 // not set... ignore..
                 continue;
             }
-            this.queueEntityForeignKey(change, relation, [fk.columnName, fkValue]);
+            this.queueEntityForeignKey(change, relation, fkValue);
         }
     }
-    queueEntityForeignKey(change: ChangeEntry, relation: IEntityRelation, keys: [string,string]) {
+    queueEntityForeignKey(change: ChangeEntry, relation: IEntityRelation, value) {
         const relatedModel = relation.relatedEntity;
         const type = relation.relatedEntity.typeClass;
         const events = this.context.eventsFor(type);
@@ -85,7 +85,13 @@ export default class VerificationSession {
         if (!query) {
             return;
         }
-        this.addError(query as EntityQuery, [keys], `Unable to access entity ${type} through foreign key ${change.type.name}.${relation.name}`);
+
+        const eq = query as EntityQuery;
+        const compare = Expression.equal(
+            Expression.member(eq.selectStatement.as, relatedModel.keys[0].columnName),
+            Expression.constant(value)
+        );
+        this.addError(query as EntityQuery, compare , `Unable to access entity ${type} through foreign key ${change.type.name}.${relation.name}`);
     }
 
     queueEntityKey(change: ChangeEntry, keys: KeyValueArray, events: EntityEvents<any>) {
@@ -95,13 +101,25 @@ export default class VerificationSession {
         if (!query) {
             return;
         }
-        this.addError(query  as EntityQuery, keys, `Unable to access entity ${type}`);
+        let compare: Expression;
+        const eq = query as EntityQuery;
+        for (const [key, value] of keys) {
+            const test = Expression.equal(
+                Expression.member(eq.selectStatement.as, Expression.quotedLiteral(key)),
+                Expression.constant(value)
+            );
+            compare = compare
+                ? Expression.logicalAnd(compare, test)
+                : test;
+        }
+        this.addError(query  as EntityQuery, compare, `Unable to access entity ${type}`);
     }
 
     async verifyAsync(): Promise<any> {
-        this.select.fields.push(
+        this.select.fields =[
             Expression.as(this.field, "error")
-        );
+        ];
+        this.select.as = ParameterExpression.create({ name: "x"});
         const compiler = this.context.driver.compiler;
         const query = compiler.compileExpression(null, this.select);
         const { rows: [ { error }]} = await this.context.driver.executeQuery(query);
@@ -110,22 +128,15 @@ export default class VerificationSession {
         }
     }
 
-    addError(query: EntityQuery, keys: [string,string][], error: string) {
+    addError(query: EntityQuery, compare: Expression, error: string) {
         const select = { ... query.selectStatement};
         select.fields = [
             Expression.identifier("1")
         ];
 
-        let where: Expression;
-        for (const [column, value] of keys) {
-            const test = Expression.equal(
-                Expression.member(select.as, Expression.identifier(column)),
-                Expression.constant(value)
-            );
-            where = where
-                ? Expression.logicalAnd(where, test)
-                : test;
-        }
+        const where = select.where
+            ? Expression.logicalAnd(select.where, compare)
+            : compare;
 
         select.where = where;
 

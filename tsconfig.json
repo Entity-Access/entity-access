@@ -2,10 +2,12 @@
     "compilerOptions": {
         "target": "ESNext",
         "module":"NodeNext",
+        "incremental": true,
         "sourceMap": true,
         "declaration": true,
         "declarationMap": true,
         "outDir": "dist",
+        "skipDefaultLibCheck": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "lib": [
