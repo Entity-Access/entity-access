@@ -5,7 +5,7 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 
 # Project Status
 1. Beta - Postgres Driver
-2. Alpha - Sql Server Driver
+2. Beta - Sql Server Driver
 
 ## Features
 1. Unit of Work and Repository Pattern
@@ -15,6 +15,7 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 5. Postgres Driver
 6. Sql Server Driver
 7. Automatic parameterization to safeguard sql injection attacks.
+8. Context Filters - This is a new concept where you can setup filters that will be used against saving/retrieving data.
 
 ## Upcoming Features
 1. Include
