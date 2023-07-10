@@ -30,9 +30,30 @@ async function seed(context: ShoppingContext) {
 
     addHeadPhones(context, now);
 
-    const maleClothes = addMaleClothes(context);
+    const clothes = addMaleClothes(context);
 
-    const femaleClothes = addFemaleClothes(context);
+    addFemaleClothes(context);
+
+    await context.saveChanges();
+
+    const product = clothes[0];
+    const productPrice = product.prices[0];
+
+    const user = context.users.add({
+        dateCreated: new Date(),
+        orders: [
+            context.orders.add({
+                orderDate: new Date(),
+                orderItems:[
+                    context.orderItems.add({
+                        product,
+                        productPrice,
+                        amount: productPrice.amount
+                    })
+                ]
+            })
+        ]
+    });
 
     await context.saveChanges();
 }
@@ -124,7 +145,7 @@ function addMaleClothes(context: ShoppingContext) {
     const startDate = new Date();
     const active = true;
 
-    context.products.add({
+    return [context.products.add({
         name: "White T-Shirt",
         status,
         categories: [
@@ -139,8 +160,7 @@ function addMaleClothes(context: ShoppingContext) {
                 startDate
             })
         ]
-    });
-
+    }),
     context.products.add({
         name: "Red T-Shirt",
         status,
@@ -156,8 +176,7 @@ function addMaleClothes(context: ShoppingContext) {
                 startDate
             })
         ]
-    });
-
+    }),
     context.products.add({
         name: "Blue T-Shirt",
         status,
@@ -173,8 +192,7 @@ function addMaleClothes(context: ShoppingContext) {
                 startDate
             })
         ]
-    });
-
+    }),
     context.products.add({
         name: "Pink T-Shirt",
         status,
@@ -190,7 +208,7 @@ function addMaleClothes(context: ShoppingContext) {
                 startDate
             })
         ]
-    });
+    })];
 }
 
 export const headPhoneCategory = "head-phones";

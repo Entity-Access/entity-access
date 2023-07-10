@@ -1,9 +1,10 @@
+import assert from "assert";
 import Logger from "../../../common/Logger.js";
 import { ServiceProvider } from "../../../di/di.js";
 import { BaseDriver } from "../../../drivers/base/BaseDriver.js";
 import ContextEvents from "../../../model/events/ContextEvents.js";
 import { TestConfig } from "../../TestConfig.js";
-import { ShoppingContext } from "../../model/ShoppingContext.js";
+import { ShoppingContext, User } from "../../model/ShoppingContext.js";
 import { createContext } from "../../model/createContext.js";
 import { ShoppingContextEvents } from "../ShoppingContextEvents.js";
 import { UserInfo } from "../events/UserInfo.js";
@@ -12,10 +13,22 @@ export default async function(this: TestConfig) {
 
     const customer = await createUser(this);
 
+    await addNewOrder.call(this, customer);
+
+    try {
+        await addNewOrder.call(this, customer, 1);
+        assert.fail("No error thrown");
+    } catch(error) {
+
+    }
+}
+
+
+async function addNewOrder(this: TestConfig, customer: User, userID?) {
     const scope = ServiceProvider.global.createScope();
     try {
         const user = new UserInfo();
-        user.userID = customer.userID;
+        user.userID = userID ?? customer.userID;
         scope.add(Logger, Logger.instance);
         scope.add(BaseDriver, this.driver);
         scope.add(UserInfo, user);
@@ -45,7 +58,6 @@ export default async function(this: TestConfig) {
         scope.dispose();
     }
 }
-
 
 async function createUser(config: TestConfig) {
     const context = await createContext(config.driver);
