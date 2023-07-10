@@ -3,6 +3,7 @@ import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
+import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
 
 interface IPropertyChain {
@@ -15,12 +16,12 @@ export interface IMappingModel {
     parameter: ParameterExpression;
     model?: EntityType;
     selectStatement?: SelectStatement;
-    replace?: Expression;
+    name: string;
 }
 
 export default class ExpressionToSql extends Visitor<ITextQuery> {
 
-    protected targets: Map<ParameterExpression, IMappingModel> = new Map();
+    protected readonly scope: ParameterScope = new ParameterScope();
 
     constructor(
         private source: EntityQuery,
@@ -29,8 +30,14 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         private compiler: QueryCompiler
     ) {
         super();
-        this.targets.set(root, { parameter: root, replace: root });
-        this.targets.set(target, { parameter: target, model: this.source?.type, replace: target ?? source?.selectStatement.as});
+        // this.targets.set(root, { parameter: root });
+        // this.targets.set(target, { parameter: target, model: this.source?.type });
+        if (this.root) {
+            this.scope.create({ parameter: root, name: root.name ?? "x" });
+        }
+        if (this.target) {
+            this.scope.create({ parameter: target });
+        }
     }
 
     visitArray(e: Expression[], sep = ","): ITextQuery {
@@ -59,19 +66,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         // inject parameter and types if we don't have it..
         if (e.as && e.model) {
-            const scope = this.targets.get(e.as);
-            if (!scope) {
-                this.targets.set(e.as, {
-                    parameter: e.as,
-                    model:
-                    e.model,
-                    replace: e.as,
-                    selectStatement: e
-                });
-            } else {
-                scope.selectStatement = e;
-                scope.model = e.model;
-            }
+            this.scope.create({ parameter: e.as, selectStatement: e });
         }
 
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
@@ -82,7 +77,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const source = e.source.type === "ValuesStatement"
             ? prepare `(${this.visit(e.source)})`
             : this.visit(e.source);
-        const as = e.as ? prepare ` AS ${this.compiler.quotedLiteral(e.as.name)}` : "";
+        const as = e.as ? prepare ` AS ${this.compiler.quotedLiteral( this.scope.nameOf(e.as))}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
         return prepare `SELECT
         ${fields}
@@ -131,7 +126,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const targetProperty = this.getPropertyChain(e.callee as ExpressionType);
         if (targetProperty) {
             const { parameter , identifier, chain } = targetProperty;
-            const existingTarget = this.targets.get(parameter);
+            const existingTarget = this.scope.get(parameter);
             if (existingTarget) {
 
 
@@ -166,12 +161,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 select = relatedModel.selectOneNumber();
                             }
 
-                            const replaceParam = this.createParameter(select, relatedModel.name[0]);
-
-                            this.targets.set(param1, { parameter: param1, model: relatedModel, replace: replaceParam });
-                            this.targets.set(select.as, { parameter: param1, model: relatedModel, replace: replaceParam });
-                            this.targets.set(replaceParam, { parameter: param1, model: relatedModel, replace: replaceParam });
-                            select.as = replaceParam;
+                            this.scope.create({ parameter: param1, model: relatedModel });
+                            this.scope.alias(param1, select.as, select);
+                            select.as = param1;
                             const targetKey = MemberExpression.create({
                                 target: this.target,
                                 property: Identifier.create({
@@ -180,7 +172,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             });
 
                             const relatedKey = MemberExpression.create({
-                                target: replaceParam,
+                                target: param1,
                                 property: Identifier.create({
                                     value: relation.relation.fkColumn.columnName
                                 })
@@ -211,7 +203,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             });
 
                             const r = this.visit(exists);
-                            this.targets.delete(param1);
+                            this.scope.delete(param1);
                             return r;
                         }
 
@@ -238,11 +230,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitParameterExpression(pe: ParameterExpression): ITextQuery {
-        const replace = this.targets.get(pe);
-        if (replace && replace.replace !== pe) {
-            return this.visit(replace.replace);
-        }
-        const { name, value } = pe;
+        pe = this.scope.get(pe).parameter;
+        const { value } = pe;
+        const name = this.scope.nameOf(pe);
         if (value !== void 0) {
             return [() => value];
         }
@@ -261,7 +251,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 const value = parameter.value;
                 return [() => value[chain[0]]];
             }
-            return [ QueryParameter.create(() => parameter.name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
+            const name = this.scope.nameOf(parameter);
+            return [ QueryParameter.create(() => name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
         }
 
         const { target, computed, property } = me;
@@ -389,9 +380,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     private getPropertyChain(x: Expression): IPropertyChain {
 
         // first replace root parameters
-        if (x.type === "MemberExpression") {
-            x = this.replaceParameters(x as MemberExpression);
-        }
+        // if (x.type === "MemberExpression") {
+        //     x = this.replaceParameters(x as MemberExpression);
+        // }
 
         const chain = [];
         let me = (x as ExpressionType).type === "MemberExpression"
@@ -452,7 +443,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         const chain = [ ... pc.chain];
 
-        const scope = this.targets.get(parameter);
+        const scope = this.scope.get(parameter);
         const select = scope?.selectStatement ?? this.source?.selectStatement;
         if (!select) {
             return pc;
@@ -492,7 +483,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 }));
                 parameter = joinParameter;
                 type = relation.relatedEntity;
-                this.targets.set(parameter, { parameter, model: type, replace: parameter});
+                this.scope.create({ parameter, model: type});
                 pc.parameter = parameter;
                 pc.chain = [ ... chain ];
             } else {
@@ -503,21 +494,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
 
         return { parameter, chain };
-    }
-
-    private replaceParameters(x: MemberExpression): Expression {
-        const { target, property } = x;
-        if (target.type === "ParameterExpression") {
-            const replace = this.targets.get(target as ParameterExpression);
-            if (replace && replace.replace !== target) {
-                return Expression.member(replace.replace, property);
-            }
-            return x;
-        }
-        if (target.type === "MemberExpression") {
-            return Expression.member(this.replaceParameters(target as MemberExpression), property);
-        }
-        return x;
     }
 
 }
