@@ -1,4 +1,5 @@
 import { IClassOf } from "../../decorators/IClassOf.js";
+import NameParser from "../../decorators/parser/NameParser.js";
 import Inject from "../../di/di.js";
 import type  EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../EntityContext.js";
@@ -7,21 +8,11 @@ import ChangeEntry from "../changes/ChangeEntry.js";
 
 const done = Promise.resolve() as Promise<void>;
 
-export class ForeignKeyFilter {
+export class ForeignKeyFilter<T = any> {
 
     public type: EntityType;
     public name: string;
     public fkName: string;
-
-    public get read() {
-        const read = this.context.query(this.type.typeClass);
-        return this.events.filter(read);
-    }
-
-    public get modify() {
-        const read = this.context.query(this.type.typeClass);
-        return this.events.modify(read);
-    }
 
     private events: EntityEvents<any>;
     private context: EntityContext;
@@ -31,8 +22,19 @@ export class ForeignKeyFilter {
         return p as any as ForeignKeyFilter;
     }
 
-    public is<T>(type: IClassOf<T>, key: keyof T): boolean {
-        return type === this.type.typeClass && (this.name === key || this.fkName === key);
+    public is<TR>(fx: (x: T) => TR): boolean {
+        const name = NameParser.parseMember(fx);
+        return name === this.fkName || name === this.name;
+    }
+
+    public read() {
+        const read = this.context.query(this.type.typeClass);
+        return this.events.filter(read);
+    }
+
+    public modify() {
+        const read = this.context.query(this.type.typeClass);
+        return this.events.modify(read);
     }
 }
 
@@ -59,8 +61,8 @@ export default abstract class EntityEvents<T> {
         return done;
     }
 
-    onForeignKeyFilter(filter: ForeignKeyFilter) {
-        return filter.modify;
+    onForeignKeyFilter(filter: ForeignKeyFilter<T>) {
+        return filter.modify();
     }
 
     afterInsert(entity: T, entry: ChangeEntry) {

@@ -1,7 +1,7 @@
 import type { IColumn, IEntityRelation } from "../decorators/IColumn.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
-import NameParser from "../decorators/parser/MemberParser.js";
+import NameParser from "../decorators/parser/NameParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import { QuotedLiteral, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";

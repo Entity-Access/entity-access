@@ -1,7 +1,7 @@
 import Inject from "../../../di/di.js";
 import { IEntityQuery } from "../../../model/IFilterWithParameter.js";
-import EntityEvents from "../../../model/events/EntityEvents.js";
-import { Order, OrderItem } from "../../model/ShoppingContext.js";
+import EntityEvents, { ForeignKeyFilter } from "../../../model/events/EntityEvents.js";
+import { Order, OrderItem, User } from "../../model/ShoppingContext.js";
 import { UserInfo } from "./UserInfo.js";
 
 export class OrderEvents extends EntityEvents<Order> {
@@ -27,6 +27,12 @@ export class OrderEvents extends EntityEvents<Order> {
         const { userID } = this.user;
         // user can only modify placed orders
         return query.where({ userID }, (p) => (x) => x.customerID === p.userID);
+    }
+
+    onForeignKeyFilter(filter: ForeignKeyFilter<Order>): IEntityQuery<any> {
+        if (filter.is((x) => x.customer)) {
+            return filter.read();
+        }
     }
 }
 

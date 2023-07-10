@@ -1,3 +1,4 @@
+import Logger from "../../../common/Logger.js";
 import { ServiceProvider } from "../../../di/di.js";
 import { BaseDriver } from "../../../drivers/base/BaseDriver.js";
 import ContextEvents from "../../../model/events/ContextEvents.js";
@@ -15,6 +16,7 @@ export default async function(this: TestConfig) {
     try {
         const user = new UserInfo();
         user.userID = customer.userID;
+        scope.add(Logger, Logger.instance);
         scope.add(BaseDriver, this.driver);
         scope.add(UserInfo, user);
         scope.add(ContextEvents, new ShoppingContextEvents());

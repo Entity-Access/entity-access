@@ -85,6 +85,7 @@ export class EntitySource<T = any> {
     public asQuery() {
         const { model, context } = this;
         const selectStatement = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+        selectStatement.model = model;
         return new EntityQuery<T>({
             context,
             type: model,

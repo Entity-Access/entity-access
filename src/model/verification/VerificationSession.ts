@@ -1,5 +1,8 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
+import Logger from "../../common/Logger.js";
+import { TypeInfo } from "../../common/TypeInfo.js";
 import { IEntityRelation } from "../../decorators/IColumn.js";
+import { ServiceProvider } from "../../di/di.js";
 import EntityType from "../../entity-query/EntityType.js";
 import { ConditionalExpression, Constant, ExistsExpression, Expression, Identifier, ParameterExpression, QuotedLiteral, SelectStatement, TemplateLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
 import EntityContext from "../EntityContext.js";
@@ -91,7 +94,8 @@ export default class VerificationSession {
             Expression.member(eq.selectStatement.as, relatedModel.keys[0].columnName),
             Expression.constant(value)
         );
-        this.addError(query as EntityQuery, compare , `Unable to access entity ${type} through foreign key ${change.type.name}.${relation.name}`);
+        const typeName  = TypeInfo.nameOfType(type);
+        this.addError(query as EntityQuery, compare , `Unable to access entity ${typeName} through foreign key ${TypeInfo.nameOfType(change.type)}.${relation.name}`);
     }
 
     queueEntityKey(change: ChangeEntry, keys: KeyValueArray, events: EntityEvents<any>) {
@@ -112,7 +116,8 @@ export default class VerificationSession {
                 ? Expression.logicalAnd(compare, test)
                 : test;
         }
-        this.addError(query  as EntityQuery, compare, `Unable to access entity ${type}`);
+        const typeName = TypeInfo.nameOfType(type);
+        this.addError(query  as EntityQuery, compare, `Unable to access entity ${typeName}`);
     }
 
     async verifyAsync(): Promise<any> {
@@ -122,9 +127,16 @@ export default class VerificationSession {
         this.select.as = ParameterExpression.create({ name: "x"});
         const compiler = this.context.driver.compiler;
         const query = compiler.compileExpression(null, this.select);
-        const { rows: [ { error }]} = await this.context.driver.executeQuery(query);
-        if (error) {
-            EntityAccessError.throw(error);
+        const logger = ServiceProvider.resolve(this.context, Logger);
+        const session = logger.newSession();
+        try {
+            const { rows: [ { error }]} = await this.context.driver.executeQuery(query);
+            if (error) {
+                session.error(`Failed executing ${query.text}\n[${query.values.join(",")}]\n${error?.stack ?? error}`);
+                EntityAccessError.throw(error);
+            }
+        } finally {
+            session.dispose();
         }
     }
 

@@ -32,7 +32,8 @@ FROM "OrderItems" AS "O1"
 WHERE ("P1"."productID" = "O1"."productID") AND ("O1"."productID" = $1)) AND EXISTS (SELECT
 1
 FROM "OrderItems" AS "O2"
-WHERE ("P1"."productID" = "O2"."productID") AND ("O2"."order"."orderDate" > $2))`;
+ INNER JOIN "Orders" AS "O0" ON "O2"."orderID" = "O0"."orderID"
+WHERE ("P1"."productID" = "O2"."productID") AND ("O0"."orderDate" > $2))`;
 
 const productJoin = `SELECT
 "P1"."productID","P1"."name","P1"."ownerID","P1"."status"

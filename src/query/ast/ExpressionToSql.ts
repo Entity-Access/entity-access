@@ -14,6 +14,7 @@ interface IPropertyChain {
 export interface IMappingModel {
     parameter: ParameterExpression;
     model?: EntityType;
+    selectStatement?: SelectStatement;
     replace?: Expression;
 }
 
@@ -55,6 +56,24 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitSelectStatement(e: SelectStatement): ITextQuery {
+
+        // inject parameter and types if we don't have it..
+        if (e.as && e.model) {
+            const scope = this.targets.get(e.as);
+            if (!scope) {
+                this.targets.set(e.as, {
+                    parameter: e.as,
+                    model:
+                    e.model,
+                    replace: e.as,
+                    selectStatement: e
+                });
+            } else {
+                scope.selectStatement = e;
+                scope.model = e.model;
+            }
+        }
+
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
@@ -131,7 +150,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             const relatedModel = relation.relation.relatedEntity;
                             const relatedType = relatedModel.typeClass;
                             let query = this.source.context.query(relatedType);
-                            let select = { ... (query as EntityQuery).selectStatement };
+                            const select = { ... (query as EntityQuery).selectStatement };
 
                             const replaceParam = this.createParameter(this.source.selectStatement, relatedModel.name[0]);
                             select.as = replaceParam;
@@ -423,14 +442,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (!parameter) {
             return pc;
         }
-        if (pc.chain.length <= 1 || !this.source) {
+        if (pc.chain.length <= 1) {
             return pc;
         }
 
         const chain = [ ... pc.chain];
 
-        let type = this.source.type;
-        const select = this.source.selectStatement;
+        const scope = this.targets.get(parameter);
+        const select = scope?.selectStatement ?? this.source?.selectStatement;
+        if (!select) {
+            return pc;
+        }
+        let type = select.model;
 
         select.joins ??= [];
 
