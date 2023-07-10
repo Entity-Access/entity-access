@@ -1,9 +1,9 @@
 import * as bp from "@babel/parser";
 import * as bpe from "@babel/types";
 
-export class BabelVisitor<T> {
-    visit(nodeAny: bpe.Expression | bpe.Node): T {
-        const node = nodeAny as bpe.Expression;
+export abstract class BabelVisitor<T> {
+    visit(node: bpe.Expression | bpe.Node): T {
+        // const node = nodeAny as bpe.Expression;
         switch (node.type) {
             case "BinaryExpression":
                 return this.visitBinaryExpression(node);
@@ -33,54 +33,37 @@ export class BabelVisitor<T> {
                 return this.visitIdentifier(node);
             case "MemberExpression":
                 return this.visitMemberExpression(node);
+            case "ObjectExpression":
+                return this.visitObjectExpression(node);
+            case "ObjectProperty":
+                return this.visitObjectProperty(node);
+            case "TemplateElement":
+                return this.visitTemplateElement(node);
             case "RegExpLiteral":
             default:
                 throw new Error(`Translation from ${node.type} not supported`);
         }
     }
-    visitMemberExpression(node: bpe.MemberExpression): T {
-        return;
+    abstract visitTemplateElement(node: bpe.TemplateElement): T;
+    visitObjectProperty(node: bpe.ObjectProperty): T {
+        throw new Error("Method not implemented.");
     }
-    visitLogicalExpression(node: bpe.LogicalExpression): T {
-        return;
-    }
-    visitIdentifier(node: bpe.Identifier): T {
-        return;
-    }
-    visitTemplateLiteral(node: bpe.TemplateLiteral): T {
-        return;
-    }
-    visitNumericLiteral(node: bpe.NumericLiteral): T {
-        return;
-    }
-    visitDecimalLiteral(node: bpe.DecimalLiteral): T {
-        return;
-    }
-    visitBooleanLiteral(node: bpe.BooleanLiteral): T {
-        return;
-    }
-    visitBigIntLiteral(node: bpe.BigIntLiteral): T {
-        return;
-    }
-    visitStringLiteral(node: bpe.StringLiteral): T {
-        return;
-    }
-    visitNullLiteral(node: bpe.NullLiteral): T {
-        return;
-    }
-    visitConditionalExpression(node: bpe.ConditionalExpression): T {
-        return;
-    }
+    abstract visitObjectExpression(node: bpe.ObjectExpression): T;
+    abstract visitMemberExpression(node: bpe.MemberExpression): T;
+    abstract visitLogicalExpression(node: bpe.LogicalExpression): T;
+    abstract visitIdentifier(node: bpe.Identifier): T;
+    abstract visitTemplateLiteral(node: bpe.TemplateLiteral): T;
+    abstract visitNumericLiteral(node: bpe.NumericLiteral): T;
+    abstract visitDecimalLiteral(node: bpe.DecimalLiteral): T;
+    abstract visitBooleanLiteral(node: bpe.BooleanLiteral): T;
+    abstract visitBigIntLiteral(node: bpe.BigIntLiteral): T;
+    abstract visitStringLiteral(node: bpe.StringLiteral): T;
+    abstract visitNullLiteral(node: bpe.NullLiteral): T;
+    abstract visitConditionalExpression(node: bpe.ConditionalExpression): T;
 
-    visitArrowFunctionExpression(node: bpe.ArrowFunctionExpression): T {
-        return;
-    }
+    abstract visitArrowFunctionExpression(node: bpe.ArrowFunctionExpression): T;
 
-    visitCallExpression(node: bpe.CallExpression): T {
-        return;
-    }
+    abstract visitCallExpression(node: bpe.CallExpression): T;
 
-    visitBinaryExpression(node: bpe.BinaryExpression): T {
-        return;
-    }
+    abstract visitBinaryExpression(node: bpe.BinaryExpression): T;
 }

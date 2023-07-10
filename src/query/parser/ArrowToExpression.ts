@@ -1,27 +1,34 @@
 import { parseExpression } from "@babel/parser";
-import { ArrowFunctionExpression, BinaryExpression, CallExpression, CoalesceExpression, Constant, Expression, Identifier, MemberExpression, NullExpression, NumberLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, BinaryExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, ParameterExpression, QuotedLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import EntityType from "../../entity-query/EntityType.js";
 import { EntitySource } from "../../model/EntitySource.js";
+import Restructure from "./Restructure.js";
+import { NotSupportedError } from "./NotSupportedError.js";
 
 type IQueryFragment = string | { name?: string, value?: any };
 type IQueryFragments = IQueryFragment[];
 
 export default class ArrowToExpression extends BabelVisitor<Expression> {
 
-    public static transform(fx: (p: any) => (x: any) => any) {
-        const node = parseExpression(fx.toString());
+    public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression) {
+
+        const rs = new Restructure();
+
+        const node = rs.visit(parseExpression(fx.toString()));
         if (node.type !== "ArrowFunctionExpression") {
             throw new Error("Expecting an arrow function");
         }
 
-        const firstParam = node.params[0];
-        if (firstParam.type !== "Identifier") {
-            throw new Error("Expecting an identifier");
-        }
+        const params = [] as ParameterExpression[];
 
-        const paramName = firstParam.name;
+        for (const iterator of node.params) {
+            if (iterator.type !== "Identifier") {
+                throw new Error("Expecting an identifier");
+            }
+            params.push(ParameterExpression.create({ name: iterator.name }));
+        }
 
         let body = node.body;
         if (body.type !== "ArrowFunctionExpression") {
@@ -33,13 +40,13 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             throw new Error("Expecting an identifier");
         }
 
-        const target = firstTarget.name;
+        target ??= ParameterExpression.create({ name: firstTarget.name});
 
         body = body.body;
 
-        const visitor = new this(paramName, target);
+        const visitor = new this(params, target, firstTarget.name);
         return {
-            param: paramName,
+            params,
             target,
             body: visitor.visit(body)
         };
@@ -47,11 +54,19 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     public readonly leftJoins: string[] = [];
 
+    private targetStack: Map<any,any> = new Map();
+
     protected constructor(
-        public param: string,
-        public target: string
+        public params: ParameterExpression[],
+        public target: ParameterExpression,
+        targetName: string
     ) {
         super();
+        this.targetStack.set("Sql", "Sql");
+        for (const iterator of params) {
+            this.targetStack.set(iterator.name, iterator);
+        }
+        this.targetStack.set(targetName ?? target.name, target);
     }
 
     visitBigIntLiteral({ value }: bpe.BigIntLiteral) {
@@ -79,8 +94,22 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitTemplateLiteral(node: bpe.TemplateLiteral) {
-        const value = node.expressions.map((x) => this.visit(x));
+        // const value = node.expressions.map((x) => this.visit(x));
+        const value = [] as Expression[];
+        for (let index = 0; index < node.quasis.length; index++) {
+            const { value: { cooked }} = node.quasis[index];
+            if (cooked) {
+                value.push(StringLiteral.create({ value: cooked }));
+            }
+            if (index < node.expressions.length) {
+                value.push(this.visit(node.expressions[index]));
+            }
+        }
         return TemplateLiteral.create({ value });
+    }
+
+    visitTemplateElement(node: bpe.TemplateElement): Expression {
+        throw new NotSupportedError();
     }
 
     visitLogicalExpression(node: bpe.LogicalExpression): Expression {
@@ -122,7 +151,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 operator = "=";
                 break;
             default:
-                throw new Error(`Operator ${operator} not supported`);
+                throw new NotSupportedError(`Operator ${operator}`);
         }
         const left = this.visit(node.left);
         const right = this.visit(node.right);
@@ -130,6 +159,10 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitCallExpression({ callee, arguments: args }: bpe.CallExpression) {
+
+        // we need to sanitize callee
+        this.sanitize(callee);
+
         return CallExpression.create({
             callee: callee ? this.visit(callee) : void 0,
             arguments: args ? args.map((x) => this.visit(x)) : []
@@ -137,6 +170,10 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitIdentifier({ name: value }: bpe.Identifier): Expression {
+        const scopedName = this.targetStack.get(value);
+        if (typeof scopedName === "object") {
+            return scopedName;
+        }
         return Identifier.create({ value });
     }
 
@@ -150,11 +187,74 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitArrowFunctionExpression(node: bpe.ArrowFunctionExpression): Expression {
-        const params = node.params.map((x) => this.visit(x));
+        const params = [] as ParameterExpression[];
+        const names = [];
+        for (const iterator of node.params) {
+            if (iterator.type !== "Identifier") {
+                throw new NotSupportedError();
+            }
+            names.push(iterator.name);
+            const p = ParameterExpression.create({ value: iterator.name });
+            this.targetStack.set(iterator.name, p);
+            params.push(p);
+        }
         const body = this.visit(node.body);
+        for (const name of names) {
+            this.targetStack.delete(name);
+        }
         return ArrowFunctionExpression.create({
             params,
             body
         });
     }
+
+    visitObjectExpression(node: bpe.ObjectExpression): Expression {
+        const properties = [] as ExpressionAs[];
+        for (const iterator of node.properties) {
+            switch(iterator.type) {
+                case "ObjectProperty":
+                    switch(iterator.key.type) {
+                        case "Identifier":
+                            properties.push( ExpressionAs.create({
+                                alias: QuotedLiteral.create({ literal: iterator.key.name}),
+                                expression: this.visit(iterator.value)
+                            }) );
+                            break;
+                        default:
+                            throw new NotSupportedError();
+                    }
+                    continue;
+                default:
+                    throw new NotSupportedError();
+            }
+        }
+        return NewObjectExpression.create({
+            properties
+        });
+    }
+
+    visitConditionalExpression(node: bpe.ConditionalExpression): Expression {
+        return ConditionalExpression.create({
+            test: this.visit(node.test),
+            consequent: this.visit(node.consequent),
+            alternate: this.visit(node.alternate)
+        });
+    }
+
+    private sanitize(node: bpe.Expression | bpe.V8IntrinsicIdentifier) {
+        switch(node.type) {
+            case "Identifier":
+                const name = node.name;
+                const scopedName = this.targetStack.get(name);
+                if (scopedName === null || scopedName === void 0) {
+                    throw new Error(`Unknown identifier ${name}`);
+                }
+                return;
+            case "MemberExpression":
+            case "OptionalMemberExpression":
+                return this.sanitize(node.object);
+        }
+        throw new Error(`Unexpected expression type ${node.type}`);
+    }
+
 }

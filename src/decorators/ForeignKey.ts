@@ -1,6 +1,6 @@
 import type { IClassOf } from "./IClassOf.js";
 import SchemaRegistry from "./SchemaRegistry.js";
-import NameParser from "./parser/MemberParser.js";
+import NameParser from "./parser/NameParser.js";
 
 
 export default function ForeignKey<T, TRelated>(

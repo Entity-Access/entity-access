@@ -1,24 +1,14 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
-import { BinaryExpression, Expression, ExpressionAs, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { Expression, ExpressionAs, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
 import EntityQuery from "./EntityQuery.js";
 import TimedCache from "../common/cache/TimedCache.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
-import { SourceExpression } from "./SourceExpression.js";
 
 const modelCache = new TimedCache<any, SelectStatement>();
 
 export class EntitySource<T = any> {
-
-
-    public readonly filters: {
-        read?: () => IFilterExpression;
-        modify?: () => IFilterExpression;
-        delete?: () => IFilterExpression;
-        include?: () => IFilterExpression;
-    } = {};
-
 
     get [modelSymbol]() {
         return this.model;
@@ -37,7 +27,7 @@ export class EntitySource<T = any> {
 
     }
 
-    public add(item: Partial<T>) {
+    public add(item: Partial<T>): T {
         const p = Object.getPrototypeOf(item).constructor;
         if (!p || p === Object) {
             Object.setPrototypeOf(item, this.model.typeClass.prototype);
@@ -68,41 +58,40 @@ export class EntitySource<T = any> {
     }
 
     public all(): IEntityQuery<T> {
-        const { model, context } = this;
-        const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
-        return new EntityQuery<T>(SourceExpression.create({
-            alias: select.as.literal,
-            context,
-            model,
-            select
-        })) as IEntityQuery<T>;
+        return this.asQuery();
     }
 
     public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
-        const { model, context } = this;
-        const select = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
-        return new EntityQuery<T>(SourceExpression.create({
-            alias: select.as.literal,
-            context,
-            model,
-            select
-        })).where(parameter, fx) as IEntityQuery<T>;
+        return this.asQuery().where(parameter, fx);
     }
 
     generateModel(): SelectStatement {
         const source = this.model.fullyQualifiedName;
-        const as = QuotedLiteral.create({ literal: this.model.name[0] + "1" });
+        const as = Expression.parameter(this.model.name[0] + "1");
         const fields = this.model.columns.map((c) => c.name !== c.columnName
             ? ExpressionAs.create({
-                expression: QuotedLiteral.propertyChain(as.literal, c.columnName),
+                expression: Expression.member(as, c.columnName),
                 alias: QuotedLiteral.create({ literal: c.name })
             })
-            : QuotedLiteral.propertyChain(as.literal, c.columnName));
+            : Expression.member(as, c.columnName));
         return SelectStatement.create({
             source,
             as,
             fields,
+            names: JSON.stringify([as.name])
         });
+    }
+
+    public asQuery() {
+        const { model, context } = this;
+        const selectStatement = modelCache.getOrCreate(`select-model-${this.model.name}`, () => this.generateModel());
+        selectStatement.model = model;
+        return new EntityQuery<T>({
+            context,
+            type: model,
+            selectStatement
+        }) as any as IEntityQuery<T>;
+
     }
 
     public toQuery() {
@@ -110,6 +99,6 @@ export class EntitySource<T = any> {
         if(!filter) {
             return "";
         }
-        return this.context.driver.compiler.compileExpression(filter);
+        return this.context.driver.compiler.compileExpression( this.asQuery() as any, filter);
     }
 }

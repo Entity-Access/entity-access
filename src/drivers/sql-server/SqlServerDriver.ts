@@ -4,13 +4,11 @@ import Migrations from "../../migrations/Migrations.js";
 import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
 import sql from "mssql";
 import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
-import SqlServerSqlMethodTransformer from "../../compiler/sql-server/SqlServerSqlMethodTransformer.js";
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
 import { SqlServerLiteral } from "./SqlServerLiteral.js";
-import usingAsync from "../../common/usingAsync.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 
-export type ISqlServerConnectionString = sql.config;
+export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
 const namedPool = new TimedCache<string, sql.ConnectionPool>();
 
@@ -24,14 +22,8 @@ export default class SqlServerDriver extends BaseDriver {
     private transaction: sql.Transaction;
 
     constructor(private readonly config: ISqlServerConnectionString) {
-        super({
-            database: config.database,
-            host: config.server ??= (config as any).host,
-            port: config.port,
-            password: config.password,
-            user: config.user,
-            ... config,
-        });
+        super(config);
+        config.server = config.host;
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
@@ -61,7 +53,6 @@ export default class SqlServerDriver extends BaseDriver {
         }
 
         try {
-            console.log(command.text);
             const r = await rq.query(command.text);
             return { rows: r.recordset ?? [r.output], updated: r.rowsAffected [0]};
         } catch (error) {
@@ -135,10 +126,11 @@ export default class SqlServerDriver extends BaseDriver {
     }
 
     private newConnection() {
-        const key = this.config.server + "//" + this.config.database + "/" + this.config.user;
-        return namedPool.getOrCreateAsync(this.config.server + "://" + this.config.database,
+        const config = this.config;
+        const key = config.server + "//" + config.database + "/" + config.user;
+        return namedPool.getOrCreateAsync(config.server + "://" + config.database,
             () => {
-                const pool = new sql.ConnectionPool(this.config);
+                const pool = new sql.ConnectionPool(config);
                 const oldClose = pool.close;
                 pool.close = ((c) => {
                     namedPool.delete(key);
@@ -188,7 +180,6 @@ class SqlReader implements IDbReader {
             this.processPendingRows();
         });
 
-        console.log(`Executing ${(command as any).text}`);
         void rq.query((command as any).text);
 
         do {

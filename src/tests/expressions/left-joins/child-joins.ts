@@ -5,45 +5,38 @@ import { assertSqlMatch, trimInternal } from "../trimInternal.js";
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 
 const sql1 = `SELECT
-    "P1"."productID",
-    "P1"."name",
-    "P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
-WHERE
-    EXISTS (SELECT
-                $1 AS "o1"
-        FROM "OrderItems" AS "O0"
-        WHERE 
-            ("P1"."productID" = "O0"."productID")
-            AND ("O0"."productID" = $2)
-            )
-        `;
+WHERE EXISTS (SELECT
+1
+FROM "OrderItems" AS "O0"
+WHERE ("P1"."productID" = "O0"."productID") AND ("O0"."productID" = $1))`;
 
 const sql2 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
 WHERE EXISTS (SELECT
-$1 AS "o1"
-FROM "OrderItems" AS "O0"
-WHERE ("P1"."productID" = "O0"."productID") AND ("O0"."productID" = $2)) AND EXISTS (SELECT
-$3 AS "o1"
+1
 FROM "OrderItems" AS "O1"
-WHERE ("P1"."productID" = "O1"."productID") AND ("O1"."amount" > $4))`;
+WHERE ("P1"."productID" = "O1"."productID") AND ("O1"."productID" = $1)) AND EXISTS (SELECT
+1
+FROM "OrderItems" AS "O2"
+WHERE ("P1"."productID" = "O2"."productID") AND ("O2"."amount" > $2))`;
 
 const sql3 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
 WHERE EXISTS (SELECT
-$1 AS "o1"
-FROM "OrderItems" AS "O0"
-WHERE ("P1"."productID" = "O0"."productID") AND ("O0"."productID" = $2)) AND EXISTS (SELECT
-$3 AS "o1"
+1
 FROM "OrderItems" AS "O1"
- INNER JOIN "Orders" AS "O2" ON "O1"."orderID" = "O2"."orderID"
-WHERE ("P1"."productID" = "O1"."productID") AND ("O2"."orderDate" > $4))`;
+WHERE ("P1"."productID" = "O1"."productID") AND ("O1"."productID" = $1)) AND EXISTS (SELECT
+1
+FROM "OrderItems" AS "O2"
+ INNER JOIN "Orders" AS "O0" ON "O2"."orderID" = "O0"."orderID"
+WHERE ("P1"."productID" = "O2"."productID") AND ("O0"."orderDate" > $2))`;
 
 const productJoin = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID"
+"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
 FROM "Products" AS "P1"
  LEFT JOIN "Users" AS "U0" ON "P1"."ownerID" = "U0"."userID"
 WHERE "U0"."dateCreated" > $1`;

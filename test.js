@@ -42,7 +42,6 @@ export default class TestRunner {
                     trustServerCertificate: true // change to true for local dev / self-signed certs
                 }
             })
-
         ];
     }
 
@@ -88,19 +87,28 @@ export default class TestRunner {
 
 }
 
+const testDb = !process.argv.includes("no-db");
 
-await TestRunner.runAll("./dist/tests", true);
+await TestRunner.runAll("./dist/tests", testDb);
 
 let exitCode = 0;
+let failed = 0;
 
 for (const { error, name } of results) {
     if (error) {
         exitCode = 1;
+        failed++;
         console.error(`${name} failed`);
         console.error(error?.stack ?? error);
         continue;
     }
     console.log(`${name} executed.`);
+}
+
+if (exitCode === 0) {
+    console.log(`${results.length} tests ran successfully.`);
+} else {
+    console.log(`${failed} Tests out of ${results.length} failed.`);
 }
 
 process.exit(exitCode);

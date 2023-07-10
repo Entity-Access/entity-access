@@ -1,4 +1,4 @@
-import SchemaRegistry from "../decorators/SchemaRegistry.js";
+import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 
 export default class IdentityService {
 

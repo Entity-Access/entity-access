@@ -2,9 +2,8 @@ import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
 import ForeignKey from "../../decorators/ForeignKey.js";
 import Table from "../../decorators/Table.js";
-import PostgreSqlDriver from "../../drivers/postgres/PostgreSqlDriver.js";
-import { BaseDriver } from "../../drivers/base/BaseDriver.js";
-import { Console } from "console";
+
+export const statusPublished = "published";
 
 export class ShoppingContext extends EntityContext {
 
@@ -65,6 +64,9 @@ export class Product {
     @Column({ nullable: true })
     public ownerID: number;
 
+    @Column({ dataType: "Char", length: 20})
+    public status: string;
+
     public orderItems: OrderItem[];
 
     public prices: ProductPrice[];
@@ -123,8 +125,10 @@ export class ProductPrice {
     @Column({ nullable: true})
     public endDate?: Date;
 
+    @Column({ })
     public amount: number;
 
+    @Column({})
     public productID: number;
 
     @ForeignKey({

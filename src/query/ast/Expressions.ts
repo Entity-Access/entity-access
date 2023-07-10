@@ -1,7 +1,7 @@
-import { IColumn } from "../../decorators/IColumn.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
-import { ITextOrFunctionArray } from "./IStringTransformer.js";
+import { ITextQuery } from "./IStringTransformer.js";
 import type EntityType from "../../entity-query/EntityType.js";
+import DebugStringVisitor from "./DebugStringVisitor.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
 
@@ -24,9 +24,64 @@ const flattenedSelf = Symbol("flattenedSelf");
 
 export abstract class Expression {
 
+    static as(expression: Expression, alias: QuotedLiteral | string) {
+        if (typeof alias === "string") {
+            alias = Expression.quotedLiteral(alias);
+        }
+        return ExpressionAs.create({
+            expression,
+            alias
+        });
+    }
+
+    static templateLiteral(value: Expression[]) {
+        return TemplateLiteral.create({ value });
+    }
+
+
+    static constant(value: string) {
+        return Constant.create({ value });
+    }
+
+    static quotedLiteral(name: string) {
+        return QuotedLiteral.create({ literal: name });
+    }
+
+    static parameter(name: string) {
+        return ParameterExpression.create({ name });
+    }
+
+    static identifier(name: string) {
+        return Identifier.create({ value: name });
+    }
+
+    static logicalAnd(left: Expression, right: Expression): BinaryExpression {
+        return BinaryExpression.create({ left, operator: "AND", right});
+    }
+
+    static member(target: Expression, identifier: string |Expression): MemberExpression {
+        return MemberExpression.create({
+            target,
+            property: typeof identifier === "string"
+                ? this.identifier(identifier)
+                : identifier
+        });
+    }
+
+    static equal(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "="});
+    }
+
     static create<T extends Expression>(this: IClassOf<T>, p: Partial<Omit<T, "type">>) {
         (p as any).type = (this as any).name;
         Object.setPrototypeOf(p, this.prototype);
+        Object.defineProperty(p, "debugView", {
+            get() {
+                return DebugStringVisitor.expressionToString(this);
+            },
+            enumerable: true,
+            configurable: true
+        });
         return p as T;
     }
 
@@ -68,9 +123,9 @@ export abstract class Expression {
 
 }
 
-export class PlaceholderExpression extends Expression {
-    readonly type = "PlaceholderExpression";
-    expression: () => ITextOrFunctionArray;
+export class PartialExpression extends Expression {
+    readonly type = "PartialExpression";
+    query: ITextQuery;
 }
 
 export class BinaryExpression extends Expression {
@@ -112,6 +167,21 @@ export class CallExpression extends Expression {
     arguments: Expression[];
 }
 
+export class ParameterExpression extends Expression {
+    readonly type = "ParameterExpression";
+    name: string;
+    /**
+     * Default value if any...
+     */
+    value: any;
+
+    quotedLiteral: (x: string) => string;
+
+    toString() {
+        return this.quotedLiteral?.(this.name) ?? this.name;
+    }
+}
+
 export class MemberExpression extends Expression {
     readonly type = "MemberExpression";
     target: Expression;
@@ -121,7 +191,7 @@ export class MemberExpression extends Expression {
 
 export class ArrowFunctionExpression extends Expression {
     readonly type = "ArrowFunctionExpression";
-    params: Expression[];
+    params: ParameterExpression[];
     body: Expression;
 }
 
@@ -131,9 +201,9 @@ export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
 
-    source: TableSource;
+    source: TableSource | ValuesStatement;
 
-    as: QuotedLiteral;
+    as: ParameterExpression;
 
     fields: (Expression | QuotedLiteral | ExpressionAs)[];
 
@@ -147,13 +217,30 @@ export class SelectStatement extends Expression {
 
     offset: number;
 
+    // name holds string
+    names: string;
+
+    model: EntityType;
+
+}
+
+export class NewObjectExpression extends Expression {
+    readonly type = "NewObjectExpression";
+    properties: ExpressionAs[];
+}
+
+export class ConditionalExpression extends Expression {
+    readonly type = "ConditionalExpression";
+    test: Expression;
+    consequent: Expression;
+    alternate: Expression;
 }
 
 export class JoinExpression extends Expression {
     readonly type = "JoinExpression";
     joinType: "LEFT" | "INNER";
     source: SelectStatement | QuotedLiteral | ExpressionAs;
-    as: QuotedLiteral;
+    as: QuotedLiteral | ParameterExpression;
     where: Expression;
     model: EntityType;
 }
@@ -200,8 +287,17 @@ export class BigIntLiteral extends Expression {
     public value: bigint;
 }
 
+export class TemplateElement extends Expression {
+    readonly type = "TemplateElement";
+    public value: {
+        raw: string;
+        cooked: string;
+    };
+}
+
 export class TemplateLiteral extends Expression {
     readonly type = "TemplateLiteral";
+    public quasis: TemplateElement[];
     public value: Expression[];
 }
 
@@ -289,6 +385,9 @@ export type ExpressionType =
     CoalesceExpression|
     ExistsExpression|
     Identifier |
-    PlaceholderExpression|
-    ArrowFunctionExpression
+    ArrowFunctionExpression |
+    ConditionalExpression |
+    NewObjectExpression |
+    ParameterExpression |
+    TemplateElement
 ;

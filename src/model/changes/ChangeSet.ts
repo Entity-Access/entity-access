@@ -1,8 +1,7 @@
-import type EntityContext from "./EntityContext.js";
-import SchemaRegistry from "../decorators/SchemaRegistry.js";
+import SchemaRegistry from "../../decorators/SchemaRegistry.js";
+import EntityContext from "../EntityContext.js";
+import IdentityService from "../identity/IdentityService.js";
 import ChangeEntry from "./ChangeEntry.js";
-import { IRecord } from "../drivers/base/BaseDriver.js";
-import IdentityService from "./IdentityService.js";
 
 export const privateUpdateEntry = Symbol("updateEntry");
 

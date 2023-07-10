@@ -1,17 +1,37 @@
-import { BinaryExpression, CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement, TableSource } from "../query/ast/Expressions.js";
-import { EntitySource } from "./EntitySource.js";
-import { IOrderedEntityQuery, IEntityQuery, ILambdaExpression } from "./IFilterWithParameter.js";
-import { SourceExpression } from "./SourceExpression.js";
+import Logger from "../common/Logger.js";
+import { DisposableScope } from "../common/usingAsync.js";
+import { ServiceProvider } from "../di/di.js";
+import EntityType from "../entity-query/EntityType.js";
+import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import EntityContext from "./EntityContext.js";
+import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
 
 export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
-    constructor (public readonly source: SourceExpression) {
+
+    public context: EntityContext;
+    public type: EntityType;
+    public selectStatement: SelectStatement;
+    public signal?: AbortSignal;
+    constructor (p: Partial<EntityQuery<any>>
+    ) {
+        // lets clone select...
+        Object.setPrototypeOf(p, EntityQuery.prototype);
+        return p as EntityQuery;
+    }
+
+    select(p: any, fx: any): any {
+        return this.map(p, fx);
+    }
+
+    map(p: any, fx: any): any {
+        // const source = this.source.copy();
+        // const { select } = source;
+        // const exp = this.source.context.driver.compiler.compileToExpression(source, p, fx);
     }
 
     withSignal(signal: AbortSignal): any {
-        const source = this.source.copy();
-        source.signal = signal;
-        return new EntityQuery(source);
+        return new EntityQuery({ ... this, signal });
     }
 
     thenBy(parameters: any, fx: any): any {
@@ -20,21 +40,13 @@ export default class EntityQuery<T = any>
     thenByDescending(parameters: any, fx: any) {
         return this.orderByDescending(parameters, fx);
     }
+
     where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): any {
 
-        const source = this.source.copy();
-        const { select } = source;
-        const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx);
-        if(!select.where) {
-            select.where = exp;
-        } else {
-            select.where = BinaryExpression.create({
-                left: select.where,
-                operator: "AND",
-                right: exp
-            });
-        }
-        return new EntityQuery(source);
+        return this.extend(parameters, fx, (select, body) => ({
+            ... select,
+            where: select.where ? Expression.logicalAnd(select.where, body): body
+        }));
     }
 
     async toArray(): Promise<T[]> {
@@ -46,23 +58,32 @@ export default class EntityQuery<T = any>
     }
 
     async *enumerate(): AsyncGenerator<T, any, unknown> {
-        const type = this.source.model?.typeClass;
-        const signal = this.source.signal;
-        const query = this.source.context.driver.compiler.compileExpression(this.source.select);
-        const reader = await this.source.context.driver.executeReader(query, signal);
+        const logger = ServiceProvider.resolve(this.context, Logger);
+        const scope = new DisposableScope();
+        const session = logger.newSession();
+        let query: { text: string, values: any[]};
         try {
+            scope.register(session);
+            const type = this.type;
+            const signal = this.signal;
+            query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
+            const reader = await this.context.driver.executeReader(query, signal);
+            scope.register(reader);
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
-                    Object.setPrototypeOf(iterator, type.prototype);
+                    Object.setPrototypeOf(iterator, type.typeClass.prototype);
                     // set identity...
-                    const entry = this.source.context.changeSet.getEntry(iterator, iterator);
+                    const entry = this.context.changeSet.getEntry(iterator, iterator);
                     yield entry.entity;
                     continue;
                 }
                 yield iterator as T;
             }
+        } catch(error) {
+            session.error(`Failed executing ${query?.text}\n${error.stack ?? error}`);
+            throw error;
         } finally {
-            await reader.dispose();
+            await scope.dispose();
         }
     }
 
@@ -70,7 +91,7 @@ export default class EntityQuery<T = any>
         for await(const iterator of this.limit(1).enumerate()) {
             return iterator;
         }
-        throw new Error(`No records found for ${this.source.model?.name || "Table"}`);
+        throw new Error(`No records found for ${this.type?.name || "Table"}`);
     }
 
     async first(): Promise<T> {
@@ -80,42 +101,32 @@ export default class EntityQuery<T = any>
         return null;
     }
     toQuery(): { text: string; values: any[]; } {
-        return this.source.context.driver.compiler.compileExpression(this.source.select);
+        return this.context.driver.compiler.compileExpression(this, this.selectStatement);
     }
     orderBy(parameters: any, fx: any): any {
-        const source = this.source.copy();
-        const { select } = source;
-        const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx as any);
-        select.orderBy ??= [];
-        select.orderBy.push(OrderByExpression.create({
-            target: exp
+        return this.extend(parameters, fx, (select, target) => ({
+            ... select,
+            orderBy: select.orderBy
+                ? [ ... select.orderBy, OrderByExpression.create({ target})]
+                : [OrderByExpression.create({ target})]
         }));
-        return new EntityQuery(source);
     }
     orderByDescending(parameters: any, fx: any): any {
-        const source = this.source.copy();
-        const { select } = source;
-        const exp = this.source.context.driver.compiler.compileToExpression(source, parameters, fx as any);
-        select.orderBy ??= [];
-        select.orderBy.push(OrderByExpression.create({
-            target: exp,
-            descending: true
+        const descending = true;
+        return this.extend(parameters, fx, (select, target) => ({
+            ... select,
+            orderBy: select.orderBy
+                ? [ ... select.orderBy, OrderByExpression.create({ target, descending })]
+                : [OrderByExpression.create({ target, descending })]
         }));
-        return new EntityQuery(source);
     }
 
     limit(n: number): any {
-        const source = this.source.copy();
-        const { select } = source;
-        select.limit = n;
-        return new EntityQuery(source);
+        return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, limit: n} });
     }
 
     offset(n: number): any {
-        const source = this.source.copy();
-        const { select } = source;
-        select.offset = n;
-        return new EntityQuery(source);
+        return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, offset: n} });
     }
 
     async count(parameters?:any, fx?: any): Promise<number> {
@@ -123,10 +134,7 @@ export default class EntityQuery<T = any>
             return this.where(parameters, fx).count();
         }
 
-        const source = this.source.copy();
-        const { select } = source;
-
-        select.fields = [
+        const select = { ... this.selectStatement, fields: [
             ExpressionAs.create({
                 expression: CallExpression.create({
                     callee: Identifier.create({ value: "COUNT"}),
@@ -134,10 +142,12 @@ export default class EntityQuery<T = any>
                 }),
                 alias: QuotedLiteral.create({ literal: "count" })
             })
-        ];
+        ] };
 
-        const query = this.source.context.driver.compiler.compileExpression(select);
-        const reader = await this.source.context.driver.executeReader(query);
+        const nq = new EntityQuery({ ... this, selectStatement: select });
+
+        const query = this.context.driver.compiler.compileExpression(nq, select);
+        const reader = await this.context.driver.executeReader(query);
 
         try {
             for await (const iterator of reader.next()) {
@@ -147,6 +157,12 @@ export default class EntityQuery<T = any>
             await reader.dispose();
         }
 
+    }
+
+    private extend(parameters: any, fx: any, map: (select: SelectStatement, exp: Expression) => SelectStatement) {
+        const exp = this.context.driver.compiler.compile(this, fx);
+        exp.params[0].value = parameters;
+        return new EntityQuery({ ... this, selectStatement: map(this.selectStatement, exp.body)});
     }
 
 }

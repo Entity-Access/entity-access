@@ -1,4 +1,4 @@
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NullExpression, NumberLiteral, OrderByExpression, PlaceholderExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -56,18 +56,33 @@ export default abstract class Visitor<T = any> {
                 return this.visitCoalesceExpression(e);
             case "ExistsExpression":
                 return this.visitExistsExpression(e);
-            case "PlaceholderExpression":
-                return this.visitPlaceholderExpression(e);
             case "ArrowFunctionExpression":
                 return this.visitArrowFunctionExpression(e);
+            case "ConditionalExpression":
+                return this.visitConditionalExpression(e);
+            case "NewObjectExpression":
+                return this.visitNewObjectExpression(e);
+            case "TemplateElement":
+                return this.visitTemplateElement(e);
+            case "ParameterExpression":
+                return this.visitParameterExpression(e);
         }
         const c: never = e;
         throw new Error(`${e1.type} Not implemented`);
     }
-    visitArrowFunctionExpression(e: ArrowFunctionExpression): T {
+    visitParameterExpression(e: ParameterExpression): T {
         return;
     }
-    visitPlaceholderExpression(e: PlaceholderExpression): T {
+    visitTemplateElement(e: TemplateElement): T {
+        return;
+    }
+    visitNewObjectExpression(e: NewObjectExpression): T {
+        return;
+    }
+    visitConditionalExpression(e: ConditionalExpression): T {
+        return;
+    }
+    visitArrowFunctionExpression(e: ArrowFunctionExpression): T {
         return;
     }
     visitExistsExpression(e: ExistsExpression): T {

@@ -1,7 +1,7 @@
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
-import ChangeEntry from "../../model/ChangeEntry.js";
+import ChangeEntry from "../../model/changes/ChangeEntry.js";
 import { BinaryExpression, Constant, DeleteStatement, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");

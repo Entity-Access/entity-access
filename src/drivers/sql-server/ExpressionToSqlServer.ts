@@ -1,10 +1,10 @@
 import ExpressionToSql from "../../query/ast/ExpressionToSql.js";
 import { Identifier, InsertStatement, OrderByExpression, ReturnUpdated, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
-import { ITextOrFunctionArray, prepare } from "../../query/ast/IStringTransformer.js";
+import { ITextQuery, prepare } from "../../query/ast/IStringTransformer.js";
 
 export default class ExpressionToSqlServer extends ExpressionToSql {
 
-    visitReturnUpdated(e: ReturnUpdated): ITextOrFunctionArray {
+    visitReturnUpdated(e: ReturnUpdated): ITextQuery {
         if (!e) {
             return [];
         }
@@ -22,7 +22,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         return prepare ` OUTPUT ${fields}`;
     }
 
-    visitInsertStatement(e: InsertStatement): ITextOrFunctionArray {
+    visitInsertStatement(e: InsertStatement): ITextQuery {
         const returnValues = this.visit(e.returnValues);
         if (e.values instanceof ValuesStatement) {
 
@@ -45,7 +45,28 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
     }
 
-    visitSelectStatement(e: SelectStatement): ITextOrFunctionArray {
+    visitSelectStatement(e: SelectStatement): ITextQuery {
+
+        if (e.as && e.model) {
+            const scope = this.targets.get(e.as);
+            if (!scope) {
+                this.targets.set(e.as, {
+                    parameter: e.as,
+                    model:
+                    e.model,
+                    replace: e.as,
+                    selectStatement: e
+                });
+            } else {
+                scope.selectStatement = e;
+                scope.model = e.model;
+            }
+        }
+
+        const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
+        const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
+
         const fields = this.visitArray(e.fields, ",\n\t\t");
 
         const showTop = e.limit && !e.offset;
@@ -64,15 +85,33 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         const topValue = Number(e.limit);
         const top = showTop ? prepare ` TOP (${() => topValue}) ` : "";
 
-        const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
-        const source = this.visit(e.source);
-        const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
-        const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
-        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
+        let source: ITextQuery;
+        let as: ITextQuery | "";
+        if (e.source.type === "ValuesStatement") {
+            const v = e.source as ValuesStatement;
+            const rows = v.values.map((x) => prepare `(${this.visitArray(x)})`);
+            source  = prepare `(VALUES ${rows}) as ${this.visit(e.as)}(${this.visitArray(v.fields)})`;
+            as = [];
+        } else {
+            source = this.visit(e.source);
+            as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
+        }
+
+        // const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
         const offset = showFetch ? prepare ` OFFSET ${Number(e.offset).toString()} ROWS ` : "";
         const next = showFetch ? prepare ` FETCH NEXT ${Number(e.limit).toString()} ROWS ONLY` : "";
         return prepare `SELECT ${top}
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
+    }
+
+    visitValuesStatement(e: ValuesStatement): ITextQuery {
+        const rows = [];
+        for (const rowValues of e.values) {
+            rows.push(prepare `(${ this.visitArray(rowValues) })`);
+        }
+        const fields = e.fields ? prepare ` as x11(${this.visitArray(e.fields)})` : "";
+        return prepare `(VALUES ${rows}) ${fields}`;
+
     }
 }

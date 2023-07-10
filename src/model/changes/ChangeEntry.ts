@@ -1,5 +1,5 @@
-import { IColumn } from "../decorators/IColumn.js";
-import EntityType from "../entity-query/EntityType.js";
+import { IColumn } from "../../decorators/IColumn.js";
+import EntityType from "../../entity-query/EntityType.js";
 import type ChangeSet from "./ChangeSet.js";
 import { privateUpdateEntry } from "./ChangeSet.js";
 
@@ -31,11 +31,14 @@ export default class ChangeEntry implements IChanges {
 
     private pending: (() => void)[];
 
+    private dependents: ChangeEntry[];
+
     constructor(p: IChanges, changeSet: ChangeSet) {
         Object.setPrototypeOf(p, ChangeEntry.prototype);
         const ce = p as ChangeEntry;
         ce.changeSet = changeSet;
         ce.pending = [];
+        ce.dependents = [];
         ce.modified = new Map();
         return ce;
     }
@@ -134,7 +137,15 @@ export default class ChangeEntry implements IChanges {
 
             const keyValue = related[rKey.name];
             if (keyValue === void 0) {
+
+                relatedChanges.dependents.push(this);
+
                 this.order++;
+
+                for (const d of this.dependents) {
+                    d.order++;
+                }
+
                 const fk = iterator;
                 relatedChanges.pending.push(() => {
                     this.entity[fk.fkColumn.name] = related[rKey.name];
