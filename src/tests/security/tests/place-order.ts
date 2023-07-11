@@ -30,7 +30,7 @@ async function getNewOrders(this: TestConfig) {
     const scope = ServiceProvider.global.createScope();
     try {
         const user = new UserInfo();
-        user.userID = 1;
+        user.userID = 2;
         scope.add(Logger, Logger.instance);
         scope.add(BaseDriver, this.driver);
         scope.add(UserInfo, user);

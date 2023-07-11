@@ -13,6 +13,16 @@ export class UserEvents extends EntityEvents<User> {
             return null;
         }
         const { userID } = this.user;
-        return query.where({ userID }, (p) => (x) => x.userID === p.userID);
+        return query.where({ userID }, (p) => (x) => x.userID === p.userID
+            || x.orders.some(
+                (op) => op.orderItems.some((oi) => oi.product.ownerID === p.userID)));
+    }
+
+    modify(query: IEntityQuery<User>): IEntityQuery<User> {
+        if (this.user.admin) {
+            return null;
+        }
+        const { userID } = this.user;
+        return query.where({ userID}, (p) => (x) => x.userID === p.userID);
     }
 }
