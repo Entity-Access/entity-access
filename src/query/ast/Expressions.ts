@@ -222,9 +222,6 @@ export class SelectStatement extends Expression {
 
     offset: number;
 
-    // name holds string
-    names: string;
-
     model: EntityType;
 
 }

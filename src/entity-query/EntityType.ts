@@ -132,8 +132,7 @@ export default class EntityType {
             source,
             model: this,
             as,
-            fields,
-            names: JSON.stringify([as.name])
+            fields
         });
         return { ... this.selectAll };
     }
@@ -151,8 +150,7 @@ export default class EntityType {
             source,
             model: this,
             as,
-            fields,
-            names: JSON.stringify([as.name])
+            fields
         });
         return { ... this.selectOne };
     }
