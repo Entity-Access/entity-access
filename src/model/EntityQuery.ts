@@ -3,6 +3,7 @@ import { DisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import EntityType from "../entity-query/EntityType.js";
 import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { QueryExpander } from "../query/expander/QueryExpander.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import EntityContext from "./EntityContext.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
@@ -51,8 +52,11 @@ export default class EntityQuery<T = any>
     }
 
     include(p: any): any {
-
-        const px = ArrowToExpression.transform((______x) => p);
+        const selectStatement = QueryExpander.expand({ ... this.selectStatement }, p);
+        return new EntityQuery({
+            ... this,
+            selectStatement
+        });
     }
 
     async toArray(): Promise<T[]> {

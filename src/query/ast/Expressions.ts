@@ -25,6 +25,10 @@ const flattenedSelf = Symbol("flattenedSelf");
 
 export abstract class Expression {
 
+    static array(elements: Expression[]) {
+        return ArrayExpression.create({ elements });
+    }
+
     static as(expression: Expression, alias: QuotedLiteral | string) {
         if (typeof alias === "string") {
             alias = Expression.quotedLiteral(alias);
@@ -122,6 +126,11 @@ export abstract class Expression {
 
     readonly type: never | string;
 
+}
+
+export class ArrayExpression extends Expression {
+    readonly type = "ArrayExpression";
+    elements: Expression[];
 }
 
 export class PartialExpression extends Expression {
@@ -397,5 +406,6 @@ export type ExpressionType =
     ConditionalExpression |
     NewObjectExpression |
     ParameterExpression |
+    ArrayExpression |
     TemplateElement
 ;

@@ -140,6 +140,10 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
         return BinaryExpression.create({ left, operator, right });
     }
 
+    visitArrayExpression(node: bpe.ArrayExpression): Expression {
+        return Expression.array(node.elements.map((e) => this.visit(e)));
+    }
+
     visitBinaryExpression(node: bpe.BinaryExpression) {
         let operator = node.operator as string;
         switch(node.operator) {
