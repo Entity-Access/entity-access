@@ -49,7 +49,7 @@ export default class EntityQuery<T = any>
         }));
     }
 
-    include(p: any, next: any): any {
+    include(p: any): any {
         return this;
     }
 

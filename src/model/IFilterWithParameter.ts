@@ -27,8 +27,12 @@ export interface IBaseQuery<T> {
 
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
 
-    include<TR, TRArray = TR[]>(fx: (x: T) => TRArray, next?: (q: IBaseQuery<TR>) => IBaseQuery<TR>): IBaseQuery<T>;
-    include<TR>(fx: (x: T) => TR, next?: (q: IBaseQuery<TR>) => IBaseQuery<TR>): IBaseQuery<T>;
+    include<TR>(fx: (x: T) => TR | TR[]): IBaseQueryIncluded<T, TR>;
+}
+
+export interface IBaseQueryIncluded<T, TR> extends IBaseQuery<T> {
+    include<TChild>(fx: (x: T) => TChild | TChild[]): IBaseQueryIncluded<T, TChild>;
+    thenInclude<TChild>(fx: (x: TR) => TChild | TChild[]): IBaseQueryIncluded<T, TChild>;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
