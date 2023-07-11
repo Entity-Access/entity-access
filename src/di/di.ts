@@ -125,7 +125,7 @@ export class ServiceProvider implements IDisposable {
             // we need to go through all services
             // to find the derived type
             for (const [key, value] of registrations.entries()) {
-                if (key instanceof type) {
+                if (key.prototype instanceof type) {
                     // we found the match..
                     registrations.set(type, { ...value, key: type });
                     sd = value;
