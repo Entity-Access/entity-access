@@ -11,10 +11,10 @@ export default class TimedCache<TKey = any, T = any> {
         this.map.delete(key);
     }
 
-    getOrCreate(key: TKey, factory: (k: TKey) => T, ttl: number = 15000) {
+    getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = 15000) {
         let item = this.map.get(key);
         if (!item) {
-            item = { value: factory(key), ttl, expire: Date.now() + ttl };
+            item = { value: factory(key, p1), ttl, expire: Date.now() + ttl };
             this.map.set(key, item);
         } else {
             item.expire = Date.now() + ttl;

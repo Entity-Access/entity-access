@@ -1,12 +1,9 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
-import { Expression, ExpressionAs, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { Expression } from "../query/ast/Expressions.js";
 import EntityQuery from "./EntityQuery.js";
-import TimedCache from "../common/cache/TimedCache.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
-
-const modelCache = new TimedCache<any, SelectStatement>();
 
 export class EntitySource<T = any> {
 
