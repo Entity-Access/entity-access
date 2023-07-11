@@ -256,7 +256,7 @@ export class ConditionalExpression extends Expression {
 export class JoinExpression extends Expression {
     readonly type = "JoinExpression";
     joinType: "LEFT" | "INNER";
-    source: SelectStatement | QuotedLiteral | ExpressionAs;
+    source: SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
     as: QuotedLiteral | ParameterExpression;
     where: Expression;
     model: EntityType;

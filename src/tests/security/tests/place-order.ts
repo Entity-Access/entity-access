@@ -40,9 +40,6 @@ async function getNewOrders(this: TestConfig) {
 
         const order = await context.orders.all().first();
 
-        const q = context.orders.all()
-            .include((x) => [x.orderItems.forEach((oi) => oi.product.categories)]);
-
         order.orderDate = new Date();
         await context.saveChanges();
 

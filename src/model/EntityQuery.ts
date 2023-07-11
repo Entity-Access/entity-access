@@ -52,7 +52,7 @@ export default class EntityQuery<T = any>
     }
 
     include(p: any): any {
-        const selectStatement = QueryExpander.expand({ ... this.selectStatement }, p);
+        const selectStatement = QueryExpander.expand(this.context, { ... this.selectStatement }, p);
         return new EntityQuery({
             ... this,
             selectStatement
@@ -76,6 +76,18 @@ export default class EntityQuery<T = any>
             scope.register(session);
             const type = this.type;
             const signal = this.signal;
+
+            const include = this.selectStatement.include;
+            if (include?.length > 0) {
+                // since we will be streaming results...
+                // it is important that we load all the
+                // included entities first...
+                const loaders = include.map((x) => this.load(session, x, signal));
+                await Promise.all(loaders);
+            }
+
+            signal?.throwIfAborted();
+
             query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
             const reader = await this.context.driver.executeReader(query, signal);
             scope.register(reader);
@@ -89,11 +101,28 @@ export default class EntityQuery<T = any>
                 }
                 yield iterator as T;
             }
+
         } catch(error) {
             session.error(`Failed executing ${query?.text}\n${error.stack ?? error}`);
             throw error;
         } finally {
             await scope.dispose();
+        }
+    }
+
+    async load(session: Logger, select: SelectStatement, signal: AbortSignal) {
+        const query = this.context.driver.compiler.compileExpression(this, select);
+        const reader = await this.context.driver.executeReader(query, signal);
+        try {
+            for await (const iterator of reader.next(10, signal)) {
+                Object.setPrototypeOf(iterator, select.model.typeClass.prototype);
+                this.context.changeSet.getEntry(iterator, iterator);
+            }
+        } catch (error) {
+            session.error(`Failed loading ${query.text}\n${error.stack ?? error}`);
+            throw error;
+        } finally {
+            await reader.dispose();
         }
     }
 

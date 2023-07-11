@@ -47,9 +47,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
     visitSelectStatement(e: SelectStatement): ITextQuery {
 
-        if (e.as && e.model) {
-            this.scope.create({ parameter: e.as, selectStatement: e });
-        }
+        this.prepareStatement(e);
 
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
