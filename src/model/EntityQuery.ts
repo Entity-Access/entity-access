@@ -49,6 +49,10 @@ export default class EntityQuery<T = any>
         }));
     }
 
+    include(p: any, next: any): any {
+        return this;
+    }
+
     async toArray(): Promise<T[]> {
         const results: T[] = [];
         for await (const iterator of this.enumerate()) {

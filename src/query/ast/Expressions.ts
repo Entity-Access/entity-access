@@ -2,6 +2,7 @@ import { IClassOf } from "../../decorators/IClassOf.js";
 import { ITextQuery } from "./IStringTransformer.js";
 import type EntityType from "../../entity-query/EntityType.js";
 import DebugStringVisitor from "./DebugStringVisitor.js";
+import { IEntityRelation } from "../../decorators/IColumn.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
 
@@ -223,6 +224,9 @@ export class SelectStatement extends Expression {
     offset: number;
 
     model: EntityType;
+
+    // include  relations...
+    include: IEntityRelation[];
 
 }
 
