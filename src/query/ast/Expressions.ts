@@ -203,6 +203,8 @@ export class ArrowFunctionExpression extends Expression {
 
 export type TableSource = SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
 
+export type Expand = { [key: string]: string | Expand };
+
 export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
@@ -226,7 +228,7 @@ export class SelectStatement extends Expression {
     model: EntityType;
 
     // include  relations...
-    include: IEntityRelation[];
+    include: SelectStatement[];
 
 }
 
