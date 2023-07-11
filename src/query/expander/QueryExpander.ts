@@ -80,7 +80,7 @@ export class QueryExpander {
         const fk = relation.fkColumn ?? relation.relatedRelation.fkColumn;
 
 
-        if(relation.isCollection) {
+        if(relation.isInverseRelation) {
 
             joinWhere = Expression.equal(
                 Expression.member(

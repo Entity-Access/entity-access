@@ -4,9 +4,9 @@ import { ServiceProvider } from "../di/di.js";
 import EntityType from "../entity-query/EntityType.js";
 import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
-import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import EntityContext from "./EntityContext.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
+import RelationMapper from "./identity/RelationMapper.js";
 
 export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
@@ -77,12 +77,14 @@ export default class EntityQuery<T = any>
             const type = this.type;
             const signal = this.signal;
 
+            const relationMapper = new RelationMapper(this.context.changeSet);
+
             const include = this.selectStatement.include;
             if (include?.length > 0) {
                 // since we will be streaming results...
                 // it is important that we load all the
                 // included entities first...
-                const loaders = include.map((x) => this.load(session, x, signal));
+                const loaders = include.map((x) => this.load(relationMapper, session, x, signal));
                 await Promise.all(loaders);
             }
 
@@ -96,6 +98,7 @@ export default class EntityQuery<T = any>
                     Object.setPrototypeOf(iterator, type.typeClass.prototype);
                     // set identity...
                     const entry = this.context.changeSet.getEntry(iterator, iterator);
+                    relationMapper.fix(entry);
                     yield entry.entity;
                     continue;
                 }
@@ -110,13 +113,14 @@ export default class EntityQuery<T = any>
         }
     }
 
-    async load(session: Logger, select: SelectStatement, signal: AbortSignal) {
+    async load(relationMapper: RelationMapper, session: Logger, select: SelectStatement, signal: AbortSignal) {
         const query = this.context.driver.compiler.compileExpression(this, select);
         const reader = await this.context.driver.executeReader(query, signal);
         try {
             for await (const iterator of reader.next(10, signal)) {
                 Object.setPrototypeOf(iterator, select.model.typeClass.prototype);
-                this.context.changeSet.getEntry(iterator, iterator);
+                const entry = this.context.changeSet.getEntry(iterator, iterator);
+                relationMapper.fix(entry);
             }
         } catch (error) {
             session.error(`Failed loading ${query.text}\n${error.stack ?? error}`);

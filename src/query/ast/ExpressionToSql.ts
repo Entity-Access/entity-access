@@ -461,7 +461,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         while(chain.length > 1) {
             const property = chain.shift();
             const propertyInfo = type.getProperty(property);
-            if (!propertyInfo.relation || propertyInfo.relation.isCollection) {
+            if (!propertyInfo.relation || propertyInfo.relation.isInverseRelation) {
                 return pc;
             }
 

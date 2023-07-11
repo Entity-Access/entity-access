@@ -45,6 +45,8 @@ export interface IEntityRelation {
      */
     name: string;
 
+    isInverseRelation?: boolean;
+
     isCollection?: boolean;
 
 

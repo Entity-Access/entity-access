@@ -48,7 +48,7 @@ export default class VerificationSession {
         // we need to verify access to each foreign key
 
         for (const relation of type.relations) {
-            if (relation.isCollection) {
+            if (relation.isInverseRelation) {
                 continue;
             }
 

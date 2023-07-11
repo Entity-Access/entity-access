@@ -120,7 +120,7 @@ export default class ChangeEntry implements IChanges {
         const { type: { relations }, entity } = this;
         // for parent relations.. check if related key is set or not...
         for (const iterator of relations) {
-            if (iterator.isCollection) {
+            if (iterator.isInverseRelation) {
                 continue;
             }
 
@@ -161,7 +161,7 @@ export default class ChangeEntry implements IChanges {
     setupInverseProperties() {
         const deleted = this.status === "deleted";
         for (const iterator of this.type.relations) {
-            if (!iterator.isCollection) {
+            if (!iterator.isInverseRelation) {
                 continue;
             }
             const { relatedName } = iterator;

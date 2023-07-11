@@ -106,13 +106,14 @@ export default class EntityType {
             relatedTypeClass: this.typeClass,
             dotNotCreateIndex: true,
             fkColumn,
-            isCollection: true,
+            isInverseRelation: true,
             relatedRelation: relation,
             relatedEntity: this
         };
         relatedType.relationMap.set(inverseRelation.name, inverseRelation);
         relatedType.relations.push(inverseRelation);
         inverseRelation.relatedRelation = relation;
+        relation.relatedRelation = inverseRelation;
 
     }
 

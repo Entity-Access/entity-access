@@ -1,6 +1,14 @@
 import SchemaRegistry from "../../decorators/SchemaRegistry.js";
+import type EntityType from "../../entity-query/EntityType.js";
+
+export const identityMapSymbol = Symbol("identityMapSymbol");
 
 export default class IdentityService {
+
+    public static buildIdentity(model: EntityType, ... keys: any[]) {
+        const type = model.name;
+        return JSON.stringify({ type, keys });
+    }
 
     public static getIdentity(entity) {
         const entityType = SchemaRegistry.model(Object.getPrototypeOf(entity).constructor);
