@@ -48,24 +48,12 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
     visitSelectStatement(e: SelectStatement): ITextQuery {
 
         if (e.as && e.model) {
-            const scope = this.targets.get(e.as);
-            if (!scope) {
-                this.targets.set(e.as, {
-                    parameter: e.as,
-                    model:
-                    e.model,
-                    replace: e.as,
-                    selectStatement: e
-                });
-            } else {
-                scope.selectStatement = e;
-                scope.model = e.model;
-            }
+            this.scope.create({ parameter: e.as, selectStatement: e });
         }
 
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
-        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins)}` : [];
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
 
         const fields = this.visitArray(e.fields, ",\n\t\t");
 

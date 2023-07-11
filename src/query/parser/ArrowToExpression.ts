@@ -2,21 +2,27 @@ import { parseExpression } from "@babel/parser";
 import { ArrowFunctionExpression, BinaryExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, ParameterExpression, QuotedLiteral, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
-import EntityType from "../../entity-query/EntityType.js";
-import { EntitySource } from "../../model/EntitySource.js";
 import Restructure from "./Restructure.js";
 import { NotSupportedError } from "./NotSupportedError.js";
+import TimedCache from "../../common/cache/TimedCache.js";
 
 type IQueryFragment = string | { name?: string, value?: any };
-type IQueryFragments = IQueryFragment[];
+
+const parsedCache = new TimedCache<string, bpe.Node>();
 
 export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression) {
+        const key = fx.toString();
+        const node = parsedCache.getOrCreate(key, fx, (k, f) => {
+            const rs = new Restructure();
+            return rs.visit(parseExpression(f.toString()));
+        });
+        return this.transformUncached(node, target);
+    }
 
-        const rs = new Restructure();
+    private static transformUncached(node: bpe.Node, target?: ParameterExpression) {
 
-        const node = rs.visit(parseExpression(fx.toString()));
         if (node.type !== "ArrowFunctionExpression") {
             throw new Error("Expecting an arrow function");
         }
@@ -66,7 +72,12 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
         for (const iterator of params) {
             this.targetStack.set(iterator.name, iterator);
         }
-        this.targetStack.set(targetName ?? target.name, target);
+        if (targetName) {
+            this.targetStack.set(targetName, target);
+        }
+        if (target?.name) {
+            this.targetStack.set(target.name, target);
+        }
     }
 
     visitBigIntLiteral({ value }: bpe.BigIntLiteral) {
@@ -194,7 +205,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 throw new NotSupportedError();
             }
             names.push(iterator.name);
-            const p = ParameterExpression.create({ value: iterator.name });
+            const p = ParameterExpression.create({ name: iterator.name });
             this.targetStack.set(iterator.name, p);
             params.push(p);
         }

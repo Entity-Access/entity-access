@@ -1,6 +1,6 @@
 import { IClassOf } from "../../decorators/IClassOf.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
-import { ShoppingContext, statusPublished } from "./ShoppingContext.js";
+import { ShoppingContext, User, statusPublished } from "./ShoppingContext.js";
 
 const status = statusPublished;
 
@@ -28,11 +28,16 @@ export async function createContext(driver: BaseDriver) {
 async function seed(context: ShoppingContext) {
     const now = new Date();
 
-    addHeadPhones(context, now);
+    // add admin user...
+    context.users.add({ dateCreated: new Date()});
+    // add seller
+    const seller = context.users.add({ dateCreated: new Date()});
 
-    const clothes = addMaleClothes(context);
+    addHeadPhones(context, now, seller);
 
-    addFemaleClothes(context);
+    const clothes = addMaleClothes(context, seller);
+
+    addFemaleClothes(context, seller);
 
     await context.saveChanges();
 
@@ -58,7 +63,7 @@ async function seed(context: ShoppingContext) {
     await context.saveChanges();
 }
 
-function addFemaleClothes(context: ShoppingContext) {
+function addFemaleClothes(context: ShoppingContext, owner: User) {
     const category = context.categories.add({
         name: "Female Clothes",
         categoryID: "clothes/female"
@@ -69,6 +74,7 @@ function addFemaleClothes(context: ShoppingContext) {
 
     context.products.add({
         name: "White T-Shirt",
+        owner,
         status,
         categories: [
             context.productCategories.add({
@@ -87,6 +93,7 @@ function addFemaleClothes(context: ShoppingContext) {
     context.products.add({
         name: "Red T-Shirt",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -104,6 +111,7 @@ function addFemaleClothes(context: ShoppingContext) {
     context.products.add({
         name: "Blue T-Shirt",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -121,6 +129,7 @@ function addFemaleClothes(context: ShoppingContext) {
     context.products.add({
         name: "Pink T-Shirt",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -136,7 +145,7 @@ function addFemaleClothes(context: ShoppingContext) {
     });
 }
 
-function addMaleClothes(context: ShoppingContext) {
+function addMaleClothes(context: ShoppingContext, owner: User) {
     const category = context.categories.add({
         name: "Male Clothes",
         categoryID: "clothes/male"
@@ -148,6 +157,7 @@ function addMaleClothes(context: ShoppingContext) {
     return [context.products.add({
         name: "White T-Shirt",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -164,6 +174,7 @@ function addMaleClothes(context: ShoppingContext) {
     context.products.add({
         name: "Red T-Shirt",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -180,6 +191,7 @@ function addMaleClothes(context: ShoppingContext) {
     context.products.add({
         name: "Blue T-Shirt",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -196,6 +208,7 @@ function addMaleClothes(context: ShoppingContext) {
     context.products.add({
         name: "Pink T-Shirt",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -212,7 +225,7 @@ function addMaleClothes(context: ShoppingContext) {
 }
 
 export const headPhoneCategory = "head-phones";
-function addHeadPhones(context: ShoppingContext, now: Date) {
+function addHeadPhones(context: ShoppingContext, now: Date, owner: User) {
     const category = context.categories.add({
         name: "Headphones",
         categoryID: headPhoneCategory
@@ -223,6 +236,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Jabber Head Phones",
+        owner,
         status,
         categories: [
             context.productCategories.add({
@@ -240,6 +254,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Sony Head Phones",
+        owner,
         status,
         categories: [
             context.productCategories.add({
@@ -258,6 +273,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
     context.products.add({
         name: "Sony Head Phones Black",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -274,6 +290,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Sony Head Phones Blue",
+        owner,
         status,
         categories: [
             context.productCategories.add({
@@ -292,6 +309,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
     context.products.add({
         name: "Jabber Head Phones Black",
         status,
+        owner,
         categories: [
             context.productCategories.add({
                 category
@@ -308,6 +326,7 @@ function addHeadPhones(context: ShoppingContext, now: Date) {
 
     context.products.add({
         name: "Jabber Head Phones Blue",
+        owner,
         status,
         categories: [
             context.productCategories.add({

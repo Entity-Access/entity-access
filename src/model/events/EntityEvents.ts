@@ -8,13 +8,13 @@ import ChangeEntry from "../changes/ChangeEntry.js";
 
 const done = Promise.resolve() as Promise<void>;
 
-export class ForeignKeyFilter<T = any> {
+export class ForeignKeyFilter<T = any, TE = any> {
 
     public type: EntityType;
     public name: string;
     public fkName: string;
 
-    private events: EntityEvents<any>;
+    private events: EntityEvents<TE>;
     private context: EntityContext;
 
     constructor(p: Partial<ForeignKeyFilter> & { context: EntityContext, events: EntityEvents<any> }) {
@@ -22,17 +22,21 @@ export class ForeignKeyFilter<T = any> {
         return p as any as ForeignKeyFilter;
     }
 
-    public is<TR>(fx: (x: T) => TR): boolean {
+    public is<TR>(fx: (x: T) => TR): this is ForeignKeyFilter<T, TR> & boolean {
         const name = NameParser.parseMember(fx);
         return name === this.fkName || name === this.name;
     }
 
-    public read() {
+    public read(): IEntityQuery<TE> {
         const read = this.context.query(this.type.typeClass);
         return this.events.filter(read);
     }
 
-    public modify() {
+    public unfiltered(): IEntityQuery<TE> {
+        return this.context.query(this.type.typeClass);
+    }
+
+    public modify(): IEntityQuery<TE> {
         const read = this.context.query(this.type.typeClass);
         return this.events.modify(read);
     }

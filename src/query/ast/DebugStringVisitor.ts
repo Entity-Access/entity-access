@@ -1,4 +1,4 @@
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, ParameterExpression, QuotedLiteral, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 const isBinary = (type) => /^(BinaryExpression|CoalesceExpression)$/.test(type);
@@ -47,7 +47,7 @@ export default class DebugStringVisitor extends Visitor<string> {
     }
 
     visitConditionalExpression(e: ConditionalExpression): string {
-        return `${e.test} ? ${e.consequent} : ${e.alternate}`;
+        return `${this.visit(e.test)} ? ${this.visit(e.consequent)} : ${this.visit(e.alternate)}`;
     }
 
     visitConstant(e: Constant): string {
@@ -55,7 +55,7 @@ export default class DebugStringVisitor extends Visitor<string> {
     }
 
     visitExpressionAs(e: ExpressionAs): string {
-        return `${e.expression} as ${e.alias}`;
+        return `${this.visit(e.expression)} as ${this.visit(e.alias)}`;
     }
 
     visitIdentifier(e: Identifier): string {
@@ -94,7 +94,7 @@ export default class DebugStringVisitor extends Visitor<string> {
     }
 
     visitStringLiteral(e: StringLiteral): string {
-        return `"${e.value}"`;
+        return `'${e.value}'`;
     }
 
     visitTemplateElement(e: TemplateElement): string {
@@ -120,6 +120,53 @@ export default class DebugStringVisitor extends Visitor<string> {
             }
         }
         return "`" + items.join("") + "`";
+    }
+
+    visitDeleteStatement(e: DeleteStatement): string {
+        if (e.where) {
+            return `DELETE FROM ${this.visit(e.table)} WHERE ${this.visit(e.where)}`;
+        }
+        return `DELETE FROM ${this.visit(e.table)}`;
+    }
+
+    visitExistsExpression(e: ExistsExpression): string {
+        return `EXISTS (${this.visit(e.target)})`;
+    }
+
+    visitInsertStatement(e: InsertStatement): string {
+        return `INSERT INTO ${this.visit(e.table)} ${e.values} ${this.visit(e.returnValues)}`;
+    }
+
+    visitJoinExpression(e: JoinExpression): string {
+        return `\n${e.joinType} JOIN ${this.visit(e.source)}\n\t\tON ${this.visit(e.where)}\n`;
+    }
+
+    visitOrderByExpression(e: OrderByExpression): string {
+        return `${e.target} ${e.descending ? "DESC" : "ASC"}`;
+    }
+
+    visitReturnUpdated(e: ReturnUpdated): string {
+        return `\nRETURNING ${this.visitArray(e.fields)}`;
+    }
+
+    visitValuesStatement(e: ValuesStatement): string {
+        const rows = e.values.map((x) => `(${this.visit(x[0])})`).join(",\n\t");
+        return `(VALUES ${rows}) as ${this.visit(e.as)})`;
+    }
+
+    visitSelectStatement(e: SelectStatement): string {
+        const select = `SELECT\n\t${this.visitArray(e.fields, ",\n\t")}\n\tFROM ${this.visit(e.source)}`;
+        const as = e.as ? this.visit(e.as): "";
+        const joins = e.joins?.length > 0 ? this.visitArray(e.joins, "\n\t") : "";
+        const where = e.where ? `\n\tWHERE ${this.visit(e.where)}` : "";
+        const orderBy = e.orderBy ? `\n\tORDER BY ${this.visitArray(e.orderBy, "\n\t\tTHEN BY")}`: "";
+        const limit = e.limit > 0 ? `\n\tLIMIT ${e.limit}` : "";
+        const offset = e.offset > 0 ? `\n\OFFSET ${e.offset}` : "";
+        return `${select}${as}${joins}${where}${orderBy}${limit}${offset}`;
+    }
+
+    visitUpdateStatement(e: UpdateStatement): string {
+        return "UPDATE";
     }
 
     private visitArray(e: Expression[], separator = ", ") {

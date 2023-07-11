@@ -175,6 +175,11 @@ export class ParameterExpression extends Expression {
      */
     value: any;
 
+    /**
+     * Entity Model representing the variable
+     */
+    model: EntityType;
+
     quotedLiteral: (x: string) => string;
 
     toString() {

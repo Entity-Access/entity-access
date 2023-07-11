@@ -26,7 +26,13 @@ export class OrderEvents extends EntityEvents<Order> {
         }
         const { userID } = this.user;
         // user can only modify placed orders
-        return query.where({ userID }, (p) => (x) => x.customerID === p.userID);
+        return query.where({ userID }, (p) => (x) => x.customerID === p.userID || x.orderItems.some((item) => item.product.ownerID === p.userID));
+    }
+
+    onForeignKeyFilter(filter: ForeignKeyFilter<Order>): IEntityQuery<any> {
+        if (filter.is((x) => x.customer)) {
+            return filter.read();
+        }
     }
 }
 
@@ -52,7 +58,7 @@ export class OrderItemEvents extends EntityEvents<OrderItem> {
         }
         const { userID } = this.user;
         // user can only modify placed orders
-        return query.where({ userID }, (p) => (x) => x.order.customerID === p.userID);
+        return query.where({ userID }, (p) => (x) => x.order.customerID === p.userID || x.product.ownerID === p.userID);
     }
 
     onForeignKeyFilter(filter: ForeignKeyFilter<OrderItem>): IEntityQuery<any> {
