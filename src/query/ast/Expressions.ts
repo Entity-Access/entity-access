@@ -2,6 +2,7 @@ import { IClassOf } from "../../decorators/IClassOf.js";
 import { ITextQuery } from "./IStringTransformer.js";
 import type EntityType from "../../entity-query/EntityType.js";
 import DebugStringVisitor from "./DebugStringVisitor.js";
+import { IEntityRelation } from "../../decorators/IColumn.js";
 
 const flattenedSelf = Symbol("flattenedSelf");
 
@@ -23,6 +24,10 @@ const flattenedSelf = Symbol("flattenedSelf");
  */
 
 export abstract class Expression {
+
+    static array(elements: Expression[]) {
+        return ArrayExpression.create({ elements });
+    }
 
     static as(expression: Expression, alias: QuotedLiteral | string) {
         if (typeof alias === "string") {
@@ -123,6 +128,11 @@ export abstract class Expression {
 
 }
 
+export class ArrayExpression extends Expression {
+    readonly type = "ArrayExpression";
+    elements: Expression[];
+}
+
 export class PartialExpression extends Expression {
     readonly type = "PartialExpression";
     query: ITextQuery;
@@ -202,6 +212,8 @@ export class ArrowFunctionExpression extends Expression {
 
 export type TableSource = SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
 
+export type Expand = { [key: string]: string | Expand };
+
 export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
@@ -222,10 +234,10 @@ export class SelectStatement extends Expression {
 
     offset: number;
 
-    // name holds string
-    names: string;
-
     model: EntityType;
+
+    // include  relations...
+    include: SelectStatement[];
 
 }
 
@@ -244,7 +256,7 @@ export class ConditionalExpression extends Expression {
 export class JoinExpression extends Expression {
     readonly type = "JoinExpression";
     joinType: "LEFT" | "INNER";
-    source: SelectStatement | QuotedLiteral | ExpressionAs;
+    source: SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
     as: QuotedLiteral | ParameterExpression;
     where: Expression;
     model: EntityType;
@@ -394,5 +406,6 @@ export type ExpressionType =
     ConditionalExpression |
     NewObjectExpression |
     ParameterExpression |
+    ArrayExpression |
     TemplateElement
 ;

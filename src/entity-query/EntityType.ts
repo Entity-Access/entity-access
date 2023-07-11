@@ -106,13 +106,14 @@ export default class EntityType {
             relatedTypeClass: this.typeClass,
             dotNotCreateIndex: true,
             fkColumn,
-            isCollection: true,
+            isInverseRelation: true,
             relatedRelation: relation,
             relatedEntity: this
         };
         relatedType.relationMap.set(inverseRelation.name, inverseRelation);
         relatedType.relations.push(inverseRelation);
         inverseRelation.relatedRelation = relation;
+        relation.relatedRelation = inverseRelation;
 
     }
 
@@ -132,8 +133,7 @@ export default class EntityType {
             source,
             model: this,
             as,
-            fields,
-            names: JSON.stringify([as.name])
+            fields
         });
         return { ... this.selectAll };
     }
@@ -151,8 +151,7 @@ export default class EntityType {
             source,
             model: this,
             as,
-            fields,
-            names: JSON.stringify([as.name])
+            fields
         });
         return { ... this.selectOne };
     }

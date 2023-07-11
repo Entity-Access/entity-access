@@ -64,10 +64,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitSelectStatement(e: SelectStatement): ITextQuery {
 
-        // inject parameter and types if we don't have it..
-        if (e.as && e.model) {
-            this.scope.create({ parameter: e.as, selectStatement: e });
-        }
+        this.prepareStatement(e);
 
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
@@ -82,6 +79,24 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
+    }
+    prepareStatement(e: SelectStatement) {
+        // inject parameter and types if we don't have it..
+        if (e.as && e.model) {
+            this.scope.create({ parameter: e.as, selectStatement: e });
+        }
+
+        const joins = e.joins;
+        if (joins?.length) {
+            for (const iterator of joins) {
+                if (iterator.as) {
+                    this.scope.create({ parameter: iterator.as as ParameterExpression, model: iterator.model});
+                }
+            }
+            for (const iterator of joins) {
+                this.visit(iterator.where);
+            }
+        }
     }
 
     visitQuotedLiteral(e: QuotedLiteral): ITextQuery {
@@ -446,7 +461,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         while(chain.length > 1) {
             const property = chain.shift();
             const propertyInfo = type.getProperty(property);
-            if (!propertyInfo.relation || propertyInfo.relation.isCollection) {
+            if (!propertyInfo.relation || propertyInfo.relation.isInverseRelation) {
                 return pc;
             }
 

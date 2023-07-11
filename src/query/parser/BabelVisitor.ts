@@ -39,10 +39,15 @@ export abstract class BabelVisitor<T> {
                 return this.visitObjectProperty(node);
             case "TemplateElement":
                 return this.visitTemplateElement(node);
+            case "ArrayExpression":
+                return this.visitArrayExpression(node);
             case "RegExpLiteral":
             default:
                 throw new Error(`Translation from ${node.type} not supported`);
         }
+    }
+    visitArrayExpression(node: bpe.ArrayExpression): T {
+        throw new Error("Method not implemented.");
     }
     abstract visitTemplateElement(node: bpe.TemplateElement): T;
     visitObjectProperty(node: bpe.ObjectProperty): T {

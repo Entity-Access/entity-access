@@ -1,6 +1,6 @@
 import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 import EntityContext from "../EntityContext.js";
-import IdentityService from "../identity/IdentityService.js";
+import IdentityService, { identityMapSymbol } from "../identity/IdentityService.js";
 import ChangeEntry from "./ChangeEntry.js";
 
 export const privateUpdateEntry = Symbol("updateEntry");
@@ -8,6 +8,10 @@ export const privateUpdateEntry = Symbol("updateEntry");
 export default class ChangeSet {
 
     public readonly entries: ChangeEntry[] = [];
+
+    get [identityMapSymbol]() {
+        return this.identityMap;
+    }
 
     private entryMap: Map<any, ChangeEntry> = new Map();
 

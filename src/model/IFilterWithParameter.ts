@@ -26,6 +26,8 @@ export interface IBaseQuery<T> {
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
+
+    include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
