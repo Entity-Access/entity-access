@@ -60,6 +60,13 @@ export class QueryExpander {
             throw new NotSupportedError(p.type);
         }
 
+        const target = node.target as ExpressionType;
+        if (target.type === "MemberExpression") {
+            const [mepSelect, mepType] = this.expandNode(parent, model, target);
+            parent = mepSelect;
+            model = mepType;
+        }
+
         const mp = model.getProperty(p.value);
         if (!mp.relation) {
             throw new NotSupportedError(`No relation found ${p.value} in ${model.name}`);
