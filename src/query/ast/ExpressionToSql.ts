@@ -33,7 +33,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         // this.targets.set(root, { parameter: root });
         // this.targets.set(target, { parameter: target, model: this.source?.type });
         if (this.root) {
-            this.scope.create({ parameter: root, name: root.name ?? "x" });
+            this.scope.create({ parameter: root, name: root.name ?? "x", isRuntimeParam: true });
         }
         if (this.target) {
             this.scope.create({ parameter: target });
@@ -70,8 +70,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
 
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
-        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
         const source = e.source.type === "ValuesStatement"
@@ -161,11 +161,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 select = relatedModel.selectOneNumber();
                             }
 
-                            this.scope.create({ parameter: param1, model: relatedModel });
+                            param1.model = relatedModel;
+                            this.scope.create({ parameter: param1, model: relatedModel, selectStatement: select });
                             this.scope.alias(param1, select.as, select);
                             select.as = param1;
                             const targetKey = MemberExpression.create({
-                                target: this.target,
+                                target: parameter,
                                 property: Identifier.create({
                                     value: targetType.keys[0].columnName
                                 })
@@ -230,8 +231,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitParameterExpression(pe: ParameterExpression): ITextQuery {
-        pe = this.scope.get(pe).parameter;
-        const { value } = pe;
+        const scope = this.scope.get(pe);
+        const { value } = scope.parameter;
         const name = this.scope.nameOf(pe);
         if (value !== void 0) {
             return [() => value];
@@ -250,6 +251,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             if (parameter.value) {
                 const value = parameter.value;
                 return [() => value[chain[0]]];
+            }
+            const scope = this.scope.get(parameter);
+            if (scope.isRuntimeParam) {
+                return [(p) => p[chain[0]]];
             }
             const name = this.scope.nameOf(parameter);
             return [ QueryParameter.create(() => name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
@@ -354,7 +359,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const where = this.visit(e.where);
         const as = e.as ? prepare ` AS ${ e.as.type === "QuotedLiteral"
             ? this.compiler.quotedLiteral(e.as.literal)
-            : this.compiler.quotedLiteral((e.as as any).name)}` : "";
+            : this.compiler.quotedLiteral( this.scope.nameOf(e.as) )}` : "";
         return prepare ` ${e.joinType || "LEFT"} JOIN ${table}${as} ON ${where}`;
     }
 
@@ -412,20 +417,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         };
     }
 
-    private createParameter (s: SelectStatement, prefix: string) {
-        const names = JSON.parse(s.names ?? "[]") as string[];
-        let i = 0;
-        while(true) {
-            const name = `${prefix}${i++}`;
-            if (names.includes(name)) {
-                continue;
-            }
-            names.push(name);
-            s.names = JSON.stringify(names);
-            return ParameterExpression.create({ name });
-        }
-    };
-
     private flatten(pc: IPropertyChain) : IPropertyChain {
 
         if (!pc) {
@@ -470,11 +461,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             const join = select.joins.find((x) => x.model === relation.relatedEntity);
             if (!join) {
                 const joinType = fkColumn.nullable ? "LEFT" : "INNER";
-                const joinParameter = this.createParameter(select, relation.relatedEntity.name[0]);
+                const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
+                joinParameter.model = relation.relatedEntity;
                 select.joins.push(JoinExpression.create({
                     as: joinParameter,
                     joinType,
-                    model: relation.relatedEntity,
+                    model: joinParameter.model,
                     source: Expression.quotedLiteral(relation.relatedEntity.name),
                     where: Expression.equal(
                         Expression.member(parameter, fkColumn.columnName),

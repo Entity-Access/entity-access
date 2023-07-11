@@ -5,41 +5,64 @@ import { assertSqlMatch, trimInternal } from "../trimInternal.js";
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 
 const sql1 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
-FROM "Products" AS "P1"
+"p1"."productID",
+"p1"."name",
+"p1"."ownerID",
+"p1"."status"
+FROM "Products" AS "p1"
 WHERE EXISTS (SELECT
 1
-FROM "OrderItems" AS "O0"
-WHERE ("P1"."productID" = "O0"."productID") AND ("O0"."productID" = $1))`;
+FROM "OrderItems" AS "o"
+WHERE ("p1"."productID" = "o"."productID") AND ("o"."productID" = $1))`;
 
 const sql2 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
-FROM "Products" AS "P1"
+"p1"."productID",
+"p1"."name",
+"p1"."ownerID",
+"p1"."status"
+FROM "Products" AS "p1"
 WHERE EXISTS (SELECT
 1
-FROM "OrderItems" AS "O1"
-WHERE ("P1"."productID" = "O1"."productID") AND ("O1"."productID" = $1)) AND EXISTS (SELECT
+FROM "OrderItems" AS "o"
+WHERE ("p1"."productID" = "o"."productID") AND ("o"."productID" = $1)) AND EXISTS (SELECT
 1
-FROM "OrderItems" AS "O2"
-WHERE ("P1"."productID" = "O2"."productID") AND ("O2"."amount" > $2))`;
+FROM "OrderItems" AS "o1"
+WHERE ("p1"."productID" = "o1"."productID") AND ("o1"."amount" > $2))`;
 
 const sql3 = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
-FROM "Products" AS "P1"
+"p1"."productID",
+"p1"."name",
+"p1"."ownerID",
+"p1"."status"
+FROM "Products" AS "p1"
 WHERE EXISTS (SELECT
 1
-FROM "OrderItems" AS "O1"
-WHERE ("P1"."productID" = "O1"."productID") AND ("O1"."productID" = $1)) AND EXISTS (SELECT
+FROM "OrderItems" AS "o"
+WHERE ("p1"."productID" = "o"."productID") AND ("o"."productID" = $1)) AND EXISTS (SELECT
 1
-FROM "OrderItems" AS "O2"
- INNER JOIN "Orders" AS "O0" ON "O2"."orderID" = "O0"."orderID"
-WHERE ("P1"."productID" = "O2"."productID") AND ("O0"."orderDate" > $2))`;
+FROM "OrderItems" AS "o1"
+ INNER JOIN "Orders" AS "o2" ON "o1"."orderID" = "o2"."orderID"
+WHERE ("p1"."productID" = "o1"."productID") AND ("o2"."orderDate" > $2))`;
 
 const productJoin = `SELECT
-"P1"."productID","P1"."name","P1"."ownerID","P1"."status"
-FROM "Products" AS "P1"
- LEFT JOIN "Users" AS "U0" ON "P1"."ownerID" = "U0"."userID"
-WHERE "U0"."dateCreated" > $1`;
+"p1"."productID",
+"p1"."name",
+"p1"."ownerID",
+"p1"."status"
+FROM "Products" AS "p1"
+ LEFT JOIN "Users" AS "u" ON "p1"."ownerID" = "u"."userID"
+WHERE "u"."dateCreated" > $1`;
+
+
+const join2 = `SELECT
+"o1"."orderItemID",
+"o1"."orderID",
+"o1"."productID",
+"o1"."priceID",
+"o1"."amount"
+FROM "OrderItems" AS "o1"
+ INNER JOIN "Products" AS "p" ON "o1"."productID" = "p"."productID"
+WHERE ("o1"."productID" = $1) OR ("p"."ownerID" = $2)`;
 
 export default function() {
 
@@ -61,4 +84,8 @@ export default function() {
     query = context.products.where({ date: new Date()}, (p) => (x) => x.owner.dateCreated > p.date);
     r = query.toQuery();
     assertSqlMatch(productJoin, r.text);
+
+    const q = context.orderItems.where({ o: 1,  owner: 1}, (p) => (x) => x.productID === p.o || x.product.ownerID === p.owner);
+    r = q.toQuery();
+    assertSqlMatch(join2, r.text);
 }

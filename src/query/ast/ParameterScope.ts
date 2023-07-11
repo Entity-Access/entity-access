@@ -8,6 +8,7 @@ export interface IMappingModel {
     name?: string;
     model?: EntityType;
     replace?: ParameterExpression;
+    isRuntimeParam?: boolean;
 }
 
 /**
@@ -36,6 +37,11 @@ export default class ParameterScope {
         selectStatement: SelectStatement
     ) {
         const model = this.map.get(originalParameter);
+        if (!model.selectStatement) {
+            model.selectStatement = selectStatement;
+        } else {
+            selectStatement = model.selectStatement;
+        }
         return this.create({ parameter: alias, selectStatement, name: model.name, replace: originalParameter });
     }
 
@@ -64,12 +70,16 @@ export default class ParameterScope {
 
         this.map.set(model.parameter, model);
     }
-    createName(prefix: string, name): string {
-        if (!this.names.has(name)) {
-            this.names.add(name);
-            return name;
+    createName(prefix: string, name?: string): string {
+        if (name) {
+            name = name.toLocaleLowerCase();
+            if (!this.names.has(name)) {
+                this.names.add(name);
+                return name;
+            }
         }
         let index = 1;
+        prefix = prefix.toLocaleLowerCase();
         while(true) {
             name = `${prefix}${index++}`;
             if (this.names.has(name)) {

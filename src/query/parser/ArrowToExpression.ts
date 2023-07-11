@@ -66,7 +66,12 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
         for (const iterator of params) {
             this.targetStack.set(iterator.name, iterator);
         }
-        this.targetStack.set(targetName ?? target.name, target);
+        if (targetName) {
+            this.targetStack.set(targetName, target);
+        }
+        if (target?.name) {
+            this.targetStack.set(target.name, target);
+        }
     }
 
     visitBigIntLiteral({ value }: bpe.BigIntLiteral) {
@@ -194,7 +199,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 throw new NotSupportedError();
             }
             names.push(iterator.name);
-            const p = ParameterExpression.create({ value: iterator.name });
+            const p = ParameterExpression.create({ name: iterator.name });
             this.targetStack.set(iterator.name, p);
             params.push(p);
         }
