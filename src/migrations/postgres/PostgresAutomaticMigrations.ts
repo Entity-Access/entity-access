@@ -33,7 +33,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         for (const iterator of fkColumns) {
             const indexName =  JSON.stringify(`IX_${type.name}_${iterator.columnName}`);
             const columnName = JSON.stringify(iterator.columnName);
-            let query = `CREATE INDEX ${indexName} ON ${name} ( ${columnName})`;
+            let query = `CREATE INDEX ${indexName} IF NOT EXISTS ON ${name} ( ${columnName})`;
             if (iterator.nullable !== true) {
                 query += ` WHERE (${columnName} is not null)`;
             }
