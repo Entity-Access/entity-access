@@ -23,6 +23,11 @@ export interface IColumn {
     precision?: number;
     scale?: number;
 
+    /**
+     * This will only be used to set collate while creating column.
+     */
+    collate?: string;
+
     type?: EntityType;
 
     /**
