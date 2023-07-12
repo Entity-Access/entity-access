@@ -12,7 +12,7 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 1. Unit of Work and Repository Pattern
 2. Arrow function based query features with automatic joins.
 3. Automatic Migrations for missing schema - this is done for fast development and deployment.
-4. Sql functions such as LIKE
+4. Sql functions such as LIKE, You can add your own custom functions easily.
 5. Postgres Driver
 6. Sql Server Driver
 7. Automatic parameterization to safeguard sql injection attacks.
@@ -20,8 +20,9 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 
 ## Upcoming Features
 1. Projection - Split query mode only, single level only.
-2. 
+2. Update column before save
 3. GroupBy
+4. Custom Migration Steps
 
 ### Unit of Work
 
