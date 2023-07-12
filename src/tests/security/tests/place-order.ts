@@ -32,8 +32,8 @@ async function getNewOrders(this: TestConfig) {
         const user = new UserInfo();
         user.userID = 2;
         ServiceCollection.register("Singleton", Logger, () => Logger.instance);
-        ServiceCollection.register("Singleton", BaseDriver, () => this.driver);
-        ServiceCollection.register("Scoped", UserInfo, () => user);
+        scope.add(BaseDriver, this.driver);
+        scope.add(UserInfo, user);
         ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
         const context = scope.create(ShoppingContext);
         context.verifyFilters = true;
@@ -54,8 +54,8 @@ async function addNewOrder(this: TestConfig, customer: User, userID?) {
         const user = new UserInfo();
         user.userID = userID ?? customer.userID;
         ServiceCollection.register("Singleton", Logger, () => Logger.instance);
-        ServiceCollection.register("Singleton", BaseDriver, () => this.driver);
-        ServiceCollection.register("Scoped", UserInfo, () => user);
+        scope.add(BaseDriver, this.driver);
+        scope.add(UserInfo, user);
         ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
         const context = scope.create(ShoppingContext);
         context.verifyFilters = true;
