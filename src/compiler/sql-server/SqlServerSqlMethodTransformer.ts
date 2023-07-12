@@ -109,7 +109,7 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `(${text} like ${test})`;
         },
         indexOf(text, test) {
-            return prepareAny `CHARINDEX(${text}, ${test})`;
+            return prepareAny `(CHARINDEX(${text}, ${test}) - 1)`;
         },
         left(text, length) {
             return prepareAny `left(${text}, ${length})`;
@@ -123,8 +123,20 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         right(text, length) {
             return prepareAny `right(${text}, ${length})`;
         },
+        reverse(text) {
+            return prepareAny `reverse(${text})`;
+        },
         startsWith(text, test) {
             return prepareAny `CHARINDEX(${text}, ${test}) = 1`;
+        },
+        substring(text, start, length) {
+            if (length === void 0) {
+                return prepareAny `SUBSTRING(${text}, ${start} + 1)`;
+            }
+            return prepareAny `SUBSTRING(${text}, ${start} + 1, ${length})`;
+        },
+        trim(text) {
+            return prepareAny `TRIM(${text})`;
         },
 
         upper(text) {
