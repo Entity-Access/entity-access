@@ -41,12 +41,12 @@ export class ServiceProvider implements IDisposable {
         this[parentServiceProvider] = parent;
     }
 
-    add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
-        this.getRegistration(type, true);
-        this.map.set(type, instance);
-        instance[serviceProvider] = this;
-        return instance;
-    }
+    // add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
+    //     this.getRegistration(type, true);
+    //     this.map.set(type, instance);
+    //     instance[serviceProvider] = this;
+    //     return instance;
+    // }
 
 
     createScope() {
@@ -117,7 +117,7 @@ export class ServiceProvider implements IDisposable {
         if (!sd) {
 
             if (add) {
-                const registration: IServiceDescriptor = { key: type, kind: "Scoped"};
+                const registration: IServiceDescriptor = { key: type, kind: this[parentServiceProvider] ? "Scoped" : "Singleton" };
                 registrations.set(type, registration);
                 return registration;
             }
@@ -125,7 +125,7 @@ export class ServiceProvider implements IDisposable {
             // we need to go through all services
             // to find the derived type
             for (const [key, value] of registrations.entries()) {
-                if (key instanceof type) {
+                if (key.prototype instanceof type) {
                     // we found the match..
                     registrations.set(type, { ...value, key: type });
                     sd = value;

@@ -1,6 +1,6 @@
 import assert from "assert";
 import Logger from "../../../common/Logger.js";
-import { ServiceProvider } from "../../../di/di.js";
+import { ServiceCollection, ServiceProvider } from "../../../di/di.js";
 import { BaseDriver } from "../../../drivers/base/BaseDriver.js";
 import ContextEvents from "../../../model/events/ContextEvents.js";
 import { TestConfig } from "../../TestConfig.js";
@@ -31,10 +31,10 @@ async function getNewOrders(this: TestConfig) {
     try {
         const user = new UserInfo();
         user.userID = 2;
-        scope.add(Logger, Logger.instance);
-        scope.add(BaseDriver, this.driver);
-        scope.add(UserInfo, user);
-        scope.add(ContextEvents, new ShoppingContextEvents());
+        ServiceCollection.register("Singleton", Logger, () => Logger.instance);
+        ServiceCollection.register("Singleton", BaseDriver, () => this.driver);
+        ServiceCollection.register("Scoped", UserInfo, () => user);
+        ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
         const context = scope.create(ShoppingContext);
         context.verifyFilters = true;
 
@@ -53,10 +53,10 @@ async function addNewOrder(this: TestConfig, customer: User, userID?) {
     try {
         const user = new UserInfo();
         user.userID = userID ?? customer.userID;
-        scope.add(Logger, Logger.instance);
-        scope.add(BaseDriver, this.driver);
-        scope.add(UserInfo, user);
-        scope.add(ContextEvents, new ShoppingContextEvents());
+        ServiceCollection.register("Singleton", Logger, () => Logger.instance);
+        ServiceCollection.register("Singleton", BaseDriver, () => this.driver);
+        ServiceCollection.register("Scoped", UserInfo, () => user);
+        ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
         const context = scope.create(ShoppingContext);
         context.verifyFilters = true;
 
