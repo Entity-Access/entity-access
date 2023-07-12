@@ -41,12 +41,12 @@ export class ServiceProvider implements IDisposable {
         this[parentServiceProvider] = parent;
     }
 
-    // add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
-    //     this.getRegistration(type, true);
-    //     this.map.set(type, instance);
-    //     instance[serviceProvider] = this;
-    //     return instance;
-    // }
+    add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
+        this.getRegistration(type, true);
+        this.map.set(type, instance);
+        instance[serviceProvider] = this;
+        return instance;
+    }
 
 
     createScope() {
