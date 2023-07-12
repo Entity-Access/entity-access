@@ -1,4 +1,5 @@
 import { ISql } from "./ISql.js";
 
-const Sql: ISql = void 0;
+const Sql: ISql = {
+} as any;
 export default Sql;

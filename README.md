@@ -280,3 +280,56 @@ Just as text functions you can also use date functions as shown below.
 ```typescript
     const total = await q.count();
 ```
+
+## Provide Custom Sql Methods...
+We have provided most used methods, however, to add inbuilt methods, we request you to submit feature request or pull request.
+
+Let's say you have custom function defined in your database and you want to invoke them.
+
+We will extend ISql interface.
+
+```typescript
+import Sql from "@entity-access/entity-access/dist/sql/Sql.js";
+import ISql from "@entity-access/entity-access/dist/sql/ISql.js";
+import { prepareAny } from "@entity-access/entity-access/dist/query/ast/IStringTransformer.js";
+
+declare module "@entity-access/entity-access/dist/sql/ISql.js" {
+    interface ISql {
+        myFunctions: {
+            calculateAmount(total: number, units: number, taxId: string): Date;
+        }
+    }
+}
+
+Sql.myFunctions = {
+    calculateAmount(total: number, units: number, taxId: string): Date {
+        // in reality parseDate will return Date,
+        // but expression to sql compiler expects an array of
+        // strings and functions. Function represents parameters
+        // being sent to SQL. Parameters cannot be accessed here.
+        // So a placeholder function to parameter will be sent to
+        // this method and it should be passed as it is in array
+        // as shown below.
+
+        // note how comma is inserted as separate string literal.
+        return ["mySchema.calculateAmount(", total, "," , units , "," , taxId, ")"] as any;
+
+        // DO NOT EVER USE THE FOLLOWING
+        return `mySchema.calculateAmount(${total}, ${units},${taxId})`;
+
+        // INSTEAD you can use prepareAny function 
+        // In case if you need to use something else, you can return an array and send
+        // parameters as it is.
+
+        // Also you will not be able to convert the inputs to string because
+        // each input will only return the function declaration instead of the value as a text.
+        return prepareAny `mySchema.calculateAmount(${total}, ${units},${taxId})`;
+    }
+};
+
+// now you can use this as shown below...
+
+context.customers.all()
+    .where({date}, (p) => (x) => x.birthDate < Sql.myFunctions.parseDate(p.date) );
+
+```

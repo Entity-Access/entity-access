@@ -1,9 +1,11 @@
+import type QueryCompiler from "../../compiler/QueryCompiler.js";
+
 export type ITextQueryFragment = string | ((p: any) => any) | { toString(): string };
 export type ITextQuery = ITextQueryFragment[];
 
 export type IStringTransformer = (s: string) => string;
 
-export type ISqlMethodTransformer = (callee: string, args: string[]) => string;
+export type ISqlMethodTransformer = (compiler: QueryCompiler, callee: string[], args: string[]) => string;
 
 export class QueryParameter {
 
@@ -18,7 +20,7 @@ export class QueryParameter {
     }
 }
 
-export const prepareAny = (a: TemplateStringsArray, ... p: any[]): any => {
+export const prepareAny = (a: TemplateStringsArray, ... p: any[]): string[] => {
     const r = [];
     for (let index = 0; index < a.length; index++) {
         const element = a[index];
