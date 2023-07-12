@@ -1,8 +1,11 @@
 
-import { prepare, prepareAny } from "../../query/ast/IStringTransformer.js";
-import { ISqlHelpers, flattenHelpers } from "../ISqlHelpers.js";
+import { prepareAny } from "../../query/ast/IStringTransformer.js";
+import Sql from "../../sql/Sql.js";
+import { ISqlHelpers } from "../ISqlHelpers.js";
+import type QueryCompiler from "../QueryCompiler.js";
 
 export const SqlServerSqlHelper: ISqlHelpers = {
+    ... Sql,
     in(a, array) {
         return prepareAny `${a} IN ${array}`;
     },
@@ -151,12 +154,18 @@ export const SqlServerSqlHelper: ISqlHelpers = {
     }
 };
 
-const names = flattenHelpers(SqlServerSqlHelper, "Sql");
+export default function SqlServerSqlMethodTransformer(compiler: QueryCompiler, callee: string[], args: any[]): string {
 
-export default function SqlServerSqlMethodTransformer(callee: string, args: any[]): string {
-    const name = names[callee];
-    if (!name) {
+    let start = SqlServerSqlHelper;
+    for (const iterator of callee) {
+        start = start[iterator];
+        if (!start) {
+            return;
+        }
+    }
+    if (!start) {
         return;
     }
-    return names[callee]?.(... args);
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    return (start as unknown as Function).apply(compiler, args);
 }

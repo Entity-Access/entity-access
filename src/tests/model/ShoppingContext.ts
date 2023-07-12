@@ -1,6 +1,6 @@
 import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
-import ForeignKey from "../../decorators/ForeignKey.js";
+import Relate from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 
 export const statusPublished = "published";
@@ -73,10 +73,9 @@ export class Product {
 
     public categories: ProductCategory[];
 
-    @ForeignKey({
-        key: (product) => product.ownerID,
-        related: User,
-        relatedProperty: (user) => user.ownedProducts
+    @Relate(User, {
+        foreignKey: (product) => product.ownerID,
+        inverseProperty: (user) => user.ownedProducts
     })
     public owner: User;
 
@@ -95,17 +94,15 @@ export class ProductCategory {
     @Column({ dataType: "Char", length: 200})
     public categoryID: string;
 
-    @ForeignKey({
-        key: (pc) => pc.productID,
-        related: Product,
-        relatedProperty: (c) => c.categories
+    @Relate(Product, {
+        foreignKey: (pc) => pc.productID,
+        inverseProperty: (c) => c.categories
     })
     public product: Product;
 
-    @ForeignKey({
-        key: (pc) => pc.categoryID,
-        related: Category,
-        relatedProperty: (c) => c.productCategories
+    @Relate(Category, {
+        foreignKey: (pc) => pc.categoryID,
+        inverseProperty: (c) => c.productCategories
     })
     public category: Category;
 }
@@ -131,10 +128,9 @@ export class ProductPrice {
     @Column({})
     public productID: number;
 
-    @ForeignKey({
-        key: (productPrice) => productPrice.productID,
-        related: Product,
-        relatedProperty: (product) => product.prices
+    @Relate(Product, {
+        foreignKey: (productPrice) => productPrice.productID,
+        inverseProperty: (product) => product.prices
     })
     public product: Product;
 
@@ -155,10 +151,9 @@ export class Order {
 
     public orderItems: OrderItem[];
 
-    @ForeignKey({
-        key: (order) => order.customerID,
-        related: User,
-        relatedProperty: (user) => user.orders
+    @Relate(User, {
+        foreignKey: (order) => order.customerID,
+        inverseProperty: (user) => user.orders
     })
     public customer: User;
 
@@ -182,25 +177,22 @@ export class OrderItem {
     @Column()
     public amount: number;
 
-    @ForeignKey({
-        key: (orderItem) => orderItem.orderID,
-        related: Order,
-        relatedProperty: (order) => order.orderItems
+    @Relate(Order, {
+        foreignKey: (orderItem) => orderItem.orderID,
+        inverseProperty: (order) => order.orderItems
     })
     public order: Order;
 
-    @ForeignKey({
-        key: (orderItem) => orderItem.productID,
-        related: Product,
-        relatedProperty:(product) => product.orderItems
+    @Relate(Product, {
+        foreignKey: (orderItem) => orderItem.productID,
+        inverseProperty:(product) => product.orderItems
     })
     public product: Product;
 
 
-    @ForeignKey({
-        key: (orderItem) => orderItem.priceID,
-        related: ProductPrice,
-        relatedProperty: (productPrice) => productPrice.orderItems
+    @Relate(ProductPrice, {
+        foreignKey: (orderItem) => orderItem.priceID,
+        inverseProperty: (productPrice) => productPrice.orderItems
     })
     public productPrice: ProductPrice;
 
