@@ -4,8 +4,9 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 
 
 # Project Status
-1. Beta - Postgres Driver
-2. Beta - Sql Server Driver
+1. Released - Postgres Driver
+2. Released - Sql Server Driver
+3. Released - Include Feature
 
 ## Features
 1. Unit of Work and Repository Pattern
@@ -18,8 +19,8 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 8. Context Filters - This is a new concept where you can setup filters that will be used against saving/retrieving data.
 
 ## Upcoming Features
-1. Include
-2. Projection - Split query mode only, single level only.
+1. Projection - Split query mode only, single level only.
+2. 
 3. GroupBy
 
 ### Unit of Work
@@ -149,10 +150,9 @@ class OrderItem {
      * Following configuration declares everything
      * that will give compilation error if configured wrong.
     */
-    @ForeignKey({
-        key: (orderItem) => orderItem.productID,
-        related: Product,
-        relatedProperty:(product) => product.orderItems
+    @Relate(Product, {
+        foreignKey: (orderItem) => orderItem.productID,
+        inverseProperty:(product) => product.orderItems
     })
     product: Product;
 
@@ -244,6 +244,11 @@ Just as text functions you can also use date functions as shown below.
 ```typescript
     q.orderBy({}, (p) => (x) => x.orderDate)
     .thenBy({}, (p) => (x) => x.customer.firstName)
+
+    // custom...
+    q.orderBy({}, (p) => (x) => x.orderDate)
+    .thenBy({}, (p) => (x) => Sql.text.collate(x.customer.firstName, "case_insensitive"))
+
 ```
 
 ### Limit/Offset
