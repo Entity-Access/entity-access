@@ -1,5 +1,5 @@
 
-import { prepareAny } from "../../query/ast/IStringTransformer.js";
+import { prepare, prepareAny } from "../../query/ast/IStringTransformer.js";
 import { ISqlHelpers, flattenHelpers } from "../ISqlHelpers.js";
 
 export const SqlServerSqlHelper: ISqlHelpers = {
@@ -68,8 +68,39 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         },
     },
     text: {
+        collate(text, collation) {
+            const sanitize = (t) => t.replace(/[\W_]+/g,"");
+            return prepareAny `${text} COLLATE ` + sanitize(collation);
+        },
         concat(...p) {
-            return prepareAny `CONCAT(${p.join(",")})`;
+            const text = ["CONCAT("];
+            let first = true;
+            for (const iterator of p) {
+                if (!first) {
+                    text.push(",");
+                }
+                first = false;
+                text.push(iterator);
+            }
+            text.push(")");
+            return text as any;
+        },
+        concatWS(...fragments) {
+            const text = ["CONCAT_WS("];
+            let first = true;
+            for (const iterator of fragments) {
+                if (!first) {
+                    text.push(",");
+                }
+                first = false;
+                text.push(iterator);
+            }
+            text.push(")");
+            return text as any;
+
+        },
+        difference(left, right) {
+            return prepareAny `DIFFERENCE(${left}, ${right})`;
         },
         endsWith(text, test) {
             return prepareAny `CHARINDEX(${text}, ${test}) = LEN(${text}) - LEN(${test})`;
@@ -86,11 +117,24 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         like(text, test) {
             return prepareAny `(${text} LIKE ${test})`;
         },
+        lower(text) {
+            return prepareAny `LOWER(${text})`;
+        },
         right(text, length) {
             return prepareAny `right(${text}, ${length})`;
         },
         startsWith(text, test) {
             return prepareAny `CHARINDEX(${text}, ${test}) = 1`;
+        },
+
+        upper(text) {
+            return prepareAny `UPPER(${text})`;
+        },
+
+        normalize(text, kind = "NFC") {
+            const sanitize = (t) => t.replace(/[\W_]+/g,"");
+            return prepareAny `NORMALIZE(${text},${sanitize(kind)}`;
+
         },
     }
 };

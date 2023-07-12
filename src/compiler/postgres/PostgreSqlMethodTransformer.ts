@@ -1,6 +1,9 @@
 
 import { prepareAny } from "../../query/ast/IStringTransformer.js";
+import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import { ISqlHelpers, flattenHelpers } from "../ISqlHelpers.js";
+
+const onlyAlphaNumeric = (x: string) => x.replace(/\W/g, "");
 
 export const PostgreSqlHelper: ISqlHelpers = {
     in(a, array) {
@@ -68,8 +71,38 @@ export const PostgreSqlHelper: ISqlHelpers = {
         },
     },
     text: {
+        collate(text, collation) {
+            return prepareAny `${text} COLLATE "${onlyAlphaNumeric(collation)}")`;
+        },
         concat(...p) {
-            return prepareAny `CONCAT(${p.join(",")})`;
+            const text = ["CONCAT("];
+            let first = true;
+            for (const iterator of p) {
+                if (!first) {
+                    text.push(",");
+                }
+                first = false;
+                text.push(iterator);
+            }
+            text.push(")");
+            return text as any;
+        },
+        concatWS(...fragments) {
+            const text = ["CONCAT_WS("];
+            let first = true;
+            for (const iterator of fragments) {
+                if (!first) {
+                    text.push(",");
+                }
+                first = false;
+                text.push(iterator);
+            }
+            text.push(")");
+            return text as any;
+
+        },
+        difference(left, right) {
+            throw new NotSupportedError("DIFFERENCE");
         },
         endsWith(text, test) {
             return prepareAny `strpos(${text}, ${test}) = length(${text}) - length(${test})`;
@@ -86,11 +119,20 @@ export const PostgreSqlHelper: ISqlHelpers = {
         like(text, test) {
             return prepareAny `(${text} LIKE ${test})`;
         },
+        lower(text) {
+            return prepareAny `LOWER(${text})`;
+        },
         right(text, length) {
             return prepareAny `right(${text}, ${length})`;
         },
         startsWith(text, test) {
             return prepareAny `starts_with(${text}, ${test})`;
+        },
+        upper(text) {
+            return prepareAny `UPPER(${text})`;
+        },
+        normalize(text, kind = "NFC") {
+            return prepareAny `normalize(${text}, ${onlyAlphaNumeric(kind)})`;
         },
     }
 };

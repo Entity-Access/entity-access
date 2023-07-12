@@ -14,6 +14,13 @@ export interface ISql {
 
     text: {
         concat(... fragments: string[]): string;
+        /**
+         * Concat with separator
+         * @param separator separator used to join
+         * @param fragments text fragments
+         */
+        concatWS(separator: string, ... fragments: string[]): string;
+        difference(left: string, right: string): number;
         like(text: string, test: string): boolean;
         iLike(text: string, test: string): boolean;
         left(text: string, length: number): string;
@@ -21,6 +28,10 @@ export interface ISql {
         startsWith(text: string, test: string): boolean;
         endsWith(text: string, test: string): boolean;
         indexOf(text: string, test: string): number;
+        normalize(text: string, kind?: string): string;
+        collate(text: string, collation: string): string;
+        lower(text: string): string;
+        upper(text: string): string;
     },
 
     date: {
