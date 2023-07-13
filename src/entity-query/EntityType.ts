@@ -6,6 +6,9 @@ import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import { Expression, ExpressionAs, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 
+export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
+export const addColumnSymbol = Symbol("addOrCreateColumn");
+
 
 /**
  * DbQuery represents sql equivalent table with columns...
@@ -43,6 +46,10 @@ export default class EntityType {
 
     private selectAll: SelectStatement;
     private selectOne: SelectStatement;
+
+    [addOrCreateColumnSymbol](name: string): IColumn {
+        return this.fieldMap.get(name) ?? { name };
+    }
 
     public getProperty(name: string) {
         const field = this.fieldMap.get(name);
@@ -86,7 +93,7 @@ export default class EntityType {
         if(!fkColumn) {
             fkColumn = {
                 name: relation.foreignKey,
-                columnName: relation.foreignKey,
+                // columnName: relation.foreignKey,
                 fkRelation: relation,
                 dataType: "BigInt"
             };
