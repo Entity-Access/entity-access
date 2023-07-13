@@ -44,26 +44,26 @@ export default class QueryCompiler {
     }
 
     public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: EntityQuery) {
-        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.as);
+        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.sourceParameter);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const query = exp.visit(body);
         return this.invoke(query, parameters);
     }
 
     public compile(source: EntityQuery, fx: (p) => (x) => any) {
-        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.as);
+        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.sourceParameter);
         return { params, target, body };
     }
 
     public compileToSql( source: EntityQuery , fx: (p) => (x) => any) {
-        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.as);
+        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.sourceParameter);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const textQuery = exp.visit(body);
         return new CompiledQuery(exp.root,exp.target,textQuery);
     }
 
     public compileExpression(source: EntityQuery, exp: Expression) {
-        const toSql = new this.expressionToSql(source ?? null, null, (exp as SelectStatement)?.as ?? source?.selectStatement?.as, this);
+        const toSql = new this.expressionToSql(source ?? null, null, (exp as SelectStatement)?.sourceParameter ?? source?.selectStatement?.sourceParameter, this);
         const query = toSql.visit(exp);
         return this.invoke(query);
     }

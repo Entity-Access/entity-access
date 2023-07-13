@@ -74,7 +74,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const source = e.source.type === "ValuesStatement"
             ? prepare `(${this.visit(e.source)})`
             : this.visit(e.source);
-        const as = e.as ? prepare ` AS ${this.compiler.quotedLiteral( this.scope.nameOf(e.as))}` : "";
+        const as = e.sourceParameter ? prepare ` AS ${this.compiler.quotedLiteral( this.scope.nameOf(e.sourceParameter))}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
         return prepare `SELECT
         ${fields}
@@ -82,8 +82,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
     prepareStatement(e: SelectStatement) {
         // inject parameter and types if we don't have it..
-        if (e.as && e.model) {
-            this.scope.create({ parameter: e.as, selectStatement: e });
+        if (e.sourceParameter && e.model) {
+            this.scope.create({ parameter: e.sourceParameter, selectStatement: e });
         }
 
         const joins = e.joins;
@@ -178,8 +178,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
                             param1.model = relatedModel;
                             this.scope.create({ parameter: param1, model: relatedModel, selectStatement: select });
-                            this.scope.alias(param1, select.as, select);
-                            select.as = param1;
+                            this.scope.alias(param1, select.sourceParameter, select);
+                            select.sourceParameter = param1;
                             const targetKey = MemberExpression.create({
                                 target: parameter,
                                 property: Identifier.create({

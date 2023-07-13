@@ -88,7 +88,7 @@ export default class VerificationSession {
 
         const eq = query as EntityQuery;
         const compare = Expression.equal(
-            Expression.member(eq.selectStatement.as, relatedModel.keys[0].columnName),
+            Expression.member(eq.selectStatement.sourceParameter, relatedModel.keys[0].columnName),
             Expression.constant(value)
         );
         const typeName  = TypeInfo.nameOfType(type);
@@ -106,7 +106,7 @@ export default class VerificationSession {
         const eq = query as EntityQuery;
         for (const [key, value] of keys) {
             const test = Expression.equal(
-                Expression.member(eq.selectStatement.as, Expression.quotedLiteral(key)),
+                Expression.member(eq.selectStatement.sourceParameter, Expression.quotedLiteral(key)),
                 Expression.constant(value)
             );
             compare = compare
@@ -124,7 +124,7 @@ export default class VerificationSession {
         this.select.fields =[
             Expression.as(Expression.templateLiteral(this.field), "error")
         ];
-        this.select.as = ParameterExpression.create({ name: "x"});
+        this.select.sourceParameter = ParameterExpression.create({ name: "x"});
         const source = ValuesStatement.create({
             values: [
                 [Identifier.create({ value: "1"})]

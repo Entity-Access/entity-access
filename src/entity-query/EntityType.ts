@@ -132,7 +132,7 @@ export default class EntityType {
         this.selectAll = SelectStatement.create({
             source,
             model: this,
-            as,
+            sourceParameter: as,
             fields
         });
         return { ... this.selectAll };
@@ -150,7 +150,7 @@ export default class EntityType {
         this.selectOne = SelectStatement.create({
             source,
             model: this,
-            as,
+            sourceParameter: as,
             fields
         });
         return { ... this.selectOne };
