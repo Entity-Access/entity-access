@@ -3,9 +3,11 @@ import SchemaRegistry from "./SchemaRegistry.js";
 export interface ITable {
     name: string;
     schema?: string;
+    entityName?: string;
 }
 
-export default function Table<T>(
+// eslint-disable-next-line @typescript-eslint/ban-types
+export default function Table<T extends Function>(
     name: string,
     schema?: string): any {
     return (target: T) => {
@@ -14,5 +16,11 @@ export default function Table<T>(
         model.name = name;
         // @ts-expect-error readonly
         model.schema = schema;
+    };
+}
+
+export function EntityName(name: string) {
+    return (target) => {
+        SchemaRegistry.registerClassForName(name, target);
     };
 }
