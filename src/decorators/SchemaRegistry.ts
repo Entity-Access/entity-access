@@ -5,7 +5,8 @@ const classForNameMap = new Map();
 export default class SchemaRegistry {
 
     static registerClassForName(name: string, target: any) {
-        if (classForNameMap.get(name) !== target) {
+        const existing = classForNameMap.get(name);
+        if (existing && existing !== target) {
             throw new Error(`${name} is already registered for ${target}`);
         }
         classForNameMap.set(name, target);
