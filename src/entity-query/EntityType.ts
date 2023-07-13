@@ -108,14 +108,16 @@ export default class EntityType {
             dotNotCreateIndex: true,
             fkColumn,
             isInverseRelation: true,
+            isCollection: true,
             relatedRelation: relation,
             relatedEntity: this
         };
+
         relatedType.relationMap.set(inverseRelation.name, inverseRelation);
         relatedType.relations.push(inverseRelation);
         inverseRelation.relatedRelation = relation;
         relation.relatedRelation = inverseRelation;
-
+        return relation;
     }
 
     public selectAllFields() {

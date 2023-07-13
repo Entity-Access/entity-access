@@ -1,6 +1,6 @@
 import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
-import Relate from "../../decorators/Relate.js";
+import { RelateTo } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 
 export const statusPublished = "published";
@@ -62,21 +62,18 @@ export class Product {
     public name: string;
 
     @Column({ nullable: true })
+    @RelateTo(User, {
+        property: (product) => product.owner,
+        inverseProperty: (user) => user.ownedProducts
+    })
     public ownerID: number;
 
     @Column({ dataType: "Char", length: 20})
     public status: string;
 
     public orderItems: OrderItem[];
-
     public prices: ProductPrice[];
-
     public categories: ProductCategory[];
-
-    @Relate(User, {
-        foreignKey: (product) => product.ownerID,
-        inverseProperty: (user) => user.ownedProducts
-    })
     public owner: User;
 
 }
@@ -89,21 +86,21 @@ export class ProductCategory {
     public productCategoryID: number;
 
     @Column({ dataType: "BigInt" })
+    @RelateTo(Product, {
+        property: (pc) => pc.product,
+        inverseProperty: (p) => p.categories
+    })
     public productID: number;
 
     @Column({ dataType: "Char", length: 200})
-    public categoryID: string;
-
-    @Relate(Product, {
-        foreignKey: (pc) => pc.productID,
-        inverseProperty: (c) => c.categories
-    })
-    public product: Product;
-
-    @Relate(Category, {
-        foreignKey: (pc) => pc.categoryID,
+    @RelateTo(Category, {
+        property: (pc) => pc.category,
         inverseProperty: (c) => c.productCategories
     })
+    public categoryID: string;
+
+    public product: Product;
+
     public category: Category;
 }
 
@@ -126,14 +123,13 @@ export class ProductPrice {
     public amount: number;
 
     @Column({})
+    @RelateTo(Product, {
+        property: (price) => price.product,
+        inverseProperty: (p) => p.prices
+    })
     public productID: number;
 
-    @Relate(Product, {
-        foreignKey: (productPrice) => productPrice.productID,
-        inverseProperty: (product) => product.prices
-    })
     public product: Product;
-
     public orderItems: OrderItem[];
 }
 
@@ -147,14 +143,14 @@ export class Order {
     public orderDate: Date;
 
     @Column()
+    @RelateTo(User, {
+        property: (order) => order.customer,
+        inverseProperty: (user) => user.orders
+    })
     public customerID: number;
 
     public orderItems: OrderItem[];
 
-    @Relate(User, {
-        foreignKey: (order) => order.customerID,
-        inverseProperty: (user) => user.orders
-    })
     public customer: User;
 
 }
@@ -166,34 +162,31 @@ export class OrderItem {
     public orderItemID: number;
 
     @Column()
+    @RelateTo(Order, {
+        property: (orderItem) => orderItem.order,
+        inverseProperty: (order) => order.orderItems
+    })
     public orderID: number;
 
     @Column()
+    @RelateTo(Product, {
+        property: (orderItem) => orderItem.product,
+        inverseProperty: (order) => order.orderItems
+    })
     public productID: number;
 
     @Column()
+    @RelateTo(ProductPrice, {
+        property: (orderItem) => orderItem.productPrice,
+        inverseProperty: (productPrice) => productPrice.orderItems
+    })
     public priceID: number;
 
     @Column()
     public amount: number;
 
-    @Relate(Order, {
-        foreignKey: (orderItem) => orderItem.orderID,
-        inverseProperty: (order) => order.orderItems
-    })
     public order: Order;
-
-    @Relate(Product, {
-        foreignKey: (orderItem) => orderItem.productID,
-        inverseProperty:(product) => product.orderItems
-    })
     public product: Product;
-
-
-    @Relate(ProductPrice, {
-        foreignKey: (orderItem) => orderItem.priceID,
-        inverseProperty: (productPrice) => productPrice.orderItems
-    })
     public productPrice: ProductPrice;
 
 }

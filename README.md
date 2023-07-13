@@ -142,23 +142,27 @@ class OrderItem {
     orderItemID: number;
 
     @Column()
+    /**
+     * Following configuration declares Foreign Key Relation.
+     * That will give compilation error if configured incorrectly.
+     * 
+     * RelateTo is for one to many mapping. Making column nullable will
+     * inverse relation optional.
+    */
+    @RelateTo(Product, {
+        property: (orderItem) => orderItem.product,
+        inverseProperty: (product) => product.orderItems
+    })
     productID: number;
 
     @Column()
     orderID: number;
 
-    /**
-     * Following configuration declares everything
-     * that will give compilation error if configured wrong.
-    */
-    @Relate(Product, {
-        foreignKey: (orderItem) => orderItem.productID,
-        inverseProperty:(product) => product.orderItems
-    })
     product: Product;
 
 }
 
+// You can use `RelateToOne` for one to one mapping.
 ```
 
 ## Query Examples
