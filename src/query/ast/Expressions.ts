@@ -222,6 +222,8 @@ export class SelectStatement extends Expression {
 
     sourceParameter: ParameterExpression;
 
+    as: ParameterExpression;
+
     fields: (Expression | QuotedLiteral | ExpressionAs)[];
 
     where: Expression;

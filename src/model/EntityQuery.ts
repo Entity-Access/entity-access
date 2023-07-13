@@ -172,6 +172,22 @@ export default class EntityQuery<T = any>
         return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, offset: n} });
     }
 
+    async sum(parameter?: any, fx?: any) {
+        
+    }
+
+    async avg(parameter?: any, fx?: any) {
+
+    }
+
+    async min(parameter?: any, fx?: any) {
+
+    }
+
+    async max(parameter?: any, fx?: any) {
+
+    }
+
     async count(parameters?:any, fx?: any): Promise<number> {
         if (parameters !== void 0) {
             return this.where(parameters, fx).count();

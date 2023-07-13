@@ -25,6 +25,11 @@ export interface IBaseQuery<T> {
     count(): Promise<number>;
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 
+    sum<P>(parameters: P, fx: (p: P) => (x: T) => number): Promise<number>;
+    avg<P>(parameters: P, fx: (p: P) => (x: T) => number): Promise<number>;
+    min<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): Promise<TR>;
+    max<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): Promise<TR>;
+
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
 
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;

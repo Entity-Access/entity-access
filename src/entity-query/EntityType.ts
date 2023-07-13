@@ -132,6 +132,7 @@ export default class EntityType {
         this.selectAll = SelectStatement.create({
             source,
             model: this,
+            as,
             sourceParameter: as,
             fields
         });
