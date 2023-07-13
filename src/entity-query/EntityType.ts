@@ -86,6 +86,7 @@ export default class EntityType {
         if(!fkColumn) {
             fkColumn = {
                 name: relation.foreignKey,
+                columnName: relation.foreignKey,
                 fkRelation: relation,
                 dataType: "BigInt"
             };

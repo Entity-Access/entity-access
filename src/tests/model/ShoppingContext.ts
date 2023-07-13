@@ -171,7 +171,7 @@ export class OrderItem {
     @Column()
     @RelateTo(Product, {
         property: (orderItem) => orderItem.product,
-        inverseProperty: (order) => order.orderItems
+        inverseProperty: (product) => product.orderItems
     })
     public productID: number;
 

@@ -70,28 +70,28 @@ export function RelateOne<T, TRelated>(c: IClassOf<TRelated>,
 
 export function RelateTo<T, TRelated>(c: IClassOf<TRelated>,
     {
-        property: name, inverseProperty: inv, inverseKey: invKey, dotNotCreateIndex
+        property,
+        inverseProperty, inverseKey: invKey, dotNotCreateIndex
     }: {
 
         property: (item: T) => TRelated;
         inverseProperty: (item: TRelated) => T[];
-
         inverseKey?: (item: TRelated) => any;
         dotNotCreateIndex?: boolean;
     }
 
 ) {
-    return (target: T, key: string): any => {
+    return (target: T, foreignKey: string): any => {
 
         const cn = target.constructor ?? target;
         const type = SchemaRegistry.model(cn);
 
         type.addRelation({
             type,
-            name: NameParser.parseMember(name),
-            foreignKey: key,
+            name: NameParser.parseMember(property),
+            foreignKey,
             relatedTypeClass: c,
-            relatedName: NameParser.parseMember(inv),
+            relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             dotNotCreateIndex
         });
