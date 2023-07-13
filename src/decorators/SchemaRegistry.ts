@@ -10,6 +10,9 @@ export default class SchemaRegistry {
             throw new Error(`${name} is already registered for ${target}`);
         }
         classForNameMap.set(name, target);
+        const m = this.model(target);
+        // @ts-expect-error readonly
+        m.entityName = name;
     }
 
     public static model(type) {
@@ -19,7 +22,9 @@ export default class SchemaRegistry {
             // @ts-expect-error readonly for compile time only
             model.typeClass = type;
             this.map.set(type, model);
-            this.registerClassForName(type.name, model);
+            // @ts-expect-error readonly
+            model.entityName ??= type.name;
+            this.registerClassForName(model.entityName, model);
         }
         return model;
     }
