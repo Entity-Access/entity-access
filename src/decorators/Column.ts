@@ -15,11 +15,10 @@ export default function Column(cfg: Omit<Omit<IColumn, "name">, "type"> = {}): a
         c.name = key;
         c.nullable ??= false;
         c.order ??= model.columns.length;
-        c.type = model;
-
+        c.entityType = model;
+        c.type = (Reflect as any).getMetadata("design:type", target, key);
         if (c.dataType === void 0) {
-            const jsType = (Reflect as any).getMetadata("design:type", target, key);
-            c.dataType = typeFrom(c, jsType);
+            c.dataType = typeFrom(c, c.type);
         }
 
 

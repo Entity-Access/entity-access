@@ -28,7 +28,12 @@ export interface IColumn {
      */
     collate?: string;
 
-    type?: EntityType;
+    entityType?: EntityType;
+
+    /**
+     * JavaScript Type
+     */
+    type?: any;
 
     /**
      * String representation of the default, empty string must be specified as ""

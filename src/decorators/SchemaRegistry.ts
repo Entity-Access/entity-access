@@ -6,8 +6,11 @@ export default class SchemaRegistry {
 
     static registerClassForName(name: string, target: any) {
         const existing = classForNameMap.get(name);
-        if (existing && existing !== target) {
-            throw new Error(`${name} is already registered for ${target}`);
+        if (existing) {
+            if (existing !== target) {
+                throw new Error(`${name} is already registered for ${target}`);
+            }
+            return;
         }
         classForNameMap.set(name, target);
         const m = this.model(target);
@@ -24,7 +27,7 @@ export default class SchemaRegistry {
             this.map.set(type, model);
             // @ts-expect-error readonly
             model.entityName ??= type.name;
-            this.registerClassForName(model.entityName, model);
+            this.registerClassForName(model.entityName, type);
         }
         return model;
     }
