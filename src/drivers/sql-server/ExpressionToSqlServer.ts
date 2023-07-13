@@ -76,11 +76,11 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         if (e.source.type === "ValuesStatement") {
             const v = e.source as ValuesStatement;
             const rows = v.values.map((x) => prepare `(${this.visitArray(x)})`);
-            source  = prepare `(VALUES ${rows}) as ${this.visit(e.as)}(${this.visitArray(v.fields)})`;
+            source  = prepare `(VALUES ${rows}) as ${this.visit(e.sourceParameter)}(${this.visitArray(v.fields)})`;
             as = [];
         } else {
             source = this.visit(e.source);
-            as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
+            as = e.sourceParameter ? prepare ` AS ${this.visit(e.sourceParameter)}` : "";
         }
 
         // const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";

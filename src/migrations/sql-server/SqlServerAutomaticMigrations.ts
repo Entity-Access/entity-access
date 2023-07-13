@@ -34,10 +34,13 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         for (const iterator of fkColumns) {
             const indexName =  SqlServerLiteral.quotedLiteral(`IX_${type.name}_${iterator.columnName}`);
             const columnName = SqlServerLiteral.quotedLiteral(iterator.columnName);
-            let query = `CREATE INDEX ${indexName} ON ${name} ( ${columnName})`;
+            let query = `IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = '${indexName}' AND object_id = OBJECT_ID('${name}'))
+                BEGIN   
+                    CREATE INDEX ${indexName} ON ${name} ( ${columnName})`;
             if (iterator.nullable !== true) {
                 query += ` WHERE (${columnName} is not null)`;
             }
+            query += `END`;
             await driver.executeQuery(query);
         }
     }

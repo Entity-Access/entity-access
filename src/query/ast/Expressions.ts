@@ -220,7 +220,7 @@ export class SelectStatement extends Expression {
 
     source: TableSource | ValuesStatement;
 
-    as: ParameterExpression;
+    sourceParameter: ParameterExpression;
 
     fields: (Expression | QuotedLiteral | ExpressionAs)[];
 

@@ -1,3 +1,4 @@
+import DateTime from "../types/DateTime.js";
 import { IColumn } from "./IColumn.js";
 import { ISqlType } from "./ISqlType.js";
 import SchemaRegistry from "./SchemaRegistry.js";
@@ -38,6 +39,7 @@ function typeFrom(c: IColumn, jsType: any): ISqlType {
         case BigInt:
             return "BigInt";
         case Date:
+        case DateTime:
             return "DateTime";
         case Boolean:
             return "Boolean";

@@ -156,7 +156,7 @@ export default class DebugStringVisitor extends Visitor<string> {
 
     visitSelectStatement(e: SelectStatement): string {
         const select = `SELECT\n\t${this.visitArray(e.fields, ",\n\t")}\n\tFROM ${this.visit(e.source)}`;
-        const as = e.as ? this.visit(e.as): "";
+        const as = e.sourceParameter ? this.visit(e.sourceParameter): "";
         const joins = e.joins?.length > 0 ? this.visitArray(e.joins, "\n\t") : "";
         const where = e.where ? `\n\tWHERE ${this.visit(e.where)}` : "";
         const orderBy = e.orderBy ? `\n\tORDER BY ${this.visitArray(e.orderBy, "\n\t\tTHEN BY")}`: "";

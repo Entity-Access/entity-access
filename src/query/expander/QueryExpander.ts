@@ -91,11 +91,11 @@ export class QueryExpander {
 
             joinWhere = Expression.equal(
                 Expression.member(
-                    parent.as,
+                    parent.sourceParameter,
                     Expression.quotedLiteral(fk.columnName)
                 ),
                 Expression.member(
-                    select.as,
+                    select.sourceParameter,
                     Expression.quotedLiteral(model.keys[0].columnName)
                 )
             );
@@ -107,7 +107,7 @@ export class QueryExpander {
             const joins = (select.joins ??= []);
             joins.push(JoinExpression.create({
                 source: parent.source as TableSource,
-                as: parent.as,
+                as: parent.sourceParameter,
                 model,
                 where
             }));
@@ -117,11 +117,11 @@ export class QueryExpander {
 
         joinWhere = Expression.equal(
             Expression.member(
-                parent.as,
+                parent.sourceParameter,
                 Expression.quotedLiteral(fk.columnName)
             ),
             Expression.member(
-                select.as,
+                select.sourceParameter,
                 Expression.quotedLiteral(relation.relatedEntity.keys[0].columnName)
             )
         );
