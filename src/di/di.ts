@@ -58,7 +58,7 @@ export class ServiceProvider implements IDisposable {
     }
 
 
-    resolve(type) {
+    resolve<T>(type: IClassOf<T>): T {
         let instance;
         const sd = this.getRegistration(type);
         switch(sd.kind) {

@@ -16,6 +16,7 @@ export default class EntityType {
 
     public readonly name: string;
     public readonly schema: string;
+    public readonly entityName: string;
 
 
     public readonly columns: IColumn[] = [];
