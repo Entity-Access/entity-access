@@ -8,6 +8,9 @@ export default class NameParser {
 
             const index = t.lastIndexOf(".");
             name = t.substring(index + 1);
+            if (!name) {
+                throw new Error("Failed to parse name");
+            }
             text[parsedName] = name;
         }
         return name;
