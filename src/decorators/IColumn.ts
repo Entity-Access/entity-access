@@ -11,6 +11,14 @@ export interface IColumn {
     autoGenerate?: boolean;
     dataType?: ISqlType;
     nullable?: boolean;
+
+    /**
+     * If specified, it will be used to generate the model for typescript clients.
+     * And in near future it will also be validated before saving the data to accept only values
+     * from given enum values.
+     */
+    enum?: string[];
+
     /**
      * If length is specified, it will take exact same length always.
      */
