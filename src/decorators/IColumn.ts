@@ -8,6 +8,11 @@ export interface IColumn {
     columnName?: string;
     order?: number;
     key?: boolean;
+    /**
+     * While creating table, descending order will be chosen for primary keys
+     * for non text keys.
+     */
+    keyOrder?: "descending" | "ascending";
     autoGenerate?: boolean;
     dataType?: ISqlType;
     nullable?: boolean;

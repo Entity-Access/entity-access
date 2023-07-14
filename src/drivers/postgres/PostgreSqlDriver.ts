@@ -93,7 +93,7 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 
     public automaticMigrations(): Migrations {
-        return new PostgresAutomaticMigrations();
+        return new PostgresAutomaticMigrations(this.compiler);
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {

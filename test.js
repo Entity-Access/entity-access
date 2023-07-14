@@ -31,17 +31,17 @@ export default class TestRunner {
                 password: "abcd123",
                 port: postGresPort
             }),
-            new SqlServerDriver({
-                database,
-                host,
-                user: "sa",
-                password: "$EntityAccess2023",
-                port: 1433,
-                options: {
-                    encrypt: true, // for azure
-                    trustServerCertificate: true // change to true for local dev / self-signed certs
-                }
-            })
+            // new SqlServerDriver({
+            //     database,
+            //     host,
+            //     user: "sa",
+            //     password: "$EntityAccess2023",
+            //     port: 1433,
+            //     options: {
+            //         encrypt: true, // for azure
+            //         trustServerCertificate: true // change to true for local dev / self-signed certs
+            //     }
+            // })
         ];
     }
 

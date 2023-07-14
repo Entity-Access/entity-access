@@ -5,6 +5,7 @@ import NameParser from "../decorators/parser/NameParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import { Expression, ExpressionAs, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
+import { IIndex } from "../decorators/IIndex.js";
 
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
@@ -25,6 +26,8 @@ export default class EntityType {
     public readonly columns: IColumn[] = [];
 
     public readonly relations: IEntityRelation[] = [];
+
+    public readonly indexes: IIndex[] = [];
 
     public readonly keys: IColumn[] = [];
 
