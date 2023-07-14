@@ -61,7 +61,7 @@ export default abstract class EntityEvents<T> {
         return this.modify(query);
     }
 
-    beforeInsert(entity: T, entry: ChangeEntry) {
+    beforeInsert(entity: T, entry: ChangeEntry): void | Promise<void> {
         return done;
     }
 
@@ -69,23 +69,23 @@ export default abstract class EntityEvents<T> {
         return filter.modify();
     }
 
-    afterInsert(entity: T, entry: ChangeEntry) {
+    afterInsert(entity: T, entry: ChangeEntry): void | Promise<void> {
         return done;
     }
 
-    beforeUpdate(entity: T, entry: ChangeEntry) {
+    beforeUpdate(entity: T, entry: ChangeEntry): void | Promise<void> {
         return done;
     }
 
-    afterUpdate(entity: T, entry: ChangeEntry) {
+    afterUpdate(entity: T, entry: ChangeEntry): void | Promise<void> {
         return done;
     }
 
-    beforeDelete(entity: T, entry: ChangeEntry) {
+    beforeDelete(entity: T, entry: ChangeEntry): void | Promise<void> {
         return done;
     }
 
-    afterDelete(entity: T, entry: ChangeEntry) {
+    afterDelete(entity: T, entry: ChangeEntry): void | Promise<void> {
         return done;
     }
 
