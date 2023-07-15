@@ -42,8 +42,7 @@ export class ForeignKeyFilter<T = any, TE = any> {
     }
 }
 
-
-export default abstract class EntityEvents<T> {
+export default class EntityEvents<T> {
 
     filter(query: IEntityQuery<T>) {
         return query;
@@ -92,5 +91,4 @@ export default abstract class EntityEvents<T> {
     beforeJson(entity: T) {
         return entity;
     }
-
 }

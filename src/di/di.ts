@@ -2,8 +2,6 @@ import { IDisposable, disposeDisposable } from "../common/IDisposable.js";
 import { IAbstractClassOf, IClassOf } from "../decorators/IClassOf.js";
 
 import "reflect-metadata";
-import EntityContext from "../model/EntityContext.js";
-import { BaseDriver } from "../drivers/base/BaseDriver.js";
 
 export type ServiceKind = "Singleton" | "Transient" | "Scoped";
 
@@ -20,7 +18,10 @@ const parentServiceProvider = Symbol("parentServiceProvider");
 
 export class ServiceProvider implements IDisposable {
 
-    public static global = new ServiceProvider();
+    public static get global() {
+        return this.globalInstance ??= new ServiceProvider();
+    }
+
 
     public static resolve<T>(serviceOwner: any, type: IClassOf<T>): T {
         const sp = (serviceOwner[serviceProvider] ?? this.global) as ServiceProvider;
@@ -32,6 +33,7 @@ export class ServiceProvider implements IDisposable {
         return sp.createFromType(type);
     }
 
+    private static globalInstance: ServiceProvider;
 
     private map: Map<any,any> = new Map();
     private disposables: IDisposable[];

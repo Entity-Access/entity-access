@@ -5,7 +5,10 @@ import { IDisposable } from "./IDisposable.js";
 @RegisterSingleton
 export default class Logger implements IDisposable {
 
-    public static instance = new Logger();
+    public static get instance() {
+        return this.globalInstance ??= new Logger();
+    }
+    private static globalInstance: Logger;
 
     log(a) {
         console.log(a);
