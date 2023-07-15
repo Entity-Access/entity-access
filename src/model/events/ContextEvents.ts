@@ -24,4 +24,10 @@ export default class ContextEvents {
         this.map.set(type, events);
     }
 
+    public registerAll<T>(types: (IClassOf<EntityEvents<T>> & { typeClass: IClassOf<T>})[]) {
+        for (const iterator of types) {
+            this.map.set(iterator.typeClass, iterator);
+        }
+    }
+
 }
