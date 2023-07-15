@@ -42,14 +42,7 @@ export class ForeignKeyFilter<T = any, TE = any> {
     }
 }
 
-export function EntityEventsFor<T>(typeClass: IClassOf<T>): IClassOf<EntityEvents<T>> & { typeClass: IClassOf<T>} {
-    return class extends EntityEvents<T> {
-        static typeClass =  typeClass;
-    };
-}
-
-
-export default abstract class EntityEvents<T> {
+export default class EntityEvents<T> {
 
     filter(query: IEntityQuery<T>) {
         return query;
@@ -98,5 +91,4 @@ export default abstract class EntityEvents<T> {
     beforeJson(entity: T) {
         return entity;
     }
-
 }
