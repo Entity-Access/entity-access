@@ -1,3 +1,4 @@
+[![Action Status](https://github.com/Entity-Access/entity-access/workflows/Build/badge.svg)](https://github.com/Entity-Access/entity-access/actions) [![npm version](https://badge.fury.io/js/%40entity-access%2Fentity-access.svg)](https://badge.fury.io/js/%40entity-access%2Fentity-access) 
 # Entity Access
 
 Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime such as Node, YantraJS.
@@ -7,6 +8,8 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 1. Released - Postgres Driver
 2. Released - Sql Server Driver
 3. Released - Include Feature
+4. Planned - MySql Driver
+5. Planned - Oracle Driver (Need help, we do not have Oracle Expertise)
 
 ## Features
 1. Unit of Work and Repository Pattern
@@ -23,6 +26,7 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 2. Update column before save
 3. GroupBy
 4. Custom Migration Steps
+5. MySql support
 
 ### Unit of Work
 
@@ -73,17 +77,14 @@ const db = new ShoppingContext();
 
 // find customer from orderID
 const q = db.customers
-    // first we will send parameters
+    // set parameters
     .where({ orderID },
-        // second we will write an arrow
-        // accepting parameters
+        // access parameters
         (p) =>
-            // this is the arrow which will
+            // following expression
             // be converted to SQL
-            // you can write very limited set of
-            // expressions in this arrow function
             (x) => x.orders.some(
-                // This will results in exists or join
+                // joins/exists will be set
                 // based on relations declared
                 (order) => order.orderID === p.orderID );
 const customer = await q.first();
