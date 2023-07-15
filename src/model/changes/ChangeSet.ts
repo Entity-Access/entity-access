@@ -1,3 +1,4 @@
+import EntityAccessError from "../../common/EntityAccessError.js";
 import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 import EntityContext from "../EntityContext.js";
 import IdentityService, { identityMapSymbol } from "../identity/IdentityService.js";
@@ -47,7 +48,11 @@ export default class ChangeSet {
         if (entry) {
             return entry;
         }
-        const type = SchemaRegistry.model(Object.getPrototypeOf(entity).constructor);
+        const c = Object.getPrototypeOf(entity).constructor;
+        if (c === Object) {
+            throw new EntityAccessError("Entity type not set");
+        }
+        const type = SchemaRegistry.model(c);
         const jsonKey = IdentityService.getIdentity(entity);
         if (jsonKey) {
             const existing = this.identityMap.get(jsonKey);

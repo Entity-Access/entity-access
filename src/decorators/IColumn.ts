@@ -9,10 +9,10 @@ export interface IColumn {
     order?: number;
     key?: boolean;
     /**
-     * While creating table, descending order will be chosen for primary keys
+     * While creating table, descending order will be chosen for primary keys/foreign keys
      * for non text keys.
      */
-    keyOrder?: "descending" | "ascending";
+    indexOrder?: "descending" | "ascending";
     autoGenerate?: boolean;
     dataType?: ISqlType;
     nullable?: boolean;

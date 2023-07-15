@@ -38,6 +38,7 @@ export class User {
     @Column({})
     public dateCreated: Date;
 
+    @Column({ dataType: "Char", length: 200 })
     public userName: string;
 
     public ownedProducts: Product[];

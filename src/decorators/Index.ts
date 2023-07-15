@@ -26,7 +26,7 @@ export default function Index<T>(
             include,
             indexType,
             filter,
-            columns: []
+            columns
         };
         for (const iterator of columnDefs) {
             const def = typeof iterator === "function"

@@ -14,16 +14,19 @@ export default abstract class Migrations {
             await this.migrateTable(context, type);
 
             for (const index of type.indexes) {
-                await this.migrateIndexInternal(context, index);
+                await this.migrateIndexInternal(context, index, type);
             }
         }
 
     }
 
-    async migrateIndexInternal(context: EntityContext, index: IIndex) {
+    async migrateIndexInternal(context: EntityContext, index: IIndex, type: EntityType) {
         // parse filter... pending...
+        this.migrateIndex(context, index, type);
 
     }
+
+    abstract migrateIndex(context: EntityContext, index: IIndex, type: EntityType);
 
     abstract migrateTable(context: EntityContext, type: EntityType): Promise<any>;
 

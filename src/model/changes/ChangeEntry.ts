@@ -49,12 +49,36 @@ export default class ChangeEntry implements IChanges {
             return;
         }
 
-        const { type: { columns }, entity, original } = this;
+        const { type: { columns, keys }, entity } = this;
+        let { original } = this;
 
         if (original === void 0) {
-            this.status = "inserted";
-            this.detectDependencies();
-            return;
+
+            // check if all keys are set or not...
+
+            let keysSet = true;
+            let autoGenerate = false;
+            for (const iterator of keys) {
+                autoGenerate ||= iterator.autoGenerate;
+                if(entity[iterator.name] === void 0) {
+                    keysSet = false;
+                }
+            }
+
+            if (keysSet) {
+                if (!autoGenerate) {
+                    this.status = "inserted";
+                    this.detectDependencies();
+                    return;
+                }
+            } else if (autoGenerate) {
+                this.status = "inserted";
+                this.detectDependencies();
+                return;
+            }
+
+            this.original = { ... entity };
+            original = this.original;
         }
 
         this.detectDependencies();
@@ -133,6 +157,11 @@ export default class ChangeEntry implements IChanges {
             // if related has key defined.. set it...
             const rKey = iterator.relatedEntity.keys[0];
 
+            // lets set the prototype...
+            const prototype = iterator.relatedTypeClass.prototype;
+            if (Object.getPrototypeOf(related) !== prototype) {
+                Object.setPrototypeOf(related, prototype);
+            }
             const relatedChanges = this.changeSet.getEntry(related);
 
             const keyValue = related[rKey.name];

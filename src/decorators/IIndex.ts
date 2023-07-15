@@ -20,5 +20,5 @@ export interface IIndex{
     unique?: boolean;
     include?: string[];
     indexType?: string;
-    filter?: (x: T) => boolean;
+    filter?: ((x: any) => boolean) | string;
 }

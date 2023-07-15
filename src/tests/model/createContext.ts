@@ -17,6 +17,7 @@ export async function createContext(driver: BaseDriver) {
 
     await seed(context);
 
+    driver.connectionString.database = context.driver.connectionString.database;
     return context;
 
 }
@@ -29,9 +30,15 @@ async function seed(context: ShoppingContext) {
     const now = new Date();
 
     // add admin user...
-    context.users.add({ dateCreated: new Date()});
+    context.users.add({
+        userName: "admin",
+        dateCreated: new Date()
+    });
     // add seller
-    const seller = context.users.add({ dateCreated: new Date()});
+    const seller = context.users.add({
+        userName: "self",
+        dateCreated: new Date()
+    });
 
     addHeadPhones(context, now, seller);
 
@@ -45,6 +52,7 @@ async function seed(context: ShoppingContext) {
     const productPrice = product.prices[0];
 
     const user = context.users.add({
+        userName: "customer1",
         dateCreated: new Date(),
         orders: [
             context.orders.add({
