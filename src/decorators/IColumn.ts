@@ -8,9 +8,22 @@ export interface IColumn {
     columnName?: string;
     order?: number;
     key?: boolean;
+    /**
+     * While creating table, descending order will be chosen for primary keys/foreign keys
+     * for non text keys.
+     */
+    indexOrder?: "descending" | "ascending";
     autoGenerate?: boolean;
     dataType?: ISqlType;
     nullable?: boolean;
+
+    /**
+     * If specified, it will be used to generate the model for typescript clients.
+     * And in near future it will also be validated before saving the data to accept only values
+     * from given enum values.
+     */
+    enum?: string[];
+
     /**
      * If length is specified, it will take exact same length always.
      */

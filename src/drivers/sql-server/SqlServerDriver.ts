@@ -114,7 +114,7 @@ export default class SqlServerDriver extends BaseDriver {
     }
 
     public automaticMigrations(): Migrations {
-        return new SqlServerAutomaticMigrations();
+        return new SqlServerAutomaticMigrations(this.sqlQueryCompiler);
     }
 
     protected async newRequest() {

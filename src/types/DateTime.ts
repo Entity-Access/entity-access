@@ -400,3 +400,6 @@ export default class DateTime {
     }
 
 }
+
+// extending Date..
+Object.setPrototypeOf(DateTime.prototype, Date.prototype);

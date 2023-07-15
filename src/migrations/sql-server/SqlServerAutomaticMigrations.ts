@@ -1,4 +1,5 @@
 import { IColumn } from "../../decorators/IColumn.js";
+import { IIndex } from "../../decorators/IIndex.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
 import EntityType from "../../entity-query/EntityType.js";
@@ -21,27 +22,21 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         await this.createColumns(driver, type, nonKeyColumns);
 
-        await this.createIndexes(driver, type, nonKeyColumns.filter((x) => x.fkRelation && !x.fkRelation?.dotNotCreateIndex));
+        await this.createIndexes(context, type, nonKeyColumns.filter((x) => x.fkRelation && !x.fkRelation?.dotNotCreateIndex));
 
     }
 
-    async createIndexes(driver: BaseDriver, type: EntityType, fkColumns: IColumn[]) {
-
-        const name = type.schema
-        ? SqlServerLiteral.quotedLiteral(type.schema) + "." + SqlServerLiteral.quotedLiteral(type.name)
-        : SqlServerLiteral.quotedLiteral(type.name);
-
+    async createIndexes(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
-            const indexName =  SqlServerLiteral.quotedLiteral(`IX_${type.name}_${iterator.columnName}`);
-            const columnName = SqlServerLiteral.quotedLiteral(iterator.columnName);
-            let query = `IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = '${indexName}' AND object_id = OBJECT_ID('${name}'))
-                BEGIN   
-                    CREATE INDEX ${indexName} ON ${name} ( ${columnName})`;
-            if (iterator.nullable !== true) {
-                query += ` WHERE (${columnName} is not null)`;
-            }
-            query += `END`;
-            await driver.executeQuery(query);
+            const filter = iterator.nullable
+                ? `${ SqlServerLiteral.quotedLiteral(iterator.columnName)} IS NOT NULL`
+                : "";
+            const indexDef: IIndex = {
+                name: `IX_${type.name}_${iterator.columnName}`,
+                columns: [{ name: iterator.columnName, descending: iterator.indexOrder !== "ascending"}],
+                filter
+            };
+            await this.migrateIndex(context, indexDef, type);
         }
     }
 
@@ -99,6 +94,27 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             CREATE TABLE ${name} (${fields.join(",")});
         END`);
 
+    }
+
+    async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
+        const driver = context.driver;
+        const name = type.schema
+            ? SqlServerLiteral.quotedLiteral(type.schema) + "." + SqlServerLiteral.quotedLiteral(type.name)
+            : SqlServerLiteral.quotedLiteral(type.name);
+        const indexName =  SqlServerLiteral.quotedLiteral(index.name);
+        const columns = [];
+        for (const column of index.columns) {
+            const columnName = SqlServerLiteral.quotedLiteral(column.name);
+            columns.push(`${columnName} ${column.descending ? "DESC" : "ASC"}`);
+        }
+        let query = `IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = '${indexName}' AND object_id = OBJECT_ID('${name}'))
+        BEGIN   
+            CREATE ${index.unique ? "UNIQUE" : ""} INDEX ${indexName} ON ${name} ( ${columns.join(", ")})`;
+        if (index.filter) {
+            query += ` WHERE (${index.filter})`;
+        }
+        query += `\nEND`;
+        await driver.executeQuery(query);
     }
 
 

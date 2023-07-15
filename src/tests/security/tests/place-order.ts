@@ -94,11 +94,11 @@ async function addNewOrder(this: TestConfig, customer: User, userID?) {
 
 async function createUser(config: TestConfig) {
     const context = await createContext(config.driver);
-    config.driver.connectionString.database = context.driver.connectionString.database;
     const user = context.users.add({
+        userName: "customer",
         dateCreated: new Date()
     });
     await context.saveChanges();
-    return user;
+    return { ... user };
 }
 

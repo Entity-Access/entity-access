@@ -2,6 +2,7 @@ import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
 import { RelateTo } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
+import Index from "../../decorators/Index.js";
 
 export const statusPublished = "published";
 
@@ -24,6 +25,11 @@ export class ShoppingContext extends EntityContext {
 }
 
 @Table("Users")
+@Index({
+    name: "IX_Unique_Users",
+    columns: [(x) => x.userName],
+    unique: true
+})
 export class User {
 
     @Column({ key: true , autoGenerate: true, dataType: "BigInt" })
@@ -31,6 +37,9 @@ export class User {
 
     @Column({})
     public dateCreated: Date;
+
+    @Column({ dataType: "Char", length: 200 })
+    public userName: string;
 
     public ownedProducts: Product[];
 
