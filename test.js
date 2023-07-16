@@ -1,6 +1,7 @@
 import { readdir } from "fs/promises";
 import PostgreSqlDriver from "./dist/drivers/postgres/PostgreSqlDriver.js";
 import SqlServerDriver from "./dist/drivers/sql-server/SqlServerDriver.js";
+import MysqlDriver from "./dist/drivers/mysql/MysqlDriver.js";
 import * as ports from "tcp-port-used";
 
 const host = process.env.POSTGRES_HOST ?? "localhost";
@@ -24,22 +25,32 @@ export default class TestRunner {
     static get drivers() {
         const database = "D" + start++;
         return [
-            new PostgreSqlDriver({
+            // new PostgreSqlDriver({
+            //     database,
+            //     host,
+            //     user: "postgres",
+            //     password: "abcd123",
+            //     port: postGresPort
+            // }),
+            // new SqlServerDriver({
+            //     database,
+            //     host,
+            //     user: "sa",
+            //     password: "$EntityAccess2023",
+            //     port: 1433,
+            //     options: {
+            //         encrypt: true, // for azure
+            //         trustServerCertificate: true // change to true for local dev / self-signed certs
+            //     }
+            // }),
+            new MysqlDriver ({
                 database,
                 host,
-                user: "postgres",
+                user: "root",
                 password: "abcd123",
-                port: postGresPort
-            }),
-            new SqlServerDriver({
-                database,
-                host,
-                user: "sa",
-                password: "$EntityAccess2023",
-                port: 1433,
-                options: {
-                    encrypt: true, // for azure
-                    trustServerCertificate: true // change to true for local dev / self-signed certs
+                port: 3306,
+                ssl: {
+                    rejectUnauthorized: false
                 }
             })
         ];

@@ -1,11 +1,8 @@
 /* eslint-disable no-console */
 import QueryCompiler from "../../compiler/QueryCompiler.js";
-import { IColumn } from "../../decorators/IColumn.js";
-import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
-import { Query } from "../../query/Query.js";
-import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
+import { BaseDriver, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import pkg from "pg";
 import Cursor from "pg-cursor";
 
