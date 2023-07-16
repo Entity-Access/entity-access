@@ -163,6 +163,7 @@ class SqlReader implements IDbReader {
         });
 
         rq.stream = true;
+        this.processPendingRows = () => void 0;
 
         rq.on("row", (row) => {
             this.pending.push(row);
@@ -190,6 +191,9 @@ class SqlReader implements IDbReader {
             }
             if (this.ended) {
                 break;
+            }
+            if (this.error) {
+                throw this.error;
             }
             await new Promise<any>((resolve, reject) => {
                 this.processPendingRows = resolve;
