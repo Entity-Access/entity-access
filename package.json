@@ -35,7 +35,6 @@
   },
   "devDependencies": {
     "@types/mssql": "^8.1.2",
-    "@types/mysql": "^2.15.21",
     "@types/node": "^20.3.2",
     "@types/pg": "^8.10.2",
     "@types/pg-cursor": "^2.7.0",
@@ -51,6 +50,6 @@
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-react": "^7.32.2",
     "mssql": "^9.1.1",
-    "mysql": "^2.18.1"
+    "mysql2": "^3.5.1"
   }
 }

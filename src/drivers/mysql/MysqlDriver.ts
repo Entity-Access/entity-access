@@ -1,4 +1,3 @@
-import { Promisify } from "../../common/Promisify.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 import { DisposableScope } from "../../common/usingAsync.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
@@ -6,7 +5,8 @@ import Migrations from "../../migrations/Migrations.js";
 import MysqlAutomaticMigrations from "../../migrations/mysql/MysqlAutomaticMigrations.js";
 import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IQueryResult, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
 import ExpressionToMysql from "./ExpressionToMySql.js";
-import * as mysql from "mysql";
+import * as mysql from "mysql2/promise";
+import { MySqlLiteral } from "./MySqlLiteral.js";
 
 export type IMySqlConnectionString = mysql.ConnectionConfig | IDbConnectionString;
 
@@ -17,7 +17,7 @@ const prepare = (command: IQuery) => {
     const values = [];
     const sql = cmd.text.replace(/\$\d+/g, (s) => {
         const index = Number.parseInt(s.substring(1), 10);
-        values.push(cmd.values[index]);
+        values.push(cmd.values[index-1]);
         return "?";
     });
     return { sql, values };
@@ -27,7 +27,9 @@ export default class MysqlDriver extends BaseDriver {
 
     get compiler(): QueryCompiler {
         return this.mysqlCompiler ??= new QueryCompiler({
-            expressionToSql: ExpressionToMysql
+            expressionToSql: ExpressionToMysql,
+            quotedLiteral: MySqlLiteral.quotedLiteral,
+            escapeLiteral: MySqlLiteral.escapeLiteral,
         });
     }
 
@@ -55,7 +57,7 @@ export default class MysqlDriver extends BaseDriver {
     }
     public ensureDatabase(): Promise<any> {
         const create = async () => {
-            const defaultDb = "postgres";
+            const defaultDb = "";
             const db = this.connectionString.database;
             this.connectionString.database = defaultDb;
             const connection = await this.getConnection();
@@ -63,7 +65,7 @@ export default class MysqlDriver extends BaseDriver {
             const scope = new DisposableScope();
             scope.register(connection);
             try {
-                await connection.query("CREATE DATABASE IF NOT EXISTS " + JSON.stringify(db));
+                await connection.query("CREATE DATABASE IF NOT EXISTS " + MySqlLiteral.quotedLiteral(db));
             } finally {
                 await scope.dispose();
             }
@@ -96,10 +98,7 @@ export default class MysqlDriver extends BaseDriver {
         }
         const key = `${this.connectionString.host}:${this.connectionString.port}://${this.connectionString.user}/${this.connectionString.database}`;
         const pool = timedCache.getOrCreate(key, this,  () => mysql.createPool(this.connectionString));
-        const conn = await new Promise<mysql.PoolConnection>((resolve, reject) => {
-            pool.getConnection((e, c) => e ? reject(e) : resolve(c));
-        });
-        return new MysqlConnection(conn);
+        return new MysqlConnection(await pool.getConnection());
     }
 
 }
@@ -112,14 +111,14 @@ class MysqlTransaction {
 
     async commit() {
         this.committed = true;
-        return Promisify.toPromise((e) => this.conn.commit(e));
+        return this.conn.commit();
     }
 
     [Symbol.asyncDisposable]() {
         if (!this.committed) {
-            return Promisify.toPromise((e) => this.conn.rollback(e));
+            return this.conn.rollback();
         }
-        return Promisify.toPromise((e) => this.conn.commit(e));
+        return this.conn.commit();
     }
 }
 
@@ -135,8 +134,11 @@ class MysqlReader implements IDbReader {
     constructor(private conn: mysql.PoolConnection, private query: IQuery) {}
 
     async *next(min?: number, signal?: AbortSignal): AsyncGenerator<IRecord, any, any> {
-
-        const query = this.conn.query(prepare(this.query));
+        const query = this.conn;
+        this.conn.query(prepare(this.query)).catch((error) => {
+            this.error = error;
+            this.processPendingRows();
+        });
         this.processPendingRows = () => void 0;
         query.on("end", () => {
             this.ended = true;
@@ -149,7 +151,7 @@ class MysqlReader implements IDbReader {
         query.on("error", (error) => this.error = error);
         signal?.addEventListener("abort", () => {
             this.error = new Error("Aborted");
-            this.conn.end();
+            this.conn.end().catch(() => void 0);
             this.processPendingRows();
         });
         do {
@@ -170,11 +172,11 @@ class MysqlReader implements IDbReader {
         } while (true);
     }
     dispose(): Promise<any> {
-        this.conn.end();
+        this.conn.release();
         return Promise.resolve();
     }
     [disposableSymbol]?(): void {
-        this.conn.end();
+        this.conn.release();
     }
 
 }
@@ -190,25 +192,23 @@ class MysqlConnection {
     }
 
     async beginTransaction() {
-        await Promisify.toPromise((fx) => this.conn.beginTransaction(fx));
+        await this.conn.beginTransaction();
         return new MysqlTransaction(this.conn);
     }
 
-    query(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
+    async query(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
         signal?.throwIfAborted();
         signal?.addEventListener("abort", () => this.conn.destroy());
-        return new Promise<IQueryResult>((resolve, reject) => {
-            this.conn.query(prepare(command), (error, results, fields) => {
-                if (error) {
-                    reject(error);
-                    return;
-                }
-                resolve({
-                    rows: Array.isArray(results) ? results : [],
-                    updated: results?.changedRows
-                });
-            });
-        });
+        const [rows, fields] = await this.conn.query(prepare(command));
+        if (Array.isArray(rows)) {
+            return {
+                rows,
+                updated: 0
+            };
+        }
+        return {
+            updated: rows.affectedRows
+        };
     }
 
     [Symbol.disposable]() {
