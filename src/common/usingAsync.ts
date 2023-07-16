@@ -11,7 +11,7 @@ const disposeAll = async (all: (IDisposable & { end?(): any; close?():any })[]) 
     while (all.length) {
         const d = all.pop();
         try {
-            const f = d.dispose ?? d.end ?? d.close ?? d[Symbol.disposable] ?? d[Symbol.asyncDisposable];
+            const f = d[Symbol.disposable] ?? d[Symbol.asyncDisposable] ?? d.dispose ?? d.end ?? d.close;
             const r = f?.apply(d);
             if (r?.then) {
                 await r;

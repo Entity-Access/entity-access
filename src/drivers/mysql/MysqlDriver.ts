@@ -47,10 +47,11 @@ export default class MysqlDriver extends BaseDriver {
 
     public async executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
         const disposables = new DisposableScope();
+        const c = toQuery(command);
         try {
             const conn = await this.getConnection();
             disposables.register(conn);
-            return await conn.query(command, signal);
+            return await conn.query(c, signal);
         } finally {
             await disposables.dispose();
         }
@@ -81,10 +82,12 @@ export default class MysqlDriver extends BaseDriver {
         const scope = new DisposableScope();
         try {
             const transaction = await this.getConnection();
+            scope.register(transaction);
             this.transaction = transaction;
             scope.register(await transaction.beginTransaction());
             return fx();
         } finally {
+            this.transaction = null;
             await scope.dispose();
         }
     }
@@ -98,7 +101,14 @@ export default class MysqlDriver extends BaseDriver {
         }
         const key = `${this.connectionString.host}:${this.connectionString.port}://${this.connectionString.user}/${this.connectionString.database}`;
         const pool = timedCache.getOrCreate(key, this,  () => mysql.createPool(this.connectionString));
-        return new MysqlConnection(await pool.getConnection());
+        const wait = setTimeout(() => {
+            console.error("Failed to get connection");
+        }, 3000);
+        const c = await pool.getConnection();
+        clearTimeout(wait);
+        c[Symbol.disposable] = () =>
+            c.release();
+        return new MysqlConnection(c);
     }
 
 }
@@ -114,7 +124,7 @@ class MysqlTransaction {
         return this.conn.commit();
     }
 
-    [Symbol.asyncDisposable]() {
+    [Symbol.disposable]() {
         if (!this.committed) {
             return this.conn.rollback();
         }
@@ -134,48 +144,54 @@ class MysqlReader implements IDbReader {
     constructor(private conn: mysql.PoolConnection, private query: IQuery) {}
 
     async *next(min?: number, signal?: AbortSignal): AsyncGenerator<IRecord, any, any> {
-        const query = this.conn;
-        this.conn.query(prepare(this.query)).catch((error) => {
-            this.error = error;
-            this.processPendingRows();
-        });
-        this.processPendingRows = () => void 0;
-        query.on("end", () => {
-            this.ended = true;
-            this.processPendingRows();
-        });
-        query.on("result", (row) => {
-            this.pending.push(row);
-            this.processPendingRows();
-        });
-        query.on("error", (error) => this.error = error);
-        signal?.addEventListener("abort", () => {
-            this.error = new Error("Aborted");
-            this.conn.end().catch(() => void 0);
-            this.processPendingRows();
-        });
-        do {
-            if (this.pending.length > 0){
-                const copy = this.pending;
-                this.pending = [];
-                yield *copy;
-            }
-            if (this.ended) {
-                break;
-            }
-            if (this.error) {
-                throw this.error;
-            }
-            await new Promise<any>((resolve, reject) => {
-                this.processPendingRows = resolve;
-            });
-        } while (true);
+        const c = prepare(this.query);
+        console.log(c.sql);
+        const [ rows ] = await this.conn.query(c);
+        yield *(rows as any[]);
+        // const query = this.conn;
+        // const c = prepare(this.query);
+        // console.log(c.sql);
+        // this.conn.query(c).catch((error) => {
+        //     this.error = error;
+        //     this.processPendingRows();
+        // });
+        // this.processPendingRows = () => void 0;
+        // query.on("end", () => {
+        //     this.ended = true;
+        //     this.processPendingRows();
+        // });
+        // query.on("result", (row) => {
+        //     this.pending.push(row);
+        //     this.processPendingRows();
+        // });
+        // query.on("error", (error) => this.error = error);
+        // signal?.addEventListener("abort", () => {
+        //     this.error = new Error("Aborted");
+        //     this.conn.end().catch(() => void 0);
+        //     this.processPendingRows();
+        // });
+        // do {
+        //     if (this.pending.length > 0){
+        //         const copy = this.pending;
+        //         this.pending = [];
+        //         yield *copy;
+        //     }
+        //     if (this.ended) {
+        //         break;
+        //     }
+        //     if (this.error) {
+        //         throw this.error;
+        //     }
+        //     await new Promise<any>((resolve, reject) => {
+        //         this.processPendingRows = resolve;
+        //     });
+        // } while (true);
     }
     dispose(): Promise<any> {
         this.conn.release();
         return Promise.resolve();
     }
-    [disposableSymbol]?(): void {
+    [disposableSymbol]() {
         this.conn.release();
     }
 
@@ -199,7 +215,10 @@ class MysqlConnection {
     async query(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
         signal?.throwIfAborted();
         signal?.addEventListener("abort", () => this.conn.destroy());
-        const [rows, fields] = await this.conn.query(prepare(command));
+        const c = prepare(command);
+        // console.log(c.sql);
+        // console.log(c.values.join(", "));
+        const [rows, fields] = await this.conn.query(c);
         if (Array.isArray(rows)) {
             return {
                 rows,
@@ -212,6 +231,6 @@ class MysqlConnection {
     }
 
     [Symbol.disposable]() {
-        this.conn.destroy();
+        this.conn.release();
     }
 }

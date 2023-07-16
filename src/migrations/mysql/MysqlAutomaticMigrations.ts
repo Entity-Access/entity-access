@@ -9,6 +9,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
 
     async migrateTable(context: EntityContext, type: EntityType) {
 
+        console.log(`Migrating ${type.name}.`);
 
         // create table if not exists...
         const nonKeyColumns = type.nonKeys;
@@ -21,6 +22,8 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
         await this.createColumns(driver, type, nonKeyColumns);
 
         await this.createIndexes(context, type, nonKeyColumns.filter((x) => x.fkRelation && !x.fkRelation?.dotNotCreateIndex));
+
+        console.log(`${type.name} Migrated.`);
 
     }
 
@@ -53,6 +56,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
             if(await this.exists(driver, {
                 from: "INFORMATION_SCHEMA.COLUMNS",
                 where: {
+                    "TABLE_SCHEMA": driver.connectionString.database,
                     "COLUMN_NAME": iterator.columnName,
                     "TABLE_NAME": type.name
                 }
@@ -113,6 +117,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
         if (await this.exists(driver, {
             from: "information_schema.statistics",
             where: {
+                "table_schema": driver.connectionString.database,
                 "table_name": type.name,
                 "index_name": indexName
             }
@@ -125,7 +130,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
             const columnName = this.compiler.quotedLiteral(column.name);
             columns.push(`${columnName} ${column.descending ? "DESC" : "ASC"}`);
         }
-        let query = `CREATE ${index.unique ? "UNIQUE" : ""} ${indexName} ON ${name} ( ${columns.join(", ")})`;
+        let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX ${indexName} ON ${name} ( ${columns.join(", ")})`;
         if (index.filter) {
             query += ` WHERE (${index.filter})`;
         }
