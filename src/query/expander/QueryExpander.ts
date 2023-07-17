@@ -6,8 +6,8 @@ import ArrowToExpression from "../parser/ArrowToExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
 
 export class QueryExpander {
-    static expand(context: EntityContext, select: SelectStatement, p) {
-        const qe = new QueryExpander(context, select);
+    static expand(context: EntityContext, select: SelectStatement, p, filter: boolean) {
+        const qe = new QueryExpander(context, select, filter);
         const expression = ArrowToExpression.transform(`(_____________________x) => ${p}` as any);
         qe.expandNode(select, select.model, expression.body as ExpressionType);
         return select;
@@ -15,7 +15,8 @@ export class QueryExpander {
 
     constructor(
         private context: EntityContext,
-        private select: SelectStatement
+        private select: SelectStatement,
+        private filter: boolean
     ) {
 
     }
@@ -75,9 +76,11 @@ export class QueryExpander {
         const { relatedTypeClass: propertyType } = relation;
 
         let query = this.context.query(propertyType);
-        const events = this.context.eventsFor(propertyType, false);
-        if (events) {
-            query = events.includeFilter(query, model, p.value) ?? query;
+        if (this.filter) {
+            const events = this.context.eventsFor(propertyType, false);
+            if (events) {
+                query = events.includeFilter(query, model, p.value) ?? query;
+            }
         }
         const select = { ... (query as EntityQuery).selectStatement };
 

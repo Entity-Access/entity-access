@@ -8,6 +8,13 @@ import ChangeEntry from "../changes/ChangeEntry.js";
 
 const done = Promise.resolve() as Promise<void>;
 
+/**
+ * When an expression is already filtered, we should assume that
+ * Events author has taken care of filtering and does not require
+ * nested filtering.
+ */
+export const filteredSymbol = Symbol("filtered");
+
 export class ForeignKeyFilter<T = any, TE = any> {
 
     public type: EntityType;
