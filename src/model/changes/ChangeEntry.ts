@@ -140,6 +140,24 @@ export default class ChangeEntry implements IChanges {
         this.modified.clear();
     }
 
+    /**
+     * This will cancel all pending changes will mark entry as unchanged.
+     */
+    public cancel() {
+        this.pending.length = 0;
+        const { entity, original } = this;
+        if (original) {
+            for (const key in original) {
+                if (Object.prototype.hasOwnProperty.call(original, key)) {
+                    const element = original[key];
+                    entity[key] = element;
+                }
+            }
+        }
+        this.status = "unchanged";
+        this.modified.clear();
+    }
+
     detectDependencies() {
         const { type: { relations }, entity } = this;
         // for parent relations.. check if related key is set or not...
