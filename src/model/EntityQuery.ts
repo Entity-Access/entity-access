@@ -6,6 +6,7 @@ import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
+import { filteredSymbol } from "./events/EntityEvents.js";
 import RelationMapper from "./identity/RelationMapper.js";
 
 export default class EntityQuery<T = any>
@@ -52,7 +53,7 @@ export default class EntityQuery<T = any>
     }
 
     include(p: any): any {
-        const selectStatement = QueryExpander.expand(this.context, { ... this.selectStatement }, p);
+        const selectStatement = QueryExpander.expand(this.context, { ... this.selectStatement }, p, !this.selectStatement[filteredSymbol]);
         return new EntityQuery({
             ... this,
             selectStatement
