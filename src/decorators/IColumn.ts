@@ -22,7 +22,7 @@ export interface IColumn {
      * And in near future it will also be validated before saving the data to accept only values
      * from given enum values.
      */
-    enum?: string[];
+    enum?: readonly string[];
 
     /**
      * If length is specified, it will take exact same length always.
