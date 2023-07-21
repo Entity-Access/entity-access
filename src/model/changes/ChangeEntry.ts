@@ -17,10 +17,10 @@ export interface IChange {
     newValue: any;
 }
 
-export default class ChangeEntry implements IChanges {
+export default class ChangeEntry<T = any> implements IChanges {
 
     type: EntityType;
-    entity: any;
+    entity: T;
     order: number;
     original: any;
     status: "detached" | "attached" | "inserted" | "modified" | "deleted" | "unchanged";
@@ -41,6 +41,11 @@ export default class ChangeEntry implements IChanges {
         ce.dependents = [];
         ce.modified = new Map();
         return ce;
+    }
+
+    public isModified(field: keyof T) {
+        const column = this.type.getColumn(field as string);
+        return this.modified.has(column);
     }
 
     public detect() {
