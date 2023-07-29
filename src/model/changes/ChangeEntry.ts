@@ -202,7 +202,9 @@ export default class ChangeEntry<T = any> implements IChanges {
                 relatedChanges.pending.push(() => {
                     this.entity[fk.fkColumn.name] = related[rKey.name];
                 });
-                this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                if (this.status !== "inserted") {
+                    this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                }
                 continue;
             }
 
