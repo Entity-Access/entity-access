@@ -47,13 +47,14 @@ export class EntitySource<T = any> {
             Object.setPrototypeOf(item, this.model.typeClass.prototype);
         }
         const entry = this.context.changeSet.getEntry(item);
-        if (entry.status === "modified") {
-            entry.status = "deleted";
-            return entry.entity;
-        }
-        if (entry.status !== "detached" && entry.status !== "unchanged") {
-            throw new Error("Entity is already attached to the context");
-        }
+        /** There is no need to check this, we will simply delete the entry */
+        // if (entry.status === "modified" || entry.status === "deleted") {
+        //     entry.status = "deleted";
+        //     return entry.entity;
+        // }
+        // if (entry.status !== "detached" && entry.status !== "unchanged") {
+        //     throw new Error("Entity is already attached to the context");
+        // }
         entry.status = "deleted";
         return entry.entity;
     }
