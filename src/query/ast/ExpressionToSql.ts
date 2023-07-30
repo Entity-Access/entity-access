@@ -289,12 +289,30 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitBinaryExpression(e: BinaryExpression): ITextQuery {
+
         const left = e.left.type === "BinaryExpression"
             ? prepare `(${this.visit(e.left)})`
             : this.visit(e.left);
         const right = e.right.type === "BinaryExpression"
             ? prepare `(${this.visit(e.right)})`
             : this.visit(e.right);
+
+        if ((e.right as ExpressionType).type === "NullExpression") {
+            if (e.operator === "===" || e.operator === "==") {
+                return prepare `${left} IS NULL`;
+            }
+            if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {
+                return prepare `${left} IS NOT NULL`;
+            }
+        }
+        if ((e.left as ExpressionType).type === "NullExpression") {
+            if (e.operator === "===" || e.operator === "==") {
+                return prepare `${right} IS NULL`;
+            }
+            if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {
+                return prepare `${right} IS NOT NULL`;
+            }
+        }
         return prepare `${left} ${e.operator} ${right}`;
     }
 
