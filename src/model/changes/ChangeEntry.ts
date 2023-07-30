@@ -17,10 +17,10 @@ export interface IChange {
     newValue: any;
 }
 
-export default class ChangeEntry implements IChanges {
+export default class ChangeEntry<T = any> implements IChanges {
 
     type: EntityType;
-    entity: any;
+    entity: T;
     order: number;
     original: any;
     status: "detached" | "attached" | "inserted" | "modified" | "deleted" | "unchanged";
@@ -41,6 +41,11 @@ export default class ChangeEntry implements IChanges {
         ce.dependents = [];
         ce.modified = new Map();
         return ce;
+    }
+
+    public isModified(field: keyof T) {
+        const column = this.type.getColumn(field as string);
+        return this.modified.has(column);
     }
 
     public detect() {
@@ -97,7 +102,9 @@ export default class ChangeEntry implements IChanges {
 
 
         if (this.modified.size > 0) {
-            this.status = "modified";
+            if (this.status !== "inserted") {
+                this.status = "modified";
+            }
         } else {
             this.status = "unchanged";
         }
@@ -197,7 +204,9 @@ export default class ChangeEntry implements IChanges {
                 relatedChanges.pending.push(() => {
                     this.entity[fk.fkColumn.name] = related[rKey.name];
                 });
-                this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                if (this.status !== "inserted") {
+                    this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                }
                 continue;
             }
 

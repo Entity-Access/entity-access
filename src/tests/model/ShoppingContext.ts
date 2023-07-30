@@ -143,6 +143,11 @@ export class ProductPrice {
 }
 
 @Table("Orders")
+@Index({
+    name: "IX_Orders_PO",
+    columns: [{ name: (x) => x.purchaseOrder , descending: false }],
+    filter: (x) => x.purchaseOrder !== null
+})
 export class Order {
 
     @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
@@ -157,6 +162,9 @@ export class Order {
         inverseProperty: (user) => user.orders
     })
     public customerID: number;
+
+    @Column({ dataType: "Char", length: 200, nullable: true})
+    public purchaseOrder: string;
 
     public orderItems: OrderItem[];
 

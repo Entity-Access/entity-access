@@ -2,7 +2,13 @@ import EntityType from "../entity-query/EntityType.js";
 
 const classForNameMap = new Map();
 
+const entityNameSymbol = Symbol("entityName");
+
 export default class SchemaRegistry {
+
+    static entityNameForClass(c) {
+        return c[entityNameSymbol] ??= this.model(c).entityName;
+    }
 
     static registerClassForName(name: string, target: any) {
         const existing = classForNameMap.get(name);

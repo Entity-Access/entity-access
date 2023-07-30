@@ -170,8 +170,8 @@ export default class EntityContext {
                     if (iterator.modified.size > 0) {
                         const update = this.driver.createUpdateExpression(iterator);
                         await this.executeExpression(update, signal);
+                        iterator.apply(update);
                     }
-                    iterator.apply({});
                     break;
                 case "deleted":
                     const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
