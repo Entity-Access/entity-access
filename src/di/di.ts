@@ -47,6 +47,7 @@ export class ServiceProvider implements IDisposable {
         this.getRegistration(type, true);
         this.map.set(type, instance);
         instance[serviceProvider] = this;
+        this.resolveProperties(instance);
         return instance;
     }
 
@@ -147,14 +148,8 @@ export class ServiceProvider implements IDisposable {
         return this.createFromType(sd.key);
     }
 
-    private createFromType(type): any {
-        const injectTypes = type[injectServiceTypesSymbol] as any[];
-        const injectServices = injectTypes
-            ? injectTypes.map((x) => this.resolve(x))
-            : [];
-        const instance = new type(... injectServices);
-        instance[serviceProvider] = this;
-        // initialize properties...
+    private resolveProperties(instance, type?) {
+        type ??= Object.getPrototypeOf(instance).constructor;
         const keys = type.prototype[injectServiceKeysSymbol];
         if (keys) {
             for (const key in keys) {
@@ -164,6 +159,17 @@ export class ServiceProvider implements IDisposable {
                 }
             }
         }
+    }
+
+    private createFromType(type): any {
+        const injectTypes = type[injectServiceTypesSymbol] as any[];
+        const injectServices = injectTypes
+            ? injectTypes.map((x) => this.resolve(x))
+            : [];
+        const instance = new type(... injectServices);
+        instance[serviceProvider] = this;
+        // initialize properties...
+        this.resolveProperties(instance, type);
         return instance;
     }
 
