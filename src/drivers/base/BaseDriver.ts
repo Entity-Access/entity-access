@@ -2,7 +2,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, InsertStatement, NotExits, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
@@ -92,6 +92,67 @@ export abstract class BaseDriver {
                 schema
             }),
             values: ValuesStatement.create({ fields, values: [values] }),
+            returnValues: ReturnUpdated.create({
+                changes: "INSERTED",
+                fields: returnFields
+            }),
+        });
+    }
+
+    createUpsertExpression(type: EntityType, entity: any, keys: {[key: string]: any}): InsertStatement {
+        const returnFields = [] as QuotedLiteral[];
+        const fields = [] as QuotedLiteral[];
+        const values = [] as Constant[];
+        for (const iterator of type.columns) {
+            const literal = QuotedLiteral.create({ literal: iterator.columnName });
+            if (iterator.autoGenerate) {
+                returnFields.push(literal);
+                continue;
+            }
+            const value = entity[iterator.name];
+            if (value === void 0) {
+                continue;
+            }
+            fields.push(literal);
+            values.push(Constant.create({ value }));
+        }
+
+        const name = QuotedLiteral.create({ literal: type.name });
+        const schema = type.schema ? QuotedLiteral.create({ literal: type.schema }) : void 0;
+
+        const checkParameter = Expression.parameter("check");
+
+        let where: Expression;
+        for (const key in keys) {
+            if (Object.prototype.hasOwnProperty.call(keys, key)) {
+                const element = keys[key];
+                const column = type.getColumn(key);
+                const condition = Expression.equal(
+                    Expression.member(checkParameter, Expression.quotedLiteral(column.columnName) ),
+                    Expression.constant(keys[key])
+                );
+                where = where
+                    ? Expression.logicalAnd(where, condition)
+                    : condition;
+            }
+        }
+
+        return InsertStatement.create({
+            table: TableLiteral.create({
+                name,
+                schema
+            }),
+            values: SelectStatement.create({
+                source: ValuesStatement.create({ fields, values: [values] }),
+                where: NotExits.create({
+                    target: SelectStatement.create({
+                        source: type.fullyQualifiedName,
+                        sourceParameter: checkParameter,
+                        fields: [Expression.identifier("1")],
+                        where
+                    })
+                })
+            }),
             returnValues: ReturnUpdated.create({
                 changes: "INSERTED",
                 fields: returnFields

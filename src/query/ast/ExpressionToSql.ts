@@ -2,7 +2,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { filteredSymbol } from "../../model/events/EntityEvents.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
@@ -282,6 +282,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             return prepare `${this.visit(target)}[${this.visit(property)}]`;
         }
         return prepare `${this.visit(target)}.${this.visit(property)}`;
+    }
+
+    visitNotExists(e: NotExits): ITextQuery {
+        return [" NOT EXISTS ", this.visit(e.target) ];
     }
 
     visitNullExpression(e: NullExpression): ITextQuery {
