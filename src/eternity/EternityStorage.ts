@@ -133,14 +133,15 @@ export default class EternityStorage {
             let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
             if (!w) {
                 w = db.workflows.add(state);
-            } else {
-                for (const key in state) {
-                    if (Object.prototype.hasOwnProperty.call(state, key)) {
-                        const element = state[key];
-                        w[key] = element;
-                    }
+            }
+
+            for (const key in state) {
+                if (Object.prototype.hasOwnProperty.call(state, key)) {
+                    const element = state[key];
+                    w[key] = element;
                 }
             }
+
             w.state ||= "queued";
             await db.saveChanges();
         });
@@ -152,7 +153,9 @@ export default class EternityStorage {
         const lockedTTL = now.addMinutes(1);
         return this.driver.runInTransaction(async () => {
             const list = await db.workflows
-                .where({now}, (p) => (x) => x.eta <= p.now && (x.lockedTTL === null || x.lockedTTL <= p.now))
+                .where({now}, (p) => (x) => x.eta <= p.now
+                    && (x.lockedTTL === null || x.lockedTTL <= p.now)
+                    && x.isWorkflow === true)
                 .orderBy({}, (p) => (x) => x.eta)
                 .thenBy({}, (p) => (x) => x.priority)
                 .limit(20)
