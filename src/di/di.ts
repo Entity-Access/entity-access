@@ -155,7 +155,7 @@ export class ServiceProvider implements IDisposable {
             for (const key in keys) {
                 if (Object.prototype.hasOwnProperty.call(keys, key)) {
                     const element = keys[key];
-                    instance[key] = this.resolve(element);
+                    instance[key] ??= this.resolve(element);
                 }
             }
         }
@@ -194,9 +194,21 @@ export const ServiceCollection = {
 export default function Inject(target, key, index?: number) {
 
     if (index !== void 0) {
-        const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
-        const serviceTypes = target[injectServiceTypesSymbol] ??= [];
-        serviceTypes[index] = plist[index];
+
+        if (key) {
+
+            // this is parameter inside a method...
+            const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
+            const pTypes = (target[injectServiceKeysSymbol] ??= {})[key] = [];
+            pTypes[index] = plist[index];
+
+        } else {
+
+            const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
+            const serviceTypes = target[injectServiceTypesSymbol] ??= [];
+            serviceTypes[index] = plist[index];
+        }
+
         return;
     }
 

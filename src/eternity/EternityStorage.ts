@@ -17,7 +17,7 @@ import DateTime from "../types/DateTime.js";
     columns: [{ name: (x) => x.eta, descending: false }],
     filter: (x) => x.isWorkflow === true
 })
-class WorkflowStorage {
+export class WorkflowStorage {
 
     @Column({ dataType: "Char", length: 400, })
     public id: string;
@@ -46,11 +46,14 @@ class WorkflowStorage {
     @Column({ dataType: "DateTime"})
     public updated: DateTime;
 
-    @Column({ dataType: "Boolean"})
-    public finished: boolean;
+    @Column({ dataType: "Int", default: "0"})
+    public priority: number;
 
-    @Column({ dataType: "Boolean"})
-    public failed: boolean;
+    @Column({ dataType: "DateTime", nullable: true })
+    public lockedTTL: DateTime;
+
+    @Column({ dataType: "AsciiChar", length: 10})
+    public state: "queued" | "failed" | "done";
 
     @Column({ dataType: "Char", nullable: true})
     public error: string;
@@ -60,6 +63,9 @@ class WorkflowStorage {
 
     @Column({ dataType: "Char", length: 200 , nullable: true})
     public parentID: string;
+
+    @Column({ dataType: "Char", length: 200 , nullable: true})
+    public lastID: string;
 }
 
 @RegisterScoped
@@ -76,44 +82,98 @@ class WorkflowContext extends EntityContext {
 @RegisterSingleton
 export default class EternityStorage {
 
-    @Inject
-    private driver: BaseDriver;
+    constructor(@Inject
+        private driver: BaseDriver) {
+
+    }
 
     async get(id: string, input?) {
         await this.init();
-        const scope = ServiceProvider.global.createScope();
-        try {
-            const db = scope.resolve(WorkflowContext);
-            const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id && x.isWorkflow === true).first();
-            if (r !== null) {
-                return {
-                    failed: r.failed,
-                    finished: r.finished,
-                    output: r.output,
-                    error: r.error
-                };
-            }
-        } finally {
-            scope.dispose();
+        const db = new WorkflowContext(this.driver);
+        const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id && x.isWorkflow === true).first();
+        if (r !== null) {
+            return {
+                updated: r.updated,
+                eta: r.eta,
+                queued: r.queued,
+                state: r.state,
+                output: r.output,
+                error: r.error
+            };
         }
         return null;
     }
 
+    async delete(id) {
+        await this.init();
+        const db = new WorkflowContext(this.driver);
+        const children = await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
+            .limit(100)
+            .toArray();
+        for (const iterator of children) {
+            db.workflows.delete(iterator);
+        }
+        await db.saveChanges();
+        if (children.length > 0) {
+            return;
+        }
+
+        const w = await db.workflows.where({ id}, (p) => (x) => x.id === p.id).first();
+        if (!w) {
+            return;
+        }
+        db.workflows.delete(w);
+        await db.saveChanges();
+    }
+
     async save(state: Partial<WorkflowStorage>) {
-        
+        await this.init();
+        const db = new WorkflowContext(this.driver);
+        await this.driver.runInTransaction(async () => {
+            let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
+            if (!w) {
+                w = db.workflows.add(state);
+            } else {
+                for (const key in state) {
+                    if (Object.prototype.hasOwnProperty.call(state, key)) {
+                        const element = state[key];
+                        w[key] = element;
+                    }
+                }
+            }
+            w.state ||= "queued";
+            await db.saveChanges();
+        });
     }
 
     async dequeue(signal?: AbortSignal) {
-        await this.init();
+        const db = new WorkflowContext(this.driver);
+        const now = DateTime.utcNow;
+        const lockedTTL = now.addMinutes(1);
+        return this.driver.runInTransaction(async () => {
+            const list = await db.workflows
+                .where({now}, (p) => (x) => x.eta <= p.now && (x.lockedTTL === null || x.lockedTTL <= p.now))
+                .orderBy({}, (p) => (x) => x.eta)
+                .thenBy({}, (p) => (x) => x.priority)
+                .limit(20)
+                .withSignal(signal)
+                .toArray();
+            for (const iterator of list) {
+                iterator.lockedTTL = lockedTTL;
+            }
+            await db.saveChanges(signal);
+            return list;
+        });
     }
 
     private async init() {
         const init = async () => {
             const db = new WorkflowContext(this.driver);
+            await this.driver.ensureDatabase();
             await db.driver.automaticMigrations().migrate(db);
         };
         const v = init();
-        Object.defineProperty(this, "init", { value: v });
+        Object.defineProperty(this, "init", { value: () => v });
         return v;
     }
 

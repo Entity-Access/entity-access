@@ -376,6 +376,11 @@ export class UpdateStatement extends Expression {
 
 }
 
+export class UnionAllStatement extends Expression {
+    readonly type = "UnionAllStatement";
+    queries: Expression[];
+}
+
 export class DeleteStatement extends Expression {
     readonly type = "DeleteStatement";
     table: TableLiteral | QuotedLiteral;
@@ -413,5 +418,6 @@ export type ExpressionType =
     ParameterExpression |
     ArrayExpression |
     NotExits |
+    UnionAllStatement |
     TemplateElement
 ;

@@ -1,4 +1,4 @@
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 const isBinary = (type) => /^(BinaryExpression|CoalesceExpression)$/.test(type);
@@ -169,7 +169,16 @@ export default class DebugStringVisitor extends Visitor<string> {
         return "UPDATE";
     }
 
+    visitNotExists(e: NotExits): string {
+        return ` NOT EXISTS ${this.visit(e.target)}`;
+    }
+
+    visitUnionAllStatement(e: UnionAllStatement): string {
+        return e.queries.map((x) => this.visit(x)).join("\nUNION ALL\n");
+    }
+
     private visitArray(e: Expression[], separator = ", ") {
         return e.map((x) => this.visit(x)).join(separator);
     }
+
 }
