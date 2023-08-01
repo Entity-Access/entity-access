@@ -136,7 +136,6 @@ export default class EternityContext {
         }
     }
 
-    public get<T>(id: string): Promise<IWorkflowResult<T>>;
     public async get<T = any>(c: IClassOf<Workflow<any, T>> | string, id?: string): Promise<IWorkflowResult<T>> {
         id ??= (c as string);
         const s = await this.storage.get(id);
@@ -147,6 +146,7 @@ export default class EternityContext {
                 error: s.error
             };
         }
+        return null;
     }
 
     public async queue<T>(
@@ -159,7 +159,7 @@ export default class EternityContext {
                 if (throwIfExists) {
                     throw new EntityAccessError(`Workflow with ID ${id} already exists`);
                 }
-                return;
+                return id;
             }
         } else {
             id = randomUUID();
@@ -186,6 +186,8 @@ export default class EternityContext {
         if(eta < this.clock.utcNow) {
             this.waiter.abort();
         }
+
+        return id;
     }
 
     public async processQueueOnce(signal?: AbortSignal) {
@@ -215,7 +217,7 @@ export default class EternityContext {
 
             const schema = WorkflowRegistry.getByName(workflow.name);
             const { input, eta, id, updated } = workflow;
-            const instance = new (schema.type)({ input, eta, id, currentTime: updated });
+            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) });
             for (const iterator of schema.activities) {
                 instance[iterator] = bindStep(workflow, iterator, instance[iterator]);
             }

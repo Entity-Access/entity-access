@@ -117,7 +117,7 @@ export default class EternityStorage {
             db.workflows.delete(iterator);
         }
         await db.saveChanges();
-        if (children.length > 0) {
+        if (children.length === 100) {
             return;
         }
 

@@ -39,9 +39,12 @@ class Logger {
     public items: any[] = [];
 }
 
-class SendWorkflow extends Workflow<string> {
+class SendWorkflow extends Workflow<string, string> {
 
     public async run(): Promise<any> {
+
+        await this.delay(TimeSpan.fromHours(1));
+
         await this.sendMail("a", "b", "c");
         return "1";
     }
@@ -74,16 +77,34 @@ export default async function (this: TestConfig) {
 
     const logger = scope.resolve(Logger);
 
-    await c.queue(SendWorkflow, "a");
+    const id = await c.queue(SendWorkflow, "a");
 
     mockClock.add(TimeSpan.fromSeconds(1));
 
     await c.processQueueOnce();
 
     mockClock.add(TimeSpan.fromSeconds(1));
+
+    await c.processQueueOnce();
+
+    assert.equal(0, logger.items.length);
+
+    mockClock.add(TimeSpan.fromHours(1));
 
     await c.processQueueOnce();
 
     assert.notEqual(0, logger.items.length);
+
+    let r = await c.get(SendWorkflow, id);
+    assert.equal("1", r.output);
+
+    mockClock.add(TimeSpan.fromDays(2));
+
+    await c.processQueueOnce();
+
+    r = await c.get(SendWorkflow, id);
+    assert.strictEqual(null, r);
+
+    // throw new Error("Preserve");
 
 }
