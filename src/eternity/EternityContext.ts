@@ -2,10 +2,10 @@
 import { randomUUID } from "crypto";
 import EntityAccessError from "../common/EntityAccessError.js";
 import { IClassOf } from "../decorators/IClassOf.js";
-import Inject, { RegisterSingleton, ServiceProvider } from "../di/di.js";
+import Inject, { RegisterSingleton, ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
 import DateTime from "../types/DateTime.js";
 import EternityStorage, { WorkflowStorage } from "./EternityStorage.js";
-import Workflow from "./Workflow.js";
+import type Workflow from "./Workflow.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
 import { WorkflowRegistry } from "./WorkflowRegistry.js";
 import crypto from "crypto";
@@ -43,6 +43,7 @@ function bindStep(store: WorkflowStorage, name: string, old: (... a: any[]) => a
             eta: this.eta,
             queued: this.eta,
             updated: this.eta,
+            isWorkflow: false,
             name,
             input
         };
@@ -68,6 +69,12 @@ function bindStep(store: WorkflowStorage, name: string, old: (... a: any[]) => a
         } else {
 
             try {
+
+                const types = Object.getPrototypeOf(this)?.[injectServiceKeysSymbol]?.[name] as any[];
+                for (let index = a.length; index < types.length; index++) {
+                    const element = ServiceProvider.resolve(this, types[index]);
+                    a.push(element);
+                }
                 lastResult = (await old.apply(this, a)) ?? 0;
                 step.output = JSON.stringify(lastResult);
                 step.state = "done";
@@ -153,7 +160,8 @@ export default class EternityContext {
             }
         }
 
-        const schema = WorkflowRegistry.getByName(type.name);
+        // this will ensure even empty workflow !!
+        const schema = WorkflowRegistry.register(type, void 0);
 
         const now = this.clock.utcNow;
         eta ??= now;
@@ -206,7 +214,7 @@ export default class EternityContext {
             for (const iterator of schema.uniqueActivities) {
                 instance[iterator] = bindStep(workflow, iterator, instance[iterator], true);
             }
-
+            scope.add( schema.type, instance);
             try {
                 const result = await instance.run();
                 workflow.output = JSON.stringify(result ?? 0);

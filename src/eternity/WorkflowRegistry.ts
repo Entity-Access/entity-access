@@ -15,13 +15,15 @@ export const WorkflowRegistry = {
     register(target: IClassOf<any>, key, unique = false) {
         let methods = schemaByName.get(target.name);
         if (!methods) {
-            methods = { name: target.name, type: target, activities: [], uniqueActivities: [] };
+            methods = { name: target.name, type: target, activities: ["delay", "waitForExternalEvent"], uniqueActivities: [] };
             schemaByName.set(target.name, methods);
         }
-        if (unique) {
-            methods.uniqueActivities.push(key);
-        } else {
-            methods.activities.push(key);
+        if (key) {
+            if (unique) {
+                methods.uniqueActivities.push(key);
+            } else {
+                methods.activities.push(key);
+            }
         }
         return methods;
     },
