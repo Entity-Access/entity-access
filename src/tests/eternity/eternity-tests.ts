@@ -1,5 +1,5 @@
 import assert from "assert";
-import Inject, { RegisterSingleton, ServiceProvider } from "../../di/di.js";
+import Inject, { Register, RegisterSingleton, ServiceProvider } from "../../di/di.js";
 import EternityContext from "../../eternity/EternityContext.js";
 import Workflow, { Activity } from "../../eternity/Workflow.js";
 import WorkflowClock from "../../eternity/WorkflowClock.js";
@@ -8,10 +8,7 @@ import { TestConfig } from "../TestConfig.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EternityStorage from "../../eternity/EternityStorage.js";
 import TimeSpan from "../../types/TimeSpan.js";
-
-function sleep(n) {
-    return new Promise((resolve) => setTimeout(resolve, n));
-}
+import sleep from "../../common/sleep.js";
 
 class MockClock extends WorkflowClock {
 
@@ -32,7 +29,7 @@ class MockClock extends WorkflowClock {
 }
 
 @RegisterSingleton
-class Logger {
+class Mailer {
 
     public items: any[] = [];
 }
@@ -52,7 +49,7 @@ class SendWorkflow extends Workflow<string, string> {
         from: string,
         to: string,
         message: string,
-        @Inject logger?: Logger) {
+        @Inject logger?: Mailer) {
         await sleep(10);
         logger.items.push({ from, to, message });
     }
@@ -62,20 +59,21 @@ class SendWorkflow extends Workflow<string, string> {
 export default async function (this: TestConfig) {
 
     const mockClock = new MockClock();
+    const mailer = new Mailer();
 
     const scope = new ServiceProvider();
     scope.add(WorkflowClock, mockClock);
     scope.add(BaseDriver, this.driver);
     const storage = new EternityStorage(this.driver, mockClock);
     await storage.seed();
+    scope.add(Mailer, mailer);
     scope.add(EternityStorage, storage);
 
-    const c = scope.resolve(EternityContext);
+    const c = new EternityContext(storage);
+    scope.add(EternityContext, c);
 
     // this is an important step
     c.register(SendWorkflow);
-
-    const logger = scope.resolve(Logger);
 
     const id = await c.queue(SendWorkflow, "a");
 
@@ -87,13 +85,13 @@ export default async function (this: TestConfig) {
 
     await c.processQueueOnce();
 
-    assert.equal(0, logger.items.length);
+    assert.equal(0, mailer.items.length);
 
     mockClock.add(TimeSpan.fromHours(1));
 
     await c.processQueueOnce();
 
-    assert.notEqual(0, logger.items.length);
+    assert.equal(1, mailer.items.length);
 
     let r = await c.get(SendWorkflow, id);
     assert.equal("1", r.output);

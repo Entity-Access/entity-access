@@ -17,16 +17,16 @@ async function  hash(text) {
     return sha256.update(text).digest("hex");
 }
 
-function bindStep(store: WorkflowStorage, name: string, old: (... a: any[]) => any, unique = false) {
+function bindStep(context: EternityContext, store: WorkflowStorage, name: string, old: (... a: any[]) => any, unique = false) {
     return async function runStep(this: Workflow, ... a: any[]) {
         const input = JSON.stringify(a);
         const ts = unique ? "0" : Math.floor(this.currentTime.msSinceEpoch);
         const params = input.length < 150 ? input : await hash(input);
         const id = `${this.id}(${params},${ts})`;
 
-        const clock = this.context.storage.clock;
+        const clock = context.storage.clock;
 
-        const existing = await this.context.storage.get(id);
+        const existing = await context.storage.get(id);
         if (existing) {
             if (existing.state === "failed" && existing.error) {
                 throw new Error(existing.error);
@@ -223,10 +223,10 @@ export default class EternityContext {
             const { input, eta, id, updated } = workflow;
             const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) });
             for (const iterator of schema.activities) {
-                instance[iterator] = bindStep(workflow, iterator, instance[iterator]);
+                instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
             }
             for (const iterator of schema.uniqueActivities) {
-                instance[iterator] = bindStep(workflow, iterator, instance[iterator], true);
+                instance[iterator] = bindStep(this, workflow, iterator, instance[iterator], true);
             }
             scope.add( schema.type, instance);
             try {

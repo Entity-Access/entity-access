@@ -35,7 +35,7 @@ export default abstract class Workflow<TIn = any, TOut = any> {
     public failedPreserveTime: TimeSpan = TimeSpan.fromDays(1);
 
     @Inject
-    protected readonly context: EternityContext;
+    protected context: EternityContext;
 
     constructor(p: Partial<Workflow>) {
         Object.setPrototypeOf(p, new.target.prototype);

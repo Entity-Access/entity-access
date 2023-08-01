@@ -13,7 +13,6 @@
             ],
             "program": "${workspaceFolder}/test.js",
             "args": [
-                "--enable-source-maps",
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"

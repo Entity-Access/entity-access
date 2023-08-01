@@ -1,13 +1,11 @@
 /* eslint-disable no-console */
+import EntityAccessError from "../../common/EntityAccessError.js";
+import ObjectPool, { IPooledObject } from "../../common/ObjectPool.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
-import { IColumn } from "../../decorators/IColumn.js";
-import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
-import { Query } from "../../query/Query.js";
 import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
-import { PoolClient } from "pg";
 import pg from "pg";
 import Cursor from "pg-cursor";
 export interface IPgSqlConnectionString extends IDbConnectionString {
@@ -29,7 +27,7 @@ export interface IPgSqlConnectionString extends IDbConnectionString {
 
 class DbReader implements IDbReader {
 
-    constructor(private cursor, private client) {
+    constructor(private cursor: Cursor, private client: IPooledObject<pg.Client>) {
 
     }
 
@@ -46,21 +44,21 @@ class DbReader implements IDbReader {
     async dispose() {
         try {
             await this.cursor.close();
-        } catch {
-            // intentionally left blank
+        } catch (error) {
+            console.error(error);
         }
 
         try {
             if (this.client) {
-                await this.client.end();
+                await this.client[Symbol.asyncDisposable]();
             }
-        } catch {
-            // intentionally left blank
+        } catch (error) {
+            console.error(error);
         }
     }
 }
 
-const poolCache = new TimedCache<string, pg.Pool>();
+const poolCache = new TimedCache<string, ObjectPool<pg.Client>>();
 
 export default class PostgreSqlDriver extends BaseDriver {
 
@@ -68,7 +66,7 @@ export default class PostgreSqlDriver extends BaseDriver {
         return this.myCompiler;
     }
 
-    private transaction: PoolClient;
+    private transaction: IPooledObject<pg.Client>;
     private myCompiler = new QueryCompiler();
 
     constructor(private readonly config: IPgSqlConnectionString) {
@@ -76,6 +74,9 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 
     public async runInTransaction<T>(fx?: () => Promise<T>): Promise<T> {
+        if (this.transaction) {
+            throw new EntityAccessError(`Nested Transactions not supported`);
+        }
         const connection = await this.getConnection();
         let result: T;
         try {
@@ -89,7 +90,7 @@ export default class PostgreSqlDriver extends BaseDriver {
             throw error;
         } finally {
             this.transaction = void 0;
-            connection.release();
+            await connection[Symbol.asyncDisposable]();
         }
     }
 
@@ -113,28 +114,35 @@ export default class PostgreSqlDriver extends BaseDriver {
             return result;
         } finally {
             if (!this.transaction) {
-                connection.release();
+                await connection[Symbol.asyncDisposable]();
             }
         }
     }
 
     public ensureDatabase() {
         const create = async () => {
-            const defaultDb = "postgres";
-            const db = this.config.database;
-            this.config.database = defaultDb;
-            const connection = await this.getConnection();
-            // @ts-expect-error readonly
-            this.config = { ... this.config };
-            this.config.database = db;
             try {
-                const r = await connection.query("SELECT FROM pg_database WHERE datname = $1", [ db ]);
-                if(r.rowCount === 1) {
-                    return;
+                // const defaultDb = "postgres";
+                const db = this.config.database;
+                // this.config.database = defaultDb;
+                // // const connection = await this.getConnection();
+                // // @ts-expect-error readonly
+                // this.config = { ... this.config };
+                // this.config.database = db;
+                const connection = new pg.Client({ ... this.config, database: "postgres" });
+                await connection.connect();
+                try {
+                    const r = await connection.query("SELECT FROM pg_database WHERE datname = $1", [ db ]);
+                    if(r.rowCount === 1) {
+                        return;
+                    }
+                    await connection.query("CREATE DATABASE " + JSON.stringify(db));
+                } finally {
+                    await connection.end();
                 }
-                await connection.query("CREATE DATABASE " + JSON.stringify(db));
-            } finally {
-                connection.release();
+            } catch (error) {
+                console.error(error);
+                throw error;
             }
         };
         const value = create();
@@ -157,8 +165,20 @@ export default class PostgreSqlDriver extends BaseDriver {
 
         const key = `${this.config.host}:${this.config.port}//${this.config.database}?${this.config.user}&${this.config.password}`;
 
-        const pooledClient = poolCache.getOrCreate(key, 1, () => new pg.Pool(this.config));
-        const client = await pooledClient.connect();
+        const pooledClient = poolCache.getOrCreate(key, 1, () => new ObjectPool({
+            asyncFactory: async () => {
+                const c = new pg.Client(this.config);
+                await c.connect();
+                return c;
+            },
+            destroy(item) {
+                return item.end();
+            },
+            subscribeForRemoval(po, clear) {
+                po.on("end", clear);
+            },
+        }));
+        const client = await pooledClient.acquire();
 
         // const client = new Client(this.config);
         // await client.connect();
