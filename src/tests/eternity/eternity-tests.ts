@@ -54,7 +54,7 @@ class SendWorkflow extends Workflow<string, string> {
         from: string,
         to: string,
         message: string,
-        @Inject logger: Logger = null) {
+        @Inject logger?: Logger) {
         await sleep(10);
         logger.items.push({ from, to, message });
     }
