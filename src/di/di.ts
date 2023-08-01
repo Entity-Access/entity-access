@@ -43,6 +43,7 @@ export class ServiceProvider implements IDisposable {
     constructor(parent?: ServiceProvider) {
         this[serviceProvider] = this;
         this[globalServiceProvider] = parent?.[globalServiceProvider] ?? this;
+        this.map.set(ServiceProvider, this);
     }
 
     add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
