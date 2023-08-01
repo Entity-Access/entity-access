@@ -5,6 +5,7 @@ import Inject, { RegisterScoped, RegisterSingleton, ServiceProvider } from "../d
 import { BaseDriver } from "../drivers/base/BaseDriver.js";
 import EntityContext from "../model/EntityContext.js";
 import DateTime from "../types/DateTime.js";
+import WorkflowClock from "./WorkflowClock.js";
 
 @Table("Workflows")
 @Index({
@@ -37,19 +38,19 @@ export class WorkflowStorage {
     @Column({ dataType: "Char", nullable: true})
     public output: string;
 
-    @Column({ dataType: "DateTime"})
+    @Column({ })
     public eta: DateTime;
 
-    @Column({ dataType: "DateTime"})
+    @Column({ })
     public queued: DateTime;
 
-    @Column({ dataType: "DateTime"})
+    @Column({ })
     public updated: DateTime;
 
     @Column({ dataType: "Int", default: "0"})
     public priority: number;
 
-    @Column({ dataType: "DateTime", nullable: true })
+    @Column({ nullable: true })
     public lockedTTL: DateTime;
 
     @Column({ dataType: "AsciiChar", length: 10})
@@ -82,13 +83,16 @@ class WorkflowContext extends EntityContext {
 @RegisterSingleton
 export default class EternityStorage {
 
-    constructor(@Inject
-        private driver: BaseDriver) {
+    constructor(
+        @Inject
+        private driver: BaseDriver,
+        @Inject
+        public readonly clock: WorkflowClock
+    ) {
 
     }
 
     async get(id: string, input?) {
-        await this.init();
         const db = new WorkflowContext(this.driver);
         const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id && x.isWorkflow === true).first();
         if (r !== null) {
@@ -105,7 +109,6 @@ export default class EternityStorage {
     }
 
     async delete(id) {
-        await this.init();
         const db = new WorkflowContext(this.driver);
         const children = await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
             .limit(100)
@@ -127,7 +130,6 @@ export default class EternityStorage {
     }
 
     async save(state: Partial<WorkflowStorage>) {
-        await this.init();
         const db = new WorkflowContext(this.driver);
         await this.driver.runInTransaction(async () => {
             let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
@@ -149,7 +151,7 @@ export default class EternityStorage {
 
     async dequeue(signal?: AbortSignal) {
         const db = new WorkflowContext(this.driver);
-        const now = DateTime.utcNow;
+        const now = this.clock.utcNow;
         const lockedTTL = now.addMinutes(1);
         return this.driver.runInTransaction(async () => {
             const list = await db.workflows
@@ -169,15 +171,10 @@ export default class EternityStorage {
         });
     }
 
-    private async init() {
-        const init = async () => {
-            const db = new WorkflowContext(this.driver);
-            await this.driver.ensureDatabase();
-            await db.driver.automaticMigrations().migrate(db);
-        };
-        const v = init();
-        Object.defineProperty(this, "init", { value: () => v });
-        return v;
+    async seed() {
+        const db = new WorkflowContext(this.driver);
+        await db.driver.ensureDatabase();
+        await db.driver.automaticMigrations().migrate(db);
     }
 
 }

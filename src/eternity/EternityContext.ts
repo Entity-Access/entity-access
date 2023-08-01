@@ -117,7 +117,7 @@ export default class EternityContext {
 
     public async start(signal?: AbortSignal) {
         while(!signal?.aborted) {
-            await this.process(signal);
+            await this.processQueueOnce(signal);
         }
     }
 
@@ -172,7 +172,7 @@ export default class EternityContext {
         }
     }
 
-    private async process(signal?: AbortSignal) {
+    public async processQueueOnce(signal?: AbortSignal) {
         const pending = await this.storage.dequeue(signal);
         // run...
         for (const iterator of pending) {

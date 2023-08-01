@@ -2,10 +2,26 @@ import { readdir } from "fs/promises";
 import PostgreSqlDriver from "./dist/drivers/postgres/PostgreSqlDriver.js";
 import SqlServerDriver from "./dist/drivers/sql-server/SqlServerDriver.js";
 import * as ports from "tcp-port-used";
+import path from "path";
 
 const host = process.env.POSTGRES_HOST ?? "localhost";
 const postGresPort = Number(process.env.POSTGRES_PORT ?? 5432);
 
+/**
+ * @type string
+ */
+let testFile;
+const testFileIndex = process.argv.indexOf("--test-file");
+if (testFileIndex !== -1) {
+    testFile = process.argv[testFileIndex+1];
+}
+testFile = testFile ? testFile.replace("/src/", "/dist/").replace("\\src\\","\\dist\\").replace(".ts", ".js") : void 0;
+if (testFile) {
+    if (testFile.startsWith(".")) {
+        testFile = path.resolve(testFile);
+    }
+    console.log(`Executing test - ${testFile}`);
+}
 // if (process.argv.includes("test-db")) {
 //     // wait for ports to open...
 //     console.log("Waiting for port to be open");
@@ -22,26 +38,30 @@ let start = Date.now();
 export default class TestRunner {
 
     static get drivers() {
-        const database = "D" + start++;
+        const database = "D" + (start++);
         return [
             new PostgreSqlDriver({
                 database,
                 host,
                 user: "postgres",
                 password: "abcd123",
-                port: postGresPort
+                port: postGresPort,
+                deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
             }),
-            // new SqlServerDriver({
-            //     database,
-            //     host,
-            //     user: "sa",
-            //     password: "$EntityAccess2023",
-            //     port: 1433,
-            //     options: {
-            //         encrypt: true, // for azure
-            //         trustServerCertificate: true // change to true for local dev / self-signed certs
-            //     }
-            // })
+            new SqlServerDriver({
+                database,
+                host,
+                user: "sa",
+                password: "$EntityAccess2023",
+                port: 1433,
+                options: {
+                    encrypt: true, // for azure
+                    trustServerCertificate: true // change to true for local dev / self-signed certs
+                },
+                deleteDatabase: (driver) => driver.executeQuery(`USE master;
+                        ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                        DROP DATABASE ${database}`)
+            })
         ];
     }
 
@@ -62,6 +82,7 @@ export default class TestRunner {
                 await r;
             }
             results.push({ name });
+            await thisParam.driver.config.deleteDatabase?.(thisParam.driver);
         } catch (error) {
             results.unshift({ name, error });
         }
@@ -77,6 +98,13 @@ export default class TestRunner {
                 continue;
             }
             if (iterator.name.endsWith(".js")) {
+                if (testFile) {
+                    if (next !== testFile) {
+                        if(testFile !== path.resolve(next)) {
+                            continue;
+                        }
+                    }
+                }
                 for (const driver of this.drivers) {
                     tasks.push(this.runTest(next, { driver, db }));
                 }
