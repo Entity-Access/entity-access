@@ -193,7 +193,7 @@ export default class EternityContext {
             return;
         }
 
-        const scope = ServiceProvider.global.createScope();
+        const scope = ServiceProvider.from(this).createScope();
 
         try {
 

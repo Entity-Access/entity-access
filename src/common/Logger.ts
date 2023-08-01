@@ -5,10 +5,33 @@ import { IDisposable } from "./IDisposable.js";
 @RegisterSingleton
 export default class Logger implements IDisposable {
 
+    public static nullLogger = new Logger();
+
     public static get instance() {
-        return this.globalInstance ??= new Logger();
+        return this.globalInstance ??= new ConsoleLogger();
     }
-    private static globalInstance: Logger;
+    private static globalInstance: ConsoleLogger;
+
+    log(a) {
+        console.log(a);
+        return this;
+    }
+
+    error(a) {
+        console.error(a);
+        return this;
+    }
+
+    newSession() {
+        return new SessionLogger(this);
+    }
+
+    dispose() {
+        // do nothing...
+    }
+}
+
+export class ConsoleLogger extends Logger {
 
     log(a) {
         console.log(a);

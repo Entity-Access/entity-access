@@ -60,25 +60,28 @@ class SendWorkflow extends Workflow<string> {
 
 export default async function (this: TestConfig) {
 
-    // const scope = ServiceProvider.global.createScope();
+    const scope = new ServiceProvider();
+    scope.add(BaseDriver, this.driver);
+    const c = new EternityContext();
+    c.clock = mockClock;
+    const storage = new EternityStorage(this.driver, mockClock);
+    await storage.seed();
+    c.storage = storage;
+    scope.add(EternityStorage, storage);
+    scope.add(EternityContext, c);
 
-    // const c = new EternityContext();
-    // c.clock = mockClock;
-    // const storage = new EternityStorage(this.driver, mockClock);
-    // await storage.seed();
-    // c.storage = storage;
-    // scope.add(EternityContext, c);
+    const logger = scope.resolve(Logger);
 
-    // const logger = ServiceProvider.global.resolve(Logger);
+    await c.queue(SendWorkflow, "a");
 
-    // await c.queue(SendWorkflow, "a");
+    mockClock.add(TimeSpan.fromSeconds(1));
 
-    // mockClock.add(TimeSpan.fromSeconds(1));
+    await c.processQueueOnce();
 
-    // await c.processQueueOnce();
+    mockClock.add(TimeSpan.fromSeconds(1));
 
-    // mockClock.add(TimeSpan.fromSeconds(1));
+    await c.processQueueOnce();
 
-    // assert.notEqual(0, logger.items.length);
+    assert.notEqual(0, logger.items.length);
 
 }

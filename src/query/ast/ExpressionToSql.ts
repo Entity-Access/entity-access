@@ -302,7 +302,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             : this.visit(e.right);
 
         if ((e.right as ExpressionType).type === "NullExpression") {
-            if (e.operator === "===" || e.operator === "==") {
+            if (e.operator === "===" || e.operator === "==" || e.operator === "=") {
                 return prepare `${left} IS NULL`;
             }
             if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {
@@ -310,7 +310,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             }
         }
         if ((e.left as ExpressionType).type === "NullExpression") {
-            if (e.operator === "===" || e.operator === "==") {
+            if (e.operator === "===" || e.operator === "==" || e.operator === "=") {
                 return prepare `${right} IS NULL`;
             }
             if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {

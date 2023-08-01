@@ -35,7 +35,7 @@ export default class EntityContext {
         @Inject
         private events?: ContextEvents,
         @Inject
-        private logger?: Logger
+        public readonly logger?: Logger
     ) {
         this.raiseEvents = !!events;
     }

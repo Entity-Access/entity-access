@@ -20,7 +20,7 @@ import WorkflowClock from "./WorkflowClock.js";
 })
 export class WorkflowStorage {
 
-    @Column({ dataType: "Char", length: 400, })
+    @Column({ dataType: "Char", length: 400, key: true })
     public id: string;
 
     @Column({ dataType: "Boolean" })

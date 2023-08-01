@@ -38,7 +38,7 @@ export default abstract class Workflow<TIn = any, TOut = any> {
     protected readonly context: EternityContext;
 
     constructor(p: Partial<Workflow>) {
-        Object.setPrototypeOf(p, Workflow.prototype);
+        Object.setPrototypeOf(p, new.target.prototype);
         return p as Workflow;
     }
 
