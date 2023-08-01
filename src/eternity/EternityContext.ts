@@ -95,7 +95,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             step.queued = start;
             step.updated = step.updated;
         }
-        await this.context.storage.save(step);
+        await context.storage.save(step);
         if (lastError) {
             throw lastError;
         }
