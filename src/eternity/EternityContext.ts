@@ -11,6 +11,7 @@ import { IWorkflowSchema, WorkflowRegistry } from "./WorkflowRegistry.js";
 import crypto from "crypto";
 import TimeSpan from "../types/TimeSpan.js";
 import WorkflowClock from "./WorkflowClock.js";
+import sleep from "../common/sleep.js";
 
 async function  hash(text) {
     const sha256 = crypto.createHash("sha256");
@@ -131,7 +132,17 @@ export default class EternityContext {
 
     public async start(signal?: AbortSignal) {
         while(!signal?.aborted) {
-            await this.processQueueOnce(signal);
+            try {
+                const total = await this.processQueueOnce(signal);
+                if (total > 0) {
+                    // do not wait till we have zero messages to process
+                    continue;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+            const ws = (this.waiter = new AbortController()).signal;
+            await sleep(15000, ws);
         }
     }
 
@@ -185,7 +196,7 @@ export default class EternityContext {
         });
 
         if(eta < clock.utcNow) {
-            this.waiter.abort();
+            this.waiter?.abort();
         }
 
         return id;
@@ -201,6 +212,8 @@ export default class EternityContext {
                 console.error(error);
             }
         }
+
+        return pending.length;
     }
     private async run(workflow: WorkflowStorage) {
 
