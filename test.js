@@ -58,9 +58,16 @@ export default class TestRunner {
                     encrypt: true, // for azure
                     trustServerCertificate: true // change to true for local dev / self-signed certs
                 },
-                deleteDatabase: (driver) => driver.executeQuery(`USE master;
+                deleteDatabase: async (driver) => {
+                    try {
+                        driver.config.database = "master";
+                        await driver.executeQuery(`USE master;
                         ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                        DROP DATABASE ${database}`)
+                        DROP DATABASE ${database}`);
+                    } catch {
+
+                    }
+                }
             })
         ];
     }
