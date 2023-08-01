@@ -46,7 +46,7 @@ function typeFrom(c: IColumn, jsType: any): ISqlType {
             return "BigInt";
         case Date:
         case DateTime:
-            return "DateTime";
+            return "DateTimeOffset";
         case Boolean:
             return "Boolean";
     }

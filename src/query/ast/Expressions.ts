@@ -124,7 +124,7 @@ export abstract class Expression {
         return copy;
     }
 
-    readonly type: never | string;
+    readonly type: ExpressionType["type"];
 
 }
 
@@ -133,10 +133,10 @@ export class ArrayExpression extends Expression {
     elements: Expression[];
 }
 
-export class PartialExpression extends Expression {
-    readonly type = "PartialExpression";
-    query: ITextQuery;
-}
+// export class PartialExpression extends Expression {
+//     readonly type = "PartialExpression";
+//     query: ITextQuery;
+// }
 
 export class BinaryExpression extends Expression {
 
@@ -164,6 +164,11 @@ export class OrderByExpression extends Expression {
     readonly type = "OrderByExpression";
     target: Expression;
     descending: boolean;
+}
+
+export class NotExits extends Expression {
+    readonly type = "NotExists";
+    target: Expression;
 }
 
 export class ExistsExpression extends Expression {
@@ -371,6 +376,11 @@ export class UpdateStatement extends Expression {
 
 }
 
+export class UnionAllStatement extends Expression {
+    readonly type = "UnionAllStatement";
+    queries: Expression[];
+}
+
 export class DeleteStatement extends Expression {
     readonly type = "DeleteStatement";
     table: TableLiteral | QuotedLiteral;
@@ -407,5 +417,7 @@ export type ExpressionType =
     NewObjectExpression |
     ParameterExpression |
     ArrayExpression |
+    NotExits |
+    UnionAllStatement |
     TemplateElement
 ;

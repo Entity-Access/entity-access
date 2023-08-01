@@ -24,6 +24,8 @@ export default abstract class Migrations {
     async migrateIndexInternal(context: EntityContext, index: IIndex, type: EntityType) {
         // parse filter... pending...
 
+        index = { ... index };
+
         if (index.filter && typeof index.filter !== "string") {
             // parse..
             const source = context.query(type.typeClass) as EntityQuery<any>;

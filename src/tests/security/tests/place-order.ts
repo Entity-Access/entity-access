@@ -27,7 +27,9 @@ export default async function(this: TestConfig) {
 }
 
 async function getNewOrders(this: TestConfig) {
-    const scope = ServiceProvider.global.createScope();
+    const global = new ServiceProvider();
+    global.add(BaseDriver, this.driver);
+    const scope = global.createScope();
     try {
         const user = new UserInfo();
         user.userID = 2;
@@ -49,7 +51,9 @@ async function getNewOrders(this: TestConfig) {
 }
 
 async function addNewOrder(this: TestConfig, customer: User, userID?) {
-    const scope = ServiceProvider.global.createScope();
+    const global = new ServiceProvider();
+    global.add(BaseDriver, this.driver);
+    const scope = global.createScope();
     try {
         const user = new UserInfo();
         user.userID = userID ?? customer.userID;

@@ -69,9 +69,8 @@ export default class EntityQuery<T = any>
     }
 
     async *enumerate(): AsyncGenerator<T, any, unknown> {
-        const logger = ServiceProvider.resolve(this.context, Logger);
         const scope = new DisposableScope();
-        const session = logger.newSession();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query: { text: string, values: any[]};
         try {
             scope.register(session);

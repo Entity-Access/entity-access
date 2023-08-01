@@ -1,8 +1,9 @@
+import EntityAccessError from "../../common/EntityAccessError.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, InsertStatement, NotExits, QuotedLiteral, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
@@ -46,8 +47,16 @@ export interface IQueryResult {
     updated?: number;
 }
 
+export interface IBaseTransaction {
+    commit(): Promise<any>;
+    rollback(): Promise<any>;
+    dispose(): Promise<any>;
+}
+
 export abstract class BaseDriver {
     abstract get compiler(): QueryCompiler;
+
+    private currentTransaction: IBaseTransaction;
 
     constructor(public readonly connectionString: IDbConnectionString) {}
 
@@ -57,7 +66,29 @@ export abstract class BaseDriver {
 
     public abstract ensureDatabase(): Promise<any>;
 
-    public abstract runInTransaction<T = any>(fx?: () => Promise<T>): Promise<T>;
+    public abstract createTransaction(): Promise<IBaseTransaction>;
+
+    public async runInTransaction<T = any>(fx?: () => Promise<T>) {
+        if(this.currentTransaction) {
+            // nested transactions... do not worry
+            // just pass through
+            return await fx();
+        }
+        let failed = true;
+        try {
+            this.currentTransaction = await this.createTransaction();
+            const result = await fx();
+            await this.currentTransaction.commit();
+            failed = false;
+            return result;
+        } finally {
+            if (failed) {
+                await this.currentTransaction.rollback();
+            }
+            await this.currentTransaction.dispose();
+            this.currentTransaction = null;
+        }
+    }
 
     /**
      * This migrations only support creation of missing items.

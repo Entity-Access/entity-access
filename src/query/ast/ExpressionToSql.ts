@@ -2,7 +2,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { filteredSymbol } from "../../model/events/EntityEvents.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
@@ -126,7 +126,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitBooleanLiteral( { value }: BooleanLiteral): ITextQuery {
-        return [ () => value ? "1" : "0" ];
+        return [ value ? " true ": " false "];
     }
 
     visitTemplateLiteral(e: TemplateLiteral): ITextQuery {
@@ -284,6 +284,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return prepare `${this.visit(target)}.${this.visit(property)}`;
     }
 
+    visitNotExists(e: NotExits): ITextQuery {
+        return [" NOT EXISTS ", this.visit(e.target) ];
+    }
+
     visitNullExpression(e: NullExpression): ITextQuery {
         return ["NULL"];
     }
@@ -298,7 +302,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             : this.visit(e.right);
 
         if ((e.right as ExpressionType).type === "NullExpression") {
-            if (e.operator === "===" || e.operator === "==") {
+            if (e.operator === "===" || e.operator === "==" || e.operator === "=") {
                 return prepare `${left} IS NULL`;
             }
             if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {
@@ -306,7 +310,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             }
         }
         if ((e.left as ExpressionType).type === "NullExpression") {
-            if (e.operator === "===" || e.operator === "==") {
+            if (e.operator === "===" || e.operator === "==" || e.operator === "=") {
                 return prepare `${right} IS NULL`;
             }
             if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {
@@ -409,6 +413,20 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitExistsExpression(e: ExistsExpression): ITextQuery {
         return prepare `EXISTS (${this.visit(e.target)})`;
+    }
+
+    visitUnionAllStatement(e: UnionAllStatement): ITextQuery {
+        const all: ITextQuery = [];
+        let first = true;
+        for (const iterator of e.queries) {
+            all.push(this.visit(iterator));
+            if (first) {
+                first = false;
+                continue;
+            }
+            all.push(" UNION ALL ");
+        }
+        return all;
     }
 
     /**

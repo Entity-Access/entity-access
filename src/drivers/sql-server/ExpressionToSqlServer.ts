@@ -1,5 +1,5 @@
 import ExpressionToSql from "../../query/ast/ExpressionToSql.js";
-import { Identifier, InsertStatement, OrderByExpression, ReturnUpdated, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BooleanLiteral, Identifier, InsertStatement, OrderByExpression, ReturnUpdated, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import { ITextQuery, prepare } from "../../query/ast/IStringTransformer.js";
 
 export default class ExpressionToSqlServer extends ExpressionToSql {
@@ -99,5 +99,9 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         const fields = e.fields ? prepare ` as x11(${this.visitArray(e.fields)})` : "";
         return prepare `(VALUES ${rows}) ${fields}`;
 
+    }
+
+    visitBooleanLiteral({ value }: BooleanLiteral): ITextQuery {
+        return value ? [ " 1 "] : [ " 0 "];
     }
 }

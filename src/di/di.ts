@@ -14,39 +14,43 @@ const registrationsSymbol = Symbol("registrations");
 
 const serviceProvider = Symbol("serviceProvider");
 
-const parentServiceProvider = Symbol("parentServiceProvider");
+const globalServiceProvider = Symbol("globalInstance");
 
 export class ServiceProvider implements IDisposable {
 
-    public static get global() {
-        return this.globalInstance ??= new ServiceProvider();
+    public static from(owner: any) {
+        return (owner[serviceProvider]) as ServiceProvider;
     }
 
-
     public static resolve<T>(serviceOwner: any, type: IClassOf<T>): T {
-        const sp = (serviceOwner[serviceProvider] ?? this.global) as ServiceProvider;
+        const sp = serviceOwner[serviceProvider] as ServiceProvider;
         return sp.resolve(type);
     }
 
     static create<T>(serviceOwner, type: IClassOf<T>): T {
-        const sp = (serviceOwner[serviceProvider] ?? this.global) as ServiceProvider;
+        const sp = serviceOwner[serviceProvider] as ServiceProvider;
         return sp.createFromType(type);
     }
 
-    private static globalInstance: ServiceProvider;
+    static createScope<T>(serviceOwner): ServiceProvider {
+        const sp = serviceOwner[globalServiceProvider] as ServiceProvider;
+        return sp.createScope();
+    }
 
     private map: Map<any,any> = new Map();
     private disposables: IDisposable[];
 
     constructor(parent?: ServiceProvider) {
         this[serviceProvider] = this;
-        this[parentServiceProvider] = parent;
+        this[globalServiceProvider] = parent?.[globalServiceProvider] ?? this;
+        this.map.set(ServiceProvider, this);
     }
 
     add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
         this.getRegistration(type, true);
         this.map.set(type, instance);
         instance[serviceProvider] = this;
+        instance[globalServiceProvider] = this[globalServiceProvider];
         this.resolveProperties(instance);
         return instance;
     }
@@ -66,7 +70,7 @@ export class ServiceProvider implements IDisposable {
         const sd = this.getRegistration(type);
         switch(sd.kind) {
             case "Scoped":
-                if (!this[parentServiceProvider]) {
+                if (this[globalServiceProvider] === this) {
                     throw new Error(`Unable to create scoped service ${type?.name ?? type} in global scope.`);
                 }
                 instance = this.map.get(type);
@@ -74,20 +78,19 @@ export class ServiceProvider implements IDisposable {
                     instance = this.createFromDescriptor(sd);
                     this.map.set(type, instance);
                     instance[serviceProvider] = this;
+                    instance[globalServiceProvider] = this[globalServiceProvider];
                     if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
                         (this.disposables ??= []).push(instance);
                     }
                 }
                 return  instance;
             case "Singleton":
-                let sp = this;
-                while (sp[parentServiceProvider]) {
-                    sp = sp[parentServiceProvider];
-                }
+                const sp = this[globalServiceProvider];
                 instance = sp.map.get(type);
                 if (!instance) {
                     instance = sp.createFromDescriptor(sd);
-                    instance[serviceProvider] = sp;
+                    instance[serviceProvider] = this;
+                    instance[globalServiceProvider] = sp;
                     sp.map.set(type, instance);
                     if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
                         (sp.disposables ??= []).push(instance);
@@ -96,7 +99,8 @@ export class ServiceProvider implements IDisposable {
                 return  instance;
             case "Transient":
                 instance = sp.createFromDescriptor(sd);
-                instance[serviceProvider] = sp;
+                instance[serviceProvider] = this;
+                instance[globalServiceProvider] = sp;
                 return instance;
         }
     }
@@ -120,7 +124,7 @@ export class ServiceProvider implements IDisposable {
         if (!sd) {
 
             if (add) {
-                const registration: IServiceDescriptor = { key: type, kind: this[parentServiceProvider] ? "Scoped" : "Singleton" };
+                const registration: IServiceDescriptor = { key: type, kind: this[globalServiceProvider] !== this ? "Scoped" : "Singleton" };
                 registrations.set(type, registration);
                 return registration;
             }
@@ -155,7 +159,7 @@ export class ServiceProvider implements IDisposable {
             for (const key in keys) {
                 if (Object.prototype.hasOwnProperty.call(keys, key)) {
                     const element = keys[key];
-                    instance[key] = this.resolve(element);
+                    instance[key] ??= this.resolve(element);
                 }
             }
         }
@@ -168,6 +172,7 @@ export class ServiceProvider implements IDisposable {
             : [];
         const instance = new type(... injectServices);
         instance[serviceProvider] = this;
+        instance[globalServiceProvider] = this[globalServiceProvider];
         // initialize properties...
         this.resolveProperties(instance, type);
         return instance;
@@ -194,9 +199,21 @@ export const ServiceCollection = {
 export default function Inject(target, key, index?: number) {
 
     if (index !== void 0) {
-        const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
-        const serviceTypes = target[injectServiceTypesSymbol] ??= [];
-        serviceTypes[index] = plist[index];
+
+        if (key) {
+
+            // this is parameter inside a method...
+            const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
+            const pTypes = (target[injectServiceKeysSymbol] ??= {})[key] = [];
+            pTypes[index] = plist[index];
+
+        } else {
+
+            const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
+            const serviceTypes = target[injectServiceTypesSymbol] ??= [];
+            serviceTypes[index] = plist[index];
+        }
+
         return;
     }
 
