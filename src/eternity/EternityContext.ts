@@ -112,7 +112,6 @@ export interface IWorkflowResult<T> {
     error: string;
 }
 
-@RegisterSingleton
 export default class EternityContext {
 
     private waiter: AbortController;
