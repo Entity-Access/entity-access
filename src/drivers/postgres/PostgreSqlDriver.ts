@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import TimedCache from "../../common/cache/TimedCache.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
@@ -6,11 +7,9 @@ import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
 import { Query } from "../../query/Query.js";
 import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
-import pkg from "pg";
+import { PoolClient } from "pg";
+import pg from "pg";
 import Cursor from "pg-cursor";
-
-const { Client } = pkg;
-
 export interface IPgSqlConnectionString extends IDbConnectionString {
 
     user?: string, // default process.env.PGUSER || process.env.USER
@@ -61,13 +60,15 @@ class DbReader implements IDbReader {
     }
 }
 
+const poolCache = new TimedCache<string, pg.Pool>();
+
 export default class PostgreSqlDriver extends BaseDriver {
 
     public get compiler() {
         return this.myCompiler;
     }
 
-    private transaction: pkg.Client;
+    private transaction: PoolClient;
     private myCompiler = new QueryCompiler();
 
     constructor(private readonly config: IPgSqlConnectionString) {
@@ -88,7 +89,7 @@ export default class PostgreSqlDriver extends BaseDriver {
             throw error;
         } finally {
             this.transaction = void 0;
-            await connection.end();
+            connection.release();
         }
     }
 
@@ -112,7 +113,7 @@ export default class PostgreSqlDriver extends BaseDriver {
             return result;
         } finally {
             if (!this.transaction) {
-                await connection.end();
+                connection.release();
             }
         }
     }
@@ -133,7 +134,7 @@ export default class PostgreSqlDriver extends BaseDriver {
                 }
                 await connection.query("CREATE DATABASE " + JSON.stringify(db));
             } finally {
-                await connection.end();
+                connection.release();
             }
         };
         const value = create();
@@ -153,8 +154,14 @@ export default class PostgreSqlDriver extends BaseDriver {
         if (this.transaction) {
             return this.transaction;
         }
-        const client = new Client(this.config);
-        await client.connect();
+
+        const key = `${this.config.host}:${this.config.port}//${this.config.database}?${this.config.user}&${this.config.password}`;
+
+        const pooledClient = poolCache.getOrCreate(key, 1, () => new pg.Pool(this.config));
+        const client = await pooledClient.connect();
+
+        // const client = new Client(this.config);
+        // await client.connect();
         const row = await client.query("SELECT pg_backend_pid() as id");
         const clientId = (row.rows as any).id;
         // there is no support to kill the query running inside
@@ -165,7 +172,7 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 
     private async kill(id) {
-        const client = new Client(this.config);
+        const client = new pg.Client(this.config);
         try {
             await client.connect();
             await client.query("SELECT pg_cancel_backend($1)", [id]);

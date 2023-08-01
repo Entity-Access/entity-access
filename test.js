@@ -46,7 +46,7 @@ export default class TestRunner {
                 user: "postgres",
                 password: "abcd123",
                 port: postGresPort,
-                deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
+                // deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
             }),
             // new SqlServerDriver({
             //     database,
@@ -58,16 +58,16 @@ export default class TestRunner {
             //         encrypt: true, // for azure
             //         trustServerCertificate: true // change to true for local dev / self-signed certs
             //     },
-            //     deleteDatabase: async (driver) => {
-            //         try {
-            //             driver.config.database = "master";
-            //             await driver.executeQuery(`USE master;
-            //             ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-            //             DROP DATABASE ${database}`);
-            //         } catch {
+            //     // deleteDatabase: async (driver) => {
+            //     //     try {
+            //     //         driver.config.database = "master";
+            //     //         await driver.executeQuery(`USE master;
+            //     //         ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+            //     //         DROP DATABASE ${database}`);
+            //     //     } catch {
 
-            //         }
-            //     }
+            //     //     }
+            //     // }
             // })
         ];
     }

@@ -24,6 +24,8 @@ function bindStep(store: WorkflowStorage, name: string, old: (... a: any[]) => a
         const params = input.length < 150 ? input : await hash(input);
         const id = `${this.id}(${params},${ts})`;
 
+        const clock = this.context.storage.clock;
+
         const existing = await this.context.storage.get(id);
         if (existing) {
             if (existing.state === "failed" && existing.error) {
@@ -49,7 +51,7 @@ function bindStep(store: WorkflowStorage, name: string, old: (... a: any[]) => a
         };
 
         // execute...
-        const start = this.context.clock.utcNow;
+        const start = clock.utcNow;
         let lastError: Error;
         let lastResult: any;
 
@@ -78,7 +80,7 @@ function bindStep(store: WorkflowStorage, name: string, old: (... a: any[]) => a
                 lastResult = (await old.apply(this, a)) ?? 0;
                 step.output = JSON.stringify(lastResult);
                 step.state = "done";
-                step.eta = this.context.clock.utcNow;
+                step.eta = clock.utcNow;
                 (this as any).currentTime = step.eta;
             } catch (error) {
                 if (error instanceof ActivitySuspendedError) {
@@ -87,7 +89,7 @@ function bindStep(store: WorkflowStorage, name: string, old: (... a: any[]) => a
                 lastError = error;
                 step.error = error.stack ?? error.toString();
                 step.state = "failed";
-                step.eta = this.context.clock.utcNow;
+                step.eta = clock.utcNow;
                 (this as any).currentTime = step.eta;
             }
             step.queued = start;
@@ -119,9 +121,7 @@ export default class EternityContext {
 
     constructor(
         @Inject
-        public storage: EternityStorage,
-        @Inject
-        public clock: WorkflowClock
+        public storage: EternityStorage
     ) {
 
     }
@@ -152,7 +152,8 @@ export default class EternityContext {
     public async queue<T>(
         type: IClassOf<Workflow<T>>,
         input: Partial<T>,
-        { id, throwIfExists, eta = this.clock.utcNow}: { id?: string, throwIfExists?: boolean, eta?: DateTime } = {}) {
+        { id, throwIfExists, eta }: { id?: string, throwIfExists?: boolean, eta?: DateTime } = {}) {
+        const clock = this.storage.clock;
         if (id) {
             const r = await this.storage.get(id);
             if (r) {
@@ -164,6 +165,7 @@ export default class EternityContext {
         } else {
             id = randomUUID();
             while(await this.storage.get(id) !== null) {
+                console.log(`Generating UUID again ${id}`);
                 id = randomUUID();
             }
         }
@@ -171,7 +173,7 @@ export default class EternityContext {
         // this will ensure even empty workflow !!
         const schema = WorkflowRegistry.register(type, void 0);
 
-        const now = this.clock.utcNow;
+        const now = clock.utcNow;
         eta ??= now;
         await this.storage.save({
             id,
@@ -183,7 +185,7 @@ export default class EternityContext {
             eta
         });
 
-        if(eta < this.clock.utcNow) {
+        if(eta < clock.utcNow) {
             this.waiter.abort();
         }
 
@@ -203,8 +205,10 @@ export default class EternityContext {
     }
     private async run(workflow: WorkflowStorage) {
 
+        const clock = this.storage.clock;
+
         if (workflow.state === "failed" || workflow.state === "done") {
-            if (workflow.eta <= this.clock.utcNow) {
+            if (workflow.eta <= clock.utcNow) {
                 // time to delete...
                 await this.storage.delete(workflow.id);
             }
@@ -229,7 +233,7 @@ export default class EternityContext {
                 const result = await instance.run();
                 workflow.output = JSON.stringify(result ?? 0);
                 workflow.state = "done";
-                workflow.eta = this.clock.utcNow.add(instance.preserveTime);
+                workflow.eta = clock.utcNow.add(instance.preserveTime);
             } catch (error) {
                 if (error instanceof ActivitySuspendedError) {
                     // this will update last id...
@@ -238,7 +242,7 @@ export default class EternityContext {
                 }
                 workflow.error = JSON.stringify(error.stack ?? error);
                 workflow.state = "failed";
-                workflow.eta = this.clock.utcNow.add(instance.failedPreserveTime);
+                workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
             }
 
             await this.storage.save(workflow);

@@ -31,8 +31,6 @@ class MockClock extends WorkflowClock {
     }
 }
 
-const mockClock = new MockClock();
-
 @RegisterSingleton
 class Logger {
 
@@ -63,6 +61,8 @@ class SendWorkflow extends Workflow<string, string> {
 
 export default async function (this: TestConfig) {
 
+    const mockClock = new MockClock();
+
     const scope = new ServiceProvider();
     scope.add(WorkflowClock, mockClock);
     scope.add(BaseDriver, this.driver);
@@ -79,11 +79,11 @@ export default async function (this: TestConfig) {
 
     const id = await c.queue(SendWorkflow, "a");
 
-    mockClock.add(TimeSpan.fromSeconds(1));
+    mockClock.add(TimeSpan.fromSeconds(15));
 
     await c.processQueueOnce();
 
-    mockClock.add(TimeSpan.fromSeconds(1));
+    mockClock.add(TimeSpan.fromSeconds(15));
 
     await c.processQueueOnce();
 
