@@ -7,7 +7,7 @@ import DateTime from "../types/DateTime.js";
 import EternityStorage, { WorkflowStorage } from "./EternityStorage.js";
 import type Workflow from "./Workflow.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
-import { WorkflowRegistry } from "./WorkflowRegistry.js";
+import { IWorkflowSchema, WorkflowRegistry } from "./WorkflowRegistry.js";
 import crypto from "crypto";
 import TimeSpan from "../types/TimeSpan.js";
 import WorkflowClock from "./WorkflowClock.js";
@@ -113,14 +113,22 @@ export interface IWorkflowResult<T> {
 @RegisterSingleton
 export default class EternityContext {
 
-
-    @Inject
-    public storage: EternityStorage;
-
-    @Inject
-    public clock: WorkflowClock;
-
     private waiter: AbortController;
+
+    private registry: Map<string, IWorkflowSchema> = new Map();
+
+    constructor(
+        @Inject
+        public storage: EternityStorage,
+        @Inject
+        public clock: WorkflowClock
+    ) {
+
+    }
+
+    public register(type: IClassOf<Workflow>) {
+        this.registry.set(type.name, WorkflowRegistry.register(type, void 0));
+    }
 
     public async start(signal?: AbortSignal) {
         while(!signal?.aborted) {

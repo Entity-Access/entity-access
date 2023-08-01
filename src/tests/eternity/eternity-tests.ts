@@ -61,14 +61,16 @@ class SendWorkflow extends Workflow<string> {
 export default async function (this: TestConfig) {
 
     const scope = new ServiceProvider();
+    scope.add(WorkflowClock, mockClock);
     scope.add(BaseDriver, this.driver);
-    const c = new EternityContext();
-    c.clock = mockClock;
     const storage = new EternityStorage(this.driver, mockClock);
     await storage.seed();
-    c.storage = storage;
     scope.add(EternityStorage, storage);
-    scope.add(EternityContext, c);
+
+    const c = scope.resolve(EternityContext);
+
+    // this is an important step
+    c.register(SendWorkflow);
 
     const logger = scope.resolve(Logger);
 
