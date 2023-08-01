@@ -137,7 +137,7 @@ export default class EntityContext {
             await verificationSession.verifyAsync();
         }
 
-        await this.driver.runInTransaction(() => this.saveChangesWithoutEvents(signal));
+        await this.saveChangesWithoutEvents(signal);
 
         if (pending.length > 0) {
 
@@ -159,30 +159,32 @@ export default class EntityContext {
     }
 
     protected async saveChangesWithoutEvents(signal: AbortSignal) {
-        const copy = [].concat(this.changeSet.entries);
-        for (const iterator of copy) {
-            switch (iterator.status) {
-                case "inserted":
-                    const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
-                    const r = await this.executeExpression(insert, signal);
-                    iterator.apply(r);
-                    break;
-                case "modified":
-                    if (iterator.modified.size > 0) {
-                        const update = this.driver.createUpdateExpression(iterator);
-                        await this.executeExpression(update, signal);
-                        iterator.apply(update);
-                    }
-                    break;
-                case "deleted":
-                    const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
-                    if (deleteQuery) {
-                        await this.executeExpression(deleteQuery, signal);
-                    }
-                    iterator.apply({});
-                    break;
+        return this.driver.runInTransaction(async () => {
+            const copy = [].concat(this.changeSet.entries);
+            for (const iterator of copy) {
+                switch (iterator.status) {
+                    case "inserted":
+                        const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
+                        const r = await this.executeExpression(insert, signal);
+                        iterator.apply(r);
+                        break;
+                    case "modified":
+                        if (iterator.modified.size > 0) {
+                            const update = this.driver.createUpdateExpression(iterator);
+                            await this.executeExpression(update, signal);
+                            iterator.apply(update);
+                        }
+                        break;
+                    case "deleted":
+                        const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
+                        if (deleteQuery) {
+                            await this.executeExpression(deleteQuery, signal);
+                        }
+                        iterator.apply({});
+                        break;
+                }
             }
-        }
+        });
     }
 
     private async executeExpression(expression: Expression, signal: AbortSignal) {

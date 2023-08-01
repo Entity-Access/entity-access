@@ -5,7 +5,7 @@ import TimedCache from "../../common/cache/TimedCache.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
-import { BaseDriver, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
+import { BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
 export interface IPgSqlConnectionString extends IDbConnectionString {
@@ -73,25 +73,14 @@ export default class PostgreSqlDriver extends BaseDriver {
         super(config);
     }
 
-    public async runInTransaction<T>(fx?: () => Promise<T>): Promise<T> {
-        if (this.transaction) {
-            throw new EntityAccessError(`Nested Transactions not supported`);
-        }
-        const connection = await this.getConnection();
-        let result: T;
-        try {
-            this.transaction = connection;
-            await connection.query("BEGIN");
-            result = await fx();
-            await connection.query("COMMIT");
-            return result;
-        } catch (error) {
-            await connection.query("ROLLBACK");
-            throw error;
-        } finally {
-            this.transaction = void 0;
-            await connection[Symbol.asyncDisposable]();
-        }
+    public async createTransaction(): Promise<IBaseTransaction> {
+        const tx = await this.getConnection();
+        await tx.query("BEGIN");
+        return {
+            commit: () => tx.query("COMMIT"),
+            rollback: () => tx.query("ROLLBACK"),
+            dispose: () => (this.transaction = null, tx[Symbol.asyncDisposable]())
+        };
     }
 
     public automaticMigrations(): Migrations {
