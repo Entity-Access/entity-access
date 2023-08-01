@@ -75,17 +75,18 @@ export abstract class BaseDriver {
             return await fx();
         }
         let failed = true;
+        let tx: IBaseTransaction;
         try {
-            this.currentTransaction = await this.createTransaction();
+            tx = this.currentTransaction = await this.createTransaction();
             const result = await fx();
-            await this.currentTransaction.commit();
+            await tx.commit();
             failed = false;
             return result;
         } finally {
             if (failed) {
-                await this.currentTransaction.rollback();
+                await tx?.rollback();
             }
-            await this.currentTransaction.dispose();
+            await tx?.dispose();
             this.currentTransaction = null;
         }
     }

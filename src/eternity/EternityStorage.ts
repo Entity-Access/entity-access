@@ -153,7 +153,7 @@ export default class EternityStorage {
         const db = new WorkflowContext(this.driver);
         const now = this.clock.utcNow;
         const lockedTTL = now.addMinutes(1);
-        return this.driver.runInTransaction(async () => {
+        return db.driver.runInTransaction(async () => {
             const list = await db.workflows
                 .where({now}, (p) => (x) => x.eta <= p.now
                     && (x.lockedTTL === null || x.lockedTTL <= p.now)
