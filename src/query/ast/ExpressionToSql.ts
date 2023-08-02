@@ -163,12 +163,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             let select: SelectStatement;
 
                             if (this.source?.context) {
-                                let query = this.source.context.query(relatedType);
-                                // check if we have filter...
-                                const entityEvents = this.source.context.eventsFor(relatedType, false);
-                                if (entityEvents) {
-                                    query = entityEvents.includeFilter(query);
-                                }
+                                const query = this.source.context.filteredQuery(relatedType, "include", false);
+                                // // check if we have filter...
+                                // const entityEvents = this.source.context.eventsFor(relatedType, false);
+                                // if (entityEvents) {
+                                //     query = entityEvents.includeFilter(query);
+                                // }
                                 select = { ... (query as EntityQuery).selectStatement };
                                 select.fields = [
                                     Identifier.create({ value: "1"})

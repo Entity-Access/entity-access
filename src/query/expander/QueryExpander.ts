@@ -75,12 +75,12 @@ export class QueryExpander {
         const { relation } = mp;
         const { relatedTypeClass: propertyType } = relation;
 
-        let query = this.context.query(propertyType);
+        const query = this.context.filteredQuery(propertyType, "include", false, model, p.value);
         // if (this.filter) {
-            const events = this.context.eventsFor(propertyType, false);
-            if (events) {
-                query = events.includeFilter(query, model, p.value) ?? query;
-            }
+            // const events = this.context.eventsFor(propertyType, false);
+            // if (events) {
+            //     query = events.includeFilter(query, model, p.value) ?? query;
+            // }
         // }
         const select = { ... (query as EntityQuery).selectStatement };
 
