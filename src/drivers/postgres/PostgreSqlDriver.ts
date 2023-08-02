@@ -154,9 +154,9 @@ export default class PostgreSqlDriver extends BaseDriver {
 
         const key = `${this.config.host}:${this.config.port}//${this.config.database}?${this.config.user}&${this.config.password}`;
 
-        const pooledClient = poolCache.getOrCreate(key, 1, () => new ObjectPool({
+        const pooledClient = poolCache.getOrCreate(key, this, (k, self) => new ObjectPool({
             asyncFactory: async () => {
-                const c = new pg.Client(this.config);
+                const c = new pg.Client(self.config);
                 await c.connect();
                 return c;
             },
