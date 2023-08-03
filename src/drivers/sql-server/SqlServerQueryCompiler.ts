@@ -10,12 +10,14 @@ export default class SqlServerQueryCompiler extends QueryCompiler {
         arrowToExpression = ArrowToExpression,
         expressionToSql = ExpressionToSqlServer,
         // quotedLiteral = SqlServerLiteral.quotedLiteral,
+        namingConvention = (n) => `[${n}]`,
         escapeLiteral = SqlServerLiteral.escapeLiteral,
         sqlMethodTransformer = SqlServerSqlMethodTransformer
     }: Partial<QueryCompiler> = {}) {
         super({
             arrowToExpression,
             expressionToSql,
+            namingConvention,
             // quotedLiteral,
             escapeLiteral,
             sqlMethodTransformer
