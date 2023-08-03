@@ -1,6 +1,6 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, Expression, ExpressionAs, Identifier, JoinExpression, MemberExpression, ParameterExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { Expression, JoinExpression, ParameterExpression, SelectStatement } from "../query/ast/Expressions.js";
 import { ITextQueryFragment, QueryParameter } from "../query/ast/IStringTransformer.js";
 import EntityContext from "./EntityContext.js";
 
@@ -64,7 +64,7 @@ export class SourceExpression {
             as: source.alias,
             joinType: column.nullable ? "LEFT" : "INNER",
             model,
-            source: QuotedLiteral.create({ literal: model.name }),
+            source: Expression.identifier(model.name),
             where: Expression.logicalAnd(
                 Expression.member(
                     this.alias,
@@ -121,9 +121,8 @@ export class SourceExpression {
 
     prepareNames([property , ... others]: string[]): ITextQueryFragment {
         const p = this.model.getProperty(property);
-        const quotedLiteral = this.context.driver.compiler.quotedLiteral;
         if (others.length === 0) {
-            return `${ QueryParameter.create(() => this.alias.name, quotedLiteral)}.${quotedLiteral(p.field.columnName)}`;
+            return `${ QueryParameter.create(() => this.alias.name)}.${p.field.columnName}`;
         }
 
         // this must be a navigation...

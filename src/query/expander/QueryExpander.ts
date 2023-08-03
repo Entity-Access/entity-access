@@ -75,12 +75,12 @@ export class QueryExpander {
         const { relation } = mp;
         const { relatedTypeClass: propertyType } = relation;
 
-        let query = this.context.query(propertyType);
+        const query = this.context.filteredQuery(propertyType, "include", false, model, p.value);
         // if (this.filter) {
-            const events = this.context.eventsFor(propertyType, false);
-            if (events) {
-                query = events.includeFilter(query, model, p.value) ?? query;
-            }
+            // const events = this.context.eventsFor(propertyType, false);
+            // if (events) {
+            //     query = events.includeFilter(query, model, p.value) ?? query;
+            // }
         // }
         const select = { ... (query as EntityQuery).selectStatement };
 
@@ -95,11 +95,11 @@ export class QueryExpander {
             joinWhere = Expression.equal(
                 Expression.member(
                     parent.sourceParameter,
-                    Expression.quotedLiteral(fk.columnName)
+                    Expression.identifier(fk.columnName)
                 ),
                 Expression.member(
                     select.sourceParameter,
-                    Expression.quotedLiteral(model.keys[0].columnName)
+                    Expression.identifier(model.keys[0].columnName)
                 )
             );
             // load parent..
@@ -121,11 +121,11 @@ export class QueryExpander {
         joinWhere = Expression.equal(
             Expression.member(
                 parent.sourceParameter,
-                Expression.quotedLiteral(fk.columnName)
+                Expression.identifier(fk.columnName)
             ),
             Expression.member(
                 select.sourceParameter,
-                Expression.quotedLiteral(relation.relatedEntity.keys[0].columnName)
+                Expression.identifier(relation.relatedEntity.keys[0].columnName)
             )
         );
 

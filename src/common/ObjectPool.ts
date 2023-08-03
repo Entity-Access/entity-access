@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import EntityAccessError from "./EntityAccessError.js";
+import TimedCache from "./cache/TimedCache.js";
 import sleep from "./sleep.js";
 
 interface IObjectPool<T> {
@@ -119,6 +120,21 @@ export default class ObjectPool<T> {
             }
         };
         return item as IPooledObject<T>;
+    }
+
+}
+
+export class NamedObjectPool<T> {
+
+    private namedCache: TimedCache<string, ObjectPool<any>> = new TimedCache();
+
+    constructor(private config: (key: string) => IObjectPool<T>) {
+
+    }
+
+    async acquire(key: string): Promise<IPooledObject<T>> {
+        const pool = this.namedCache.getOrCreate(key, this.config, (k, c) => new ObjectPool<T>(c(k)));
+        return pool.acquire();
     }
 
 }

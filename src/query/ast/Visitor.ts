@@ -1,5 +1,5 @@
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -15,8 +15,6 @@ export default abstract class Visitor<T = any> {
                 return this.visitConstant(e);
             case "ExpressionAs":
                 return this.visitExpressionAs(e);
-            case "QuotedLiteral":
-                return this.visitQuotedLiteral(e);
             case "SelectStatement":
                 return this.visitSelectStatement(e);
             case "TableLiteral":
@@ -168,10 +166,6 @@ export default abstract class Visitor<T = any> {
     }
 
     visitSelectStatement(e: SelectStatement): T {
-        return;
-    }
-
-    visitQuotedLiteral(e: QuotedLiteral): T {
         return;
     }
 

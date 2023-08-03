@@ -2,7 +2,7 @@ import Logger from "../common/Logger.js";
 import { DisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
@@ -95,9 +95,9 @@ export default class EntityQuery<T = any>
             scope.register(reader);
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
-                    Object.setPrototypeOf(iterator, type.typeClass.prototype);
+                    const item = type?.map(iterator) ?? iterator;
                     // set identity...
-                    const entry = this.context.changeSet.getEntry(iterator, iterator);
+                    const entry = this.context.changeSet.getEntry(item, item);
                     relationMapper.fix(entry);
                     yield entry.entity;
                     continue;
@@ -118,8 +118,8 @@ export default class EntityQuery<T = any>
         const reader = await this.context.driver.executeReader(query, signal);
         try {
             for await (const iterator of reader.next(10, signal)) {
-                Object.setPrototypeOf(iterator, select.model.typeClass.prototype);
-                const entry = this.context.changeSet.getEntry(iterator, iterator);
+                const item = select.model?.map(iterator) ?? iterator;
+                const entry = this.context.changeSet.getEntry(item, item);
                 relationMapper.fix(entry);
             }
         } catch (error) {
@@ -183,7 +183,7 @@ export default class EntityQuery<T = any>
                     callee: Identifier.create({ value: "COUNT"}),
                     arguments: [ Identifier.create({ value: "*"})]
                 }),
-                alias: QuotedLiteral.create({ literal: "count" })
+                alias: Expression.identifier("c1")
             })
         ] };
 
@@ -194,7 +194,7 @@ export default class EntityQuery<T = any>
 
         try {
             for await (const iterator of reader.next()) {
-                return iterator.count as number;
+                return iterator.c1 as number;
             }
         } finally {
             await reader.dispose();

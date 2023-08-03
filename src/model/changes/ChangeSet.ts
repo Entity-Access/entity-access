@@ -52,7 +52,7 @@ export default class ChangeSet {
         if (c === Object) {
             throw new EntityAccessError("Entity type not set");
         }
-        const type = SchemaRegistry.model(c);
+        const type = this.context.model.getEntityType(c);
         const jsonKey = IdentityService.getIdentity(entity);
         if (jsonKey) {
             const existing = this.identityMap.get(jsonKey);

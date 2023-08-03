@@ -125,8 +125,8 @@ export function RelateToOne<T, TRelated>(c: IClassOf<TRelated>,
             relatedTypeClass: c,
             relatedName: NameParser.parseMember(inv),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
-            dotNotCreateIndex
+            dotNotCreateIndex,
+            singleInverseRelation: true
         });
-        r.relatedRelation.isCollection = false;
     };
 }

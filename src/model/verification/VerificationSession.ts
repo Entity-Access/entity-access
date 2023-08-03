@@ -3,8 +3,7 @@ import Logger from "../../common/Logger.js";
 import { TypeInfo } from "../../common/TypeInfo.js";
 import { IEntityRelation } from "../../decorators/IColumn.js";
 import { ServiceProvider } from "../../di/di.js";
-import EntityType from "../../entity-query/EntityType.js";
-import { ConditionalExpression, Constant, ExistsExpression, Expression, Identifier, ParameterExpression, QuotedLiteral, SelectStatement, TemplateLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
+import { ConditionalExpression, ExistsExpression, Expression, NumberLiteral, ParameterExpression, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import EntityContext from "../EntityContext.js";
 import EntityQuery from "../EntityQuery.js";
 import ChangeEntry from "../changes/ChangeEntry.js";
@@ -106,7 +105,7 @@ export default class VerificationSession {
         const eq = query as EntityQuery;
         for (const [key, value] of keys) {
             const test = Expression.equal(
-                Expression.member(eq.selectStatement.sourceParameter, Expression.quotedLiteral(key)),
+                Expression.member(eq.selectStatement.sourceParameter, Expression.identifier(key)),
                 Expression.constant(value)
             );
             compare = compare
@@ -127,10 +126,10 @@ export default class VerificationSession {
         this.select.sourceParameter = ParameterExpression.create({ name: "x"});
         const source = ValuesStatement.create({
             values: [
-                [Identifier.create({ value: "1"})]
+                [NumberLiteral.one]
             ],
-            as: QuotedLiteral.create({ literal: "a"}),
-            fields: [QuotedLiteral.create({ literal: "a"})]
+            as: Expression.identifier("a"),
+            fields: [Expression.identifier("a")]
         });
         this.select.source = source;
         const compiler = this.context.driver.compiler;
@@ -151,7 +150,7 @@ export default class VerificationSession {
     addError(query: EntityQuery, compare: Expression, error: string) {
         const select = { ... query.selectStatement};
         select.fields = [
-            Expression.identifier("1")
+            NumberLiteral.one
         ];
 
         const where = select.where

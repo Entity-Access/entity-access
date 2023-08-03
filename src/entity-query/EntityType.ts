@@ -3,9 +3,10 @@ import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/NameParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
-import { Expression, ExpressionAs, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { Expression, ExpressionAs, NumberLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
+import { IStringTransformer } from "../query/ast/IStringTransformer.js";
 
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
@@ -37,10 +38,10 @@ export default class EntityType {
     public get fullyQualifiedName() {
         return this.schema
             ? TableLiteral.create({
-                schema: QuotedLiteral.create({literal: this.schema}) ,
-                name: QuotedLiteral.create({ literal: this.name })
+                schema: Expression.identifier(this.schema) ,
+                name: Expression.identifier(this.name)
             })
-            : QuotedLiteral.create({ literal: this.name });
+            : Expression.identifier(this.name);
     }
 
     private fieldMap: Map<string, IColumn> = new Map();
@@ -49,6 +50,16 @@ export default class EntityType {
 
     private selectAll: SelectStatement;
     private selectOne: SelectStatement;
+
+    constructor(original?: EntityType, namingConvention?: IStringTransformer) {
+        if (!original) {
+            return;
+        }
+        this.typeClass = original.typeClass;
+        this.name = namingConvention ? namingConvention(original.name) : original.name;
+        this.schema = original.schema ? (namingConvention ? namingConvention(original.schema) : original.schema) : original.schema;
+        this.entityName = original.entityName;
+    }
 
     [addOrCreateColumnSymbol](name: string): IColumn {
         return this.fieldMap.get(name) ?? { name };
@@ -86,7 +97,7 @@ export default class EntityType {
         return this.fieldMap.get(name);
     }
 
-    addRelation(relation: IEntityRelation) {
+    addRelation(relation: IEntityRelation, getInverseModel?: (t) => EntityType) {
         // we will also set fk to the corresponding column
         this.relations.push(relation);
         this.relationMap.set(relation.name, relation);
@@ -108,8 +119,12 @@ export default class EntityType {
             fkColumn.dataType = "BigInt";
         }
 
+        if (!getInverseModel) {
+            return relation;
+        }
+
         // let us set inverse relations...
-        const relatedType = SchemaRegistry.model(relation.relatedTypeClass);
+        const relatedType = getInverseModel(relation.relatedTypeClass);
         relation.relatedEntity = relatedType;
         const inverseRelation: IEntityRelation = {
             name: relation.relatedName,
@@ -119,7 +134,7 @@ export default class EntityType {
             dotNotCreateIndex: true,
             fkColumn,
             isInverseRelation: true,
-            isCollection: true,
+            isCollection: relation.singleInverseRelation ? false : true,
             relatedRelation: relation,
             relatedEntity: this
         };
@@ -137,12 +152,7 @@ export default class EntityType {
         }
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
-        const fields = this.columns.map((c) => c.name !== c.columnName
-            ? ExpressionAs.create({
-                expression: Expression.member(as, c.columnName),
-                alias: QuotedLiteral.create({ literal: c.name })
-            })
-            : Expression.member(as, c.columnName));
+        const fields = this.columns.map((c) => Expression.member(as, c.columnName));
         this.selectAll = SelectStatement.create({
             source,
             model: this,
@@ -159,7 +169,7 @@ export default class EntityType {
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
         const fields = [
-            Expression.identifier("1")
+            NumberLiteral.one
         ];
         this.selectOne = SelectStatement.create({
             source,
@@ -168,5 +178,17 @@ export default class EntityType {
             fields
         });
         return { ... this.selectOne };
+    }
+
+    public map(row: any) {
+        const c = new this.typeClass();
+        for (const iterator of this.columns) {
+            const value = row[iterator.columnName];
+            if (value === void 0) {
+                continue;
+            }
+            c[iterator.name] = value;
+        }
+        return c;
     }
 }

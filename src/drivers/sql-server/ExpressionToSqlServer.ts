@@ -1,5 +1,5 @@
 import ExpressionToSql from "../../query/ast/ExpressionToSql.js";
-import { BooleanLiteral, Identifier, InsertStatement, OrderByExpression, ReturnUpdated, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BooleanLiteral, InsertStatement, NumberLiteral, OrderByExpression, ReturnUpdated, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import { ITextQuery, prepare } from "../../query/ast/IStringTransformer.js";
 
 export default class ExpressionToSqlServer extends ExpressionToSql {
@@ -63,7 +63,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
                 // lets set default order by... if not set...
                 // as sql server needs something to order by...
                 e.orderBy = [
-                    OrderByExpression.create({  target:  Identifier.create({ value: "1"})  })
+                    OrderByExpression.create({  target:  NumberLiteral.one  })
                 ];
             }
         }

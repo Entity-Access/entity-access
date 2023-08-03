@@ -56,6 +56,27 @@ export default class EntityContext {
         return query;
     }
 
+    filteredQuery<T>(type: IClassOf<T>, mode: "read" | "include" | "modify" | "delete", fail = false, parentType?, key?) {
+        const query = this.model.register(type).asQuery();
+        if (!this.verifyFilters) {
+            return query;
+        }
+        const events = this.eventsFor(type, fail);
+        if (events) {
+            switch(mode) {
+                case "read":
+                    return events.filter(query) ?? query;
+                case "include":
+                    return events.includeFilter(query, parentType, key) ?? query;
+                case "modify":
+                    return events.modify(query) ?? query;
+                case "delete":
+                    return events.delete(query) ?? query;
+            }
+        }
+        return query;
+    }
+
     public async saveChanges(signal?: AbortSignal) {
 
         if (this[isChanging]) {
@@ -160,7 +181,7 @@ export default class EntityContext {
 
     protected async saveChangesWithoutEvents(signal: AbortSignal) {
         return this.driver.runInTransaction(async () => {
-            const copy = [].concat(this.changeSet.entries);
+            const copy = [].concat(this.changeSet.entries) as ChangeEntry[];
             for (const iterator of copy) {
                 switch (iterator.status) {
                     case "inserted":

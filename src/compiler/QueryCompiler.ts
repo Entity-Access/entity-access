@@ -5,8 +5,7 @@ import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
 import EntityQuery from "../model/EntityQuery.js";
-import ReplaceParameter from "../query/ast/ReplaceParameter.js";
-
+import { NamingConventions } from "./NamingConventions.js";
 
 export class CompiledQuery {
     constructor(
@@ -22,7 +21,8 @@ export default class QueryCompiler {
     public readonly arrowToExpression: typeof ArrowToExpression;
     public readonly expressionToSql: typeof ExpressionToSql;
 
-    public readonly quotedLiteral: IStringTransformer;
+    // public readonly quotedLiteral: IStringTransformer;
+    public readonly namingConvention: IStringTransformer;
     public readonly escapeLiteral: IStringTransformer;
 
     public readonly sqlMethodTransformer: ISqlMethodTransformer;
@@ -31,7 +31,8 @@ export default class QueryCompiler {
         {
             arrowToExpression = ArrowToExpression,
             expressionToSql = ExpressionToSql,
-            quotedLiteral = JSON.stringify,
+            namingConvention = NamingConventions.snakeCase,
+            // quotedLiteral = JSON.stringify,
             escapeLiteral = SqlLiteral.escapeLiteral,
             sqlMethodTransformer = PostgreSqlMethodTransformer
         }: Partial<QueryCompiler> = {}
@@ -39,7 +40,8 @@ export default class QueryCompiler {
         this.arrowToExpression = arrowToExpression;
         this.expressionToSql = expressionToSql;
         this.escapeLiteral = escapeLiteral;
-        this.quotedLiteral = quotedLiteral;
+        this.namingConvention = namingConvention;
+        // this.quotedLiteral = quotedLiteral;
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 

@@ -10,8 +10,8 @@ import WorkflowClock from "./WorkflowClock.js";
 @Table("Workflows")
 @Index({
     name: "IX_Workflows_Group",
-    columns: [{ name: (x) => x.group, descending: false }],
-    filter: (x) => x.group !== null
+    columns: [{ name: (x) => x.groupName, descending: false }],
+    filter: (x) => x.groupName !== null
 })
 @Index({
     name: "IX_Workflows_ETA",
@@ -30,7 +30,7 @@ export class WorkflowStorage {
     public name: string;
 
     @Column({ dataType: "Char", length: 200, nullable: true })
-    public group: string;
+    public groupName: string;
 
     @Column({ dataType: "Char"})
     public input: string;
@@ -153,7 +153,7 @@ export default class EternityStorage {
         const db = new WorkflowContext(this.driver);
         const now = this.clock.utcNow;
         const lockedTTL = now.addMinutes(1);
-        return this.driver.runInTransaction(async () => {
+        return db.driver.runInTransaction(async () => {
             const list = await db.workflows
                 .where({now}, (p) => (x) => x.eta <= p.now
                     && (x.lockedTTL === null || x.lockedTTL <= p.now)

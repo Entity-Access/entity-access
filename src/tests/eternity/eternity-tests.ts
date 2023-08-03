@@ -65,7 +65,6 @@ export default async function (this: TestConfig) {
     scope.add(WorkflowClock, mockClock);
     scope.add(BaseDriver, this.driver);
     const storage = new EternityStorage(this.driver, mockClock);
-    await storage.seed();
     scope.add(Mailer, mailer);
     scope.add(EternityStorage, storage);
 
@@ -74,6 +73,8 @@ export default async function (this: TestConfig) {
 
     // this is an important step
     c.register(SendWorkflow);
+
+    await storage.seed();
 
     const id = await c.queue(SendWorkflow, "a");
 

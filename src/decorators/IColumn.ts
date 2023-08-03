@@ -6,6 +6,13 @@ import { ISqlType } from "./ISqlType.js";
 export interface IColumn {
     name?: string;
     columnName?: string;
+    explicitName?: boolean;
+
+    /**
+     * This will be used to retrieve data from provider.
+     */
+    formattedName?: string;
+
     order?: number;
     key?: boolean;
     /**
@@ -71,6 +78,8 @@ export interface IEntityRelation {
     isInverseRelation?: boolean;
 
     isCollection?: boolean;
+
+    singleInverseRelation?
 
 
     foreignKey: string;
