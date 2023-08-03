@@ -5,6 +5,7 @@ import { EntitySource } from "./EntitySource.js";
 import { BaseDriver } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
 import { IStringTransformer } from "../query/ast/IStringTransformer.js";
+import { IEntityRelation } from "../decorators/IColumn.js";
 
 const driverModelCache = Symbol("driverModelCache");
 
@@ -26,7 +27,7 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
         if (iterator.isInverseRelation) {
             continue;
         }
-        const relation = { ... iterator};
+        const relation: IEntityRelation = { ... iterator, fkColumn: void 0, relatedEntity: void 0,type: t };
         t.addRelation(relation, (tc) => getOrCreateModel(map, tc, namingConvention));
     }
     return t;

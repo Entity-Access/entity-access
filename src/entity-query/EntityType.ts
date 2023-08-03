@@ -151,12 +151,7 @@ export default class EntityType {
         }
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
-        const fields = this.columns.map((c) => c.name !== c.columnName
-            ? ExpressionAs.create({
-                expression: Expression.member(as, c.columnName),
-                alias: Expression.identifier(c.name)
-            })
-            : Expression.member(as, c.columnName));
+        const fields = this.columns.map((c) => Expression.member(as, c.columnName));
         this.selectAll = SelectStatement.create({
             source,
             model: this,

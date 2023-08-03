@@ -50,15 +50,15 @@ p1.name,
 p1.owner_id,
 p1.status
 FROM Products AS p1
- LEFT JOIN Users AS u ON p1.owner_id = u.userID
-WHERE u.dateCreated > $1`;
+ LEFT JOIN Users AS u ON p1.owner_id = u.user_id
+WHERE u.date_created > $1`;
 
 
 const join2 = `SELECT
-o1.orderItemID,
+o1.order_item_id,
 o1.order_id,
 o1.product_id,
-o1.priceID,
+o1.price_id,
 o1.amount
 FROM OrderItems AS o1
  INNER JOIN Products AS p ON o1.product_id = p.product_id

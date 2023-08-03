@@ -269,6 +269,13 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 return [(p) => p[chain[0]]];
             }
             const name = this.scope.nameOf(parameter);
+
+            // need to change name as per naming convention here...
+            const namingConvention = this.compiler.namingConvention;
+            if (scope.model && namingConvention) {
+                chain[0] = namingConvention(chain[0]);
+            }
+
             return [ QueryParameter.create(() => name) , "." , chain.join(".")];
         }
 
