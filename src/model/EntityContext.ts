@@ -181,7 +181,7 @@ export default class EntityContext {
 
     protected async saveChangesWithoutEvents(signal: AbortSignal) {
         return this.driver.runInTransaction(async () => {
-            const copy = [].concat(this.changeSet.entries);
+            const copy = [].concat(this.changeSet.entries) as ChangeEntry[];
             for (const iterator of copy) {
                 switch (iterator.status) {
                     case "inserted":
