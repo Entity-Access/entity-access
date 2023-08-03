@@ -50,6 +50,16 @@ export default class EntityType {
     private selectAll: SelectStatement;
     private selectOne: SelectStatement;
 
+    constructor(original?: EntityType) {
+        if (!original) {
+            return;
+        }
+        this.typeClass = original.typeClass;
+        this.name = original.name;
+        this.schema = original.schema;
+        this.entityName = original.entityName;
+    }
+
     [addOrCreateColumnSymbol](name: string): IColumn {
         return this.fieldMap.get(name) ?? { name };
     }
@@ -86,7 +96,7 @@ export default class EntityType {
         return this.fieldMap.get(name);
     }
 
-    addRelation(relation: IEntityRelation) {
+    addRelation(relation: IEntityRelation, getInverseModel?: (t) => EntityType) {
         // we will also set fk to the corresponding column
         this.relations.push(relation);
         this.relationMap.set(relation.name, relation);
@@ -108,8 +118,12 @@ export default class EntityType {
             fkColumn.dataType = "BigInt";
         }
 
+        if (!getInverseModel) {
+            return relation;
+        }
+
         // let us set inverse relations...
-        const relatedType = SchemaRegistry.model(relation.relatedTypeClass);
+        const relatedType = getInverseModel(relation.relatedTypeClass);
         relation.relatedEntity = relatedType;
         const inverseRelation: IEntityRelation = {
             name: relation.relatedName,
