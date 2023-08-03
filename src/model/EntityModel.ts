@@ -15,7 +15,7 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
         return t;
     }
     const original = SchemaRegistry.model(type);
-    t = new EntityType(original);
+    t = new EntityType(original, namingConvention);
     map.set(type,  t);
     for (const iterator of original.columns) {
         const column = { ... iterator };

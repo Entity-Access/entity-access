@@ -6,6 +6,7 @@ import SchemaRegistry from "../decorators/SchemaRegistry.js";
 import { Expression, ExpressionAs, NumberLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
+import { IStringTransformer } from "../query/ast/IStringTransformer.js";
 
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
@@ -50,13 +51,13 @@ export default class EntityType {
     private selectAll: SelectStatement;
     private selectOne: SelectStatement;
 
-    constructor(original?: EntityType) {
+    constructor(original?: EntityType, namingConvention?: IStringTransformer) {
         if (!original) {
             return;
         }
         this.typeClass = original.typeClass;
-        this.name = original.name;
-        this.schema = original.schema;
+        this.name = namingConvention ? namingConvention(original.name) : original.name;
+        this.schema = original.schema ? (namingConvention ? namingConvention(original.schema) : original.schema) : original.schema;
         this.entityName = original.entityName;
     }
 

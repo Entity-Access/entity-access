@@ -48,27 +48,27 @@ export default class TestRunner {
                 port: postGresPort,
                 // deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
             }),
-            new SqlServerDriver({
-                database,
-                host,
-                user: "sa",
-                password: "$EntityAccess2023",
-                port: 1433,
-                options: {
-                    encrypt: true, // for azure
-                    trustServerCertificate: true // change to true for local dev / self-signed certs
-                },
-                // deleteDatabase: async (driver) => {
-                //     try {
-                //         driver.config.database = "master";
-                //         await driver.executeQuery(`USE master;
-                //         ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                //         DROP DATABASE ${database}`);
-                //     } catch {
+            // new SqlServerDriver({
+            //     database,
+            //     host,
+            //     user: "sa",
+            //     password: "$EntityAccess2023",
+            //     port: 1433,
+            //     options: {
+            //         encrypt: true, // for azure
+            //         trustServerCertificate: true // change to true for local dev / self-signed certs
+            //     },
+            //     // deleteDatabase: async (driver) => {
+            //     //     try {
+            //     //         driver.config.database = "master";
+            //     //         await driver.executeQuery(`USE master;
+            //     //         ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+            //     //         DROP DATABASE ${database}`);
+            //     //     } catch {
 
-                //     }
-                // }
-            })
+            //     //     }
+            //     // }
+            // })
         ];
     }
 
