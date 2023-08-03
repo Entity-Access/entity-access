@@ -35,20 +35,27 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
 
 export default class EntityModel {
 
-    public entities: Map<IClassOf<any>, EntitySource> = new Map();
+    public sources: Map<IClassOf<any>, EntitySource> = new Map();
+
+    public types: Map<IClassOf<any>, EntityType> = new Map();
 
     constructor(private context: EntityContext) {
     }
 
     register<T>(type: IClassOf<T>) {
-        let source = this.entities.get(type);
+        let source = this.sources.get(type);
         if (!source) {
             const cache = (this.context.driver[driverModelCache] ??= new Map());
-            const model = getOrCreateModel(cache, type, this.context.driver.compiler.namingConvention);
-            source = new EntitySource(model, this.context);
-            this.entities.set(type, source);
+            const entityType = getOrCreateModel(cache, type, this.context.driver.compiler.namingConvention);
+            this.types.set(type, entityType);
+            source = new EntitySource(entityType, this.context);
+            this.sources.set(type, source);
         }
         return source as EntitySource<T>;
+    }
+
+    getEntityType<T>(type: IClassOf<T>): EntityType{
+        return this.types.get(type);
     }
 
 }
