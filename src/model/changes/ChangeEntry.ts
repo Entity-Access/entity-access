@@ -89,9 +89,9 @@ export default class ChangeEntry<T = any> implements IChanges {
         this.detectDependencies();
 
         for (const iterator of columns) {
-            const oldValue = original[iterator.columnName];
+            const oldValue = original[iterator.name];
             const newValue = entity[iterator.name];
-            if (entity[iterator.name] !== original[iterator.columnName]) {
+            if (entity[iterator.name] !== original[iterator.name]) {
                 let modifiedEntry = this.modified.get(iterator);
                 if (!modifiedEntry) {
                     modifiedEntry = { column: iterator, oldValue, newValue };
