@@ -79,6 +79,8 @@ export interface IEntityRelation {
 
     isCollection?: boolean;
 
+    singleInverseRelation?
+
 
     foreignKey: string;
 

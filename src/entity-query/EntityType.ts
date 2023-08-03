@@ -134,7 +134,7 @@ export default class EntityType {
             dotNotCreateIndex: true,
             fkColumn,
             isInverseRelation: true,
-            isCollection: true,
+            isCollection: relation.singleInverseRelation ? false : true,
             relatedRelation: relation,
             relatedEntity: this
         };
