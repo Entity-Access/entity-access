@@ -300,6 +300,9 @@ export class BooleanLiteral extends Expression {
 }
 
 export class NumberLiteral extends Expression {
+
+    static one = NumberLiteral.create({ value: 1 });
+
     readonly type = "NumberLiteral";
     public value: number;
 }

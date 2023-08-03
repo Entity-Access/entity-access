@@ -126,7 +126,7 @@ export default class VerificationSession {
         this.select.sourceParameter = ParameterExpression.create({ name: "x"});
         const source = ValuesStatement.create({
             values: [
-                [NumberLiteral.create({ value: 1})]
+                [NumberLiteral.one]
             ],
             as: QuotedLiteral.create({ literal: "a"}),
             fields: [QuotedLiteral.create({ literal: "a"})]
@@ -150,7 +150,7 @@ export default class VerificationSession {
     addError(query: EntityQuery, compare: Expression, error: string) {
         const select = { ... query.selectStatement};
         select.fields = [
-            Expression.identifier("1")
+            NumberLiteral.one
         ];
 
         const where = select.where

@@ -3,7 +3,7 @@ import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/NameParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
-import { Expression, ExpressionAs, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { Expression, ExpressionAs, NumberLiteral, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
 
@@ -159,7 +159,7 @@ export default class EntityType {
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
         const fields = [
-            Expression.identifier("1")
+            NumberLiteral.one
         ];
         this.selectOne = SelectStatement.create({
             source,

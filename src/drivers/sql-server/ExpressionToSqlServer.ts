@@ -63,7 +63,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
                 // lets set default order by... if not set...
                 // as sql server needs something to order by...
                 e.orderBy = [
-                    OrderByExpression.create({  target:  NumberLiteral.create({ value: 1})  })
+                    OrderByExpression.create({  target:  NumberLiteral.one  })
                 ];
             }
         }
