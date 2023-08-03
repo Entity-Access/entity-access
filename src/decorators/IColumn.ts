@@ -6,6 +6,7 @@ import { ISqlType } from "./ISqlType.js";
 export interface IColumn {
     name?: string;
     columnName?: string;
+    explicitName?: boolean;
     order?: number;
     key?: boolean;
     /**
