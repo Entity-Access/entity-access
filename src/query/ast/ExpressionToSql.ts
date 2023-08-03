@@ -2,7 +2,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { filteredSymbol } from "../../model/events/EntityEvents.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
@@ -75,7 +75,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const source = e.source.type === "ValuesStatement"
             ? prepare `(${this.visit(e.source)})`
             : this.visit(e.source);
-        const as = e.sourceParameter ? prepare ` AS ${this.compiler.quotedLiteral( this.scope.nameOf(e.sourceParameter))}` : "";
+        const as = e.sourceParameter ? prepare ` AS ${this.scope.nameOf(e.sourceParameter)}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
         return prepare `SELECT
         ${fields}
@@ -98,10 +98,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 this.visit(iterator.where);
             }
         }
-    }
-
-    visitQuotedLiteral(e: QuotedLiteral): ITextQuery {
-        return [this.compiler.quotedLiteral(e.literal)];
     }
 
     visitExpressionAs(e: ExpressionAs): ITextQuery {
@@ -273,7 +269,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 return [(p) => p[chain[0]]];
             }
             const name = this.scope.nameOf(parameter);
-            return [ QueryParameter.create(() => name, this.compiler.quotedLiteral) , "." , chain.map((x) => this.compiler.quotedLiteral(x)).join(".")];
+            return [ QueryParameter.create(() => name) , "." , chain.join(".")];
         }
 
         const { target, computed, property } = me;
@@ -395,9 +391,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
         const table = this.visit(e.source);
         const where = this.visit(e.where);
-        const as = e.as ? prepare ` AS ${ e.as.type === "QuotedLiteral"
-            ? this.compiler.quotedLiteral(e.as.literal)
-            : this.compiler.quotedLiteral( this.scope.nameOf(e.as) )}` : "";
+        const as = e.as ? prepare ` AS ${ e.as.type === "Identifier"
+            ? e.as.value
+            : this.scope.nameOf(e.as )}` : "";
         return prepare ` ${e.joinType || "LEFT"} JOIN ${table}${as} ON ${where}`;
     }
 
@@ -519,7 +515,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     as: joinParameter,
                     joinType,
                     model: joinParameter.model,
-                    source: Expression.quotedLiteral(relation.relatedEntity.name),
+                    source: Expression.identifier(relation.relatedEntity.name),
                     where: Expression.equal(
                         Expression.member(parameter, fkColumn.columnName),
                         Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)

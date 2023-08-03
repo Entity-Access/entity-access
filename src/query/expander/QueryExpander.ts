@@ -95,11 +95,11 @@ export class QueryExpander {
             joinWhere = Expression.equal(
                 Expression.member(
                     parent.sourceParameter,
-                    Expression.quotedLiteral(fk.columnName)
+                    Expression.identifier(fk.columnName)
                 ),
                 Expression.member(
                     select.sourceParameter,
-                    Expression.quotedLiteral(model.keys[0].columnName)
+                    Expression.identifier(model.keys[0].columnName)
                 )
             );
             // load parent..
@@ -121,11 +121,11 @@ export class QueryExpander {
         joinWhere = Expression.equal(
             Expression.member(
                 parent.sourceParameter,
-                Expression.quotedLiteral(fk.columnName)
+                Expression.identifier(fk.columnName)
             ),
             Expression.member(
                 select.sourceParameter,
-                Expression.quotedLiteral(relation.relatedEntity.keys[0].columnName)
+                Expression.identifier(relation.relatedEntity.keys[0].columnName)
             )
         );
 

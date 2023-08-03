@@ -22,7 +22,7 @@ export default class QueryCompiler {
     public readonly arrowToExpression: typeof ArrowToExpression;
     public readonly expressionToSql: typeof ExpressionToSql;
 
-    public readonly quotedLiteral: IStringTransformer;
+    // public readonly quotedLiteral: IStringTransformer;
     public readonly escapeLiteral: IStringTransformer;
 
     public readonly sqlMethodTransformer: ISqlMethodTransformer;
@@ -31,7 +31,7 @@ export default class QueryCompiler {
         {
             arrowToExpression = ArrowToExpression,
             expressionToSql = ExpressionToSql,
-            quotedLiteral = JSON.stringify,
+            // quotedLiteral = JSON.stringify,
             escapeLiteral = SqlLiteral.escapeLiteral,
             sqlMethodTransformer = PostgreSqlMethodTransformer
         }: Partial<QueryCompiler> = {}
@@ -39,7 +39,7 @@ export default class QueryCompiler {
         this.arrowToExpression = arrowToExpression;
         this.expressionToSql = expressionToSql;
         this.escapeLiteral = escapeLiteral;
-        this.quotedLiteral = quotedLiteral;
+        // this.quotedLiteral = quotedLiteral;
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 

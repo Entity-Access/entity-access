@@ -3,7 +3,7 @@ import Logger from "../../common/Logger.js";
 import { TypeInfo } from "../../common/TypeInfo.js";
 import { IEntityRelation } from "../../decorators/IColumn.js";
 import { ServiceProvider } from "../../di/di.js";
-import { ConditionalExpression, ExistsExpression, Expression, NumberLiteral, ParameterExpression, QuotedLiteral, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { ConditionalExpression, ExistsExpression, Expression, NumberLiteral, ParameterExpression, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import EntityContext from "../EntityContext.js";
 import EntityQuery from "../EntityQuery.js";
 import ChangeEntry from "../changes/ChangeEntry.js";
@@ -105,7 +105,7 @@ export default class VerificationSession {
         const eq = query as EntityQuery;
         for (const [key, value] of keys) {
             const test = Expression.equal(
-                Expression.member(eq.selectStatement.sourceParameter, Expression.quotedLiteral(key)),
+                Expression.member(eq.selectStatement.sourceParameter, Expression.identifier(key)),
                 Expression.constant(value)
             );
             compare = compare
@@ -128,8 +128,8 @@ export default class VerificationSession {
             values: [
                 [NumberLiteral.one]
             ],
-            as: QuotedLiteral.create({ literal: "a"}),
-            fields: [QuotedLiteral.create({ literal: "a"})]
+            as: Expression.identifier("a"),
+            fields: [Expression.identifier("a")]
         });
         this.select.source = source;
         const compiler = this.context.driver.compiler;

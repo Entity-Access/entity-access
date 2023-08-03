@@ -125,7 +125,7 @@ export default class PostgreSqlDriver extends BaseDriver {
                     if(r.rowCount === 1) {
                         return;
                     }
-                    await connection.query("CREATE DATABASE " + JSON.stringify(db));
+                    await connection.query(`CREATE DATABASE "${db}"`);
                 } finally {
                     await connection.end();
                 }

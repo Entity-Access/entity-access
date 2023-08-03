@@ -9,14 +9,14 @@ export default class SqlServerQueryCompiler extends QueryCompiler {
     constructor({
         arrowToExpression = ArrowToExpression,
         expressionToSql = ExpressionToSqlServer,
-        quotedLiteral = SqlServerLiteral.quotedLiteral,
+        // quotedLiteral = SqlServerLiteral.quotedLiteral,
         escapeLiteral = SqlServerLiteral.escapeLiteral,
         sqlMethodTransformer = SqlServerSqlMethodTransformer
     }: Partial<QueryCompiler> = {}) {
         super({
             arrowToExpression,
             expressionToSql,
-            quotedLiteral,
+            // quotedLiteral,
             escapeLiteral,
             sqlMethodTransformer
         });

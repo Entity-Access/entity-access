@@ -3,7 +3,7 @@ import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/NameParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
-import { Expression, ExpressionAs, NumberLiteral, QuotedLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { Expression, ExpressionAs, NumberLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
 
@@ -37,10 +37,10 @@ export default class EntityType {
     public get fullyQualifiedName() {
         return this.schema
             ? TableLiteral.create({
-                schema: QuotedLiteral.create({literal: this.schema}) ,
-                name: QuotedLiteral.create({ literal: this.name })
+                schema: Expression.identifier(this.schema) ,
+                name: Expression.identifier(this.name)
             })
-            : QuotedLiteral.create({ literal: this.name });
+            : Expression.identifier(this.name);
     }
 
     private fieldMap: Map<string, IColumn> = new Map();
@@ -140,7 +140,7 @@ export default class EntityType {
         const fields = this.columns.map((c) => c.name !== c.columnName
             ? ExpressionAs.create({
                 expression: Expression.member(as, c.columnName),
-                alias: QuotedLiteral.create({ literal: c.name })
+                alias: Expression.identifier(c.name)
             })
             : Expression.member(as, c.columnName));
         this.selectAll = SelectStatement.create({

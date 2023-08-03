@@ -30,7 +30,7 @@ export default abstract class Migrations {
             // parse..
             const source = context.query(type.typeClass) as EntityQuery<any>;
             const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${index.filter}` as any);
-            index.filter = textQuery.join("").split( this.compiler.quotedLiteral(source.selectStatement.sourceParameter.name) + ".").join("");
+            index.filter = textQuery.join("").split( source.selectStatement.sourceParameter.name + ".").join("");
         }
 
         this.migrateIndex(context, index, type);
