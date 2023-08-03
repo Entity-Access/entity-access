@@ -3,8 +3,7 @@ import Logger from "../../common/Logger.js";
 import { TypeInfo } from "../../common/TypeInfo.js";
 import { IEntityRelation } from "../../decorators/IColumn.js";
 import { ServiceProvider } from "../../di/di.js";
-import EntityType from "../../entity-query/EntityType.js";
-import { ConditionalExpression, Constant, ExistsExpression, Expression, Identifier, ParameterExpression, QuotedLiteral, SelectStatement, TemplateLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
+import { ConditionalExpression, ExistsExpression, Expression, NumberLiteral, ParameterExpression, QuotedLiteral, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import EntityContext from "../EntityContext.js";
 import EntityQuery from "../EntityQuery.js";
 import ChangeEntry from "../changes/ChangeEntry.js";
@@ -127,7 +126,7 @@ export default class VerificationSession {
         this.select.sourceParameter = ParameterExpression.create({ name: "x"});
         const source = ValuesStatement.create({
             values: [
-                [Identifier.create({ value: "1"})]
+                [NumberLiteral.create({ value: 1})]
             ],
             as: QuotedLiteral.create({ literal: "a"}),
             fields: [QuotedLiteral.create({ literal: "a"})]

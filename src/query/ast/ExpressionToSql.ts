@@ -113,11 +113,11 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitBigIntLiteral({ value }: BigIntLiteral): ITextQuery {
-        return [() => value];
+        return [value.toString()];
     }
 
     visitNumberLiteral( { value }: NumberLiteral): ITextQuery {
-        return [() => value];
+        return [value.toString()];
     }
 
     visitStringLiteral({ value }: StringLiteral): ITextQuery {
@@ -171,7 +171,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 // }
                                 select = { ... (query as EntityQuery).selectStatement };
                                 select.fields = [
-                                    Identifier.create({ value: "1"})
+                                    NumberLiteral.create({ value: 1})
                                 ];
                             } else {
                                 select = relatedModel.selectOneNumber();

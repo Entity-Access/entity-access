@@ -1,6 +1,6 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, Expression, ExpressionAs, Identifier, JoinExpression, MemberExpression, ParameterExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { Expression, JoinExpression, ParameterExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
 import { ITextQueryFragment, QueryParameter } from "../query/ast/IStringTransformer.js";
 import EntityContext from "./EntityContext.js";
 

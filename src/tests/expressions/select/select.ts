@@ -1,8 +1,5 @@
 import assert from "assert";
 import QueryCompiler from "../../../compiler/QueryCompiler.js";
-import ArrowToExpression from "../../../query/parser/ArrowToExpression.js";
-import { ExpressionAs, Identifier, MemberExpression, NewObjectExpression, QuotedLiteral } from "../../../query/ast/Expressions.js";
-import ExpressionToSql from "../../../query/ast/ExpressionToSql.js";
 
 type ICustomer = { firstName: string; lastName: string; emailAddress: string; birthDate: Date };
 
@@ -19,6 +16,6 @@ export default function() {
 
     r = compiler.execute({ name }, (p) => ({ id }) => ({ error: `${id > 0 ? "Error" : ""}` }));
 
-    assert.strictEqual(`FROM (CONCAT((CASE WHEN "x1"."id" > $1 THEN $2 ELSE $3 END)) AS "error")`, r.text);
+    assert.strictEqual(`FROM (CONCAT((CASE WHEN "x1"."id" > 0 THEN $1 ELSE $2 END)) AS "error")`, r.text);
 
 }
