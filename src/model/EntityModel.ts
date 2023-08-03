@@ -23,6 +23,10 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
         t.addColumn(column);
         column.entityType = t;
     }
+    // sort keys...
+    if (t.keys.length > 1) {
+        t.keys.sort((a, b) => a.order - b.order);
+    }
     for (const iterator of original.relations) {
         if (iterator.isInverseRelation) {
             continue;
