@@ -122,7 +122,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitStringLiteral({ value }: StringLiteral): ITextQuery {
         const escapeLiteral = this.compiler.escapeLiteral;
-        return [() => escapeLiteral(value)];
+        return [escapeLiteral(value)];
     }
 
     visitBooleanLiteral( { value }: BooleanLiteral): ITextQuery {
