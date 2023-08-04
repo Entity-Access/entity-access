@@ -39,7 +39,10 @@ export default abstract class Workflow<TIn = any, TOut = any> {
 
     constructor(p: Partial<Workflow>) {
         Object.setPrototypeOf(p, new.target.prototype);
-        return p as Workflow;
+        const w = p as Workflow;
+        w.preserveTime = TimeSpan.fromMinutes(5);
+        w.failedPreserveTime = TimeSpan.fromDays(1);
+        return w;
     }
 
     public abstract run(): Promise<TOut>;

@@ -256,6 +256,7 @@ export default class EternityContext {
                     return;
                 }
                 workflow.error = JSON.stringify(error.stack ?? error);
+                console.error(error);
                 workflow.state = "failed";
                 workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
             }
