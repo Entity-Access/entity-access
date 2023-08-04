@@ -1,8 +1,10 @@
 import Logger from "../common/Logger.js";
 import { DisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
+import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
 import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
+import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
@@ -114,9 +116,11 @@ export default class EntityQuery<T = any>
     }
 
     async load(relationMapper: RelationMapper, session: Logger, select: SelectStatement, signal: AbortSignal) {
-        const query = this.context.driver.compiler.compileExpression(this, select);
-        const reader = await this.context.driver.executeReader(query, signal);
+        let query: { text, values };
+        let reader: IDbReader;
         try {
+            query = this.context.driver.compiler.compileExpression(this, select);
+            reader = await this.context.driver.executeReader(query, signal);
             for await (const iterator of reader.next(10, signal)) {
                 const item = select.model?.map(iterator) ?? iterator;
                 const entry = this.context.changeSet.getEntry(item, item);
@@ -126,7 +130,7 @@ export default class EntityQuery<T = any>
             session.error(`Failed loading ${query.text}\n${error.stack ?? error}`);
             throw error;
         } finally {
-            await reader.dispose();
+            await reader?.dispose();
         }
     }
 
