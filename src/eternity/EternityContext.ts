@@ -73,7 +73,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
 
             try {
 
-                const types = Object.getPrototypeOf(this)?.[injectServiceKeysSymbol]?.[name] as any[];
+                const types = old[injectServiceKeysSymbol] as any[];
                 for (let index = a.length; index < types.length; index++) {
                     const element = ServiceProvider.resolve(this, types[index]);
                     a.push(element);
