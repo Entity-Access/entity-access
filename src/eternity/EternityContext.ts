@@ -234,7 +234,8 @@ export default class EternityContext {
         try {
 
             const schema = WorkflowRegistry.getByName(workflow.name);
-            const { input, eta, id, updated } = workflow;
+            const { eta, id, updated } = workflow;
+            const input = JSON.parse(workflow.input);
             const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) });
             for (const iterator of schema.activities) {
                 instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
