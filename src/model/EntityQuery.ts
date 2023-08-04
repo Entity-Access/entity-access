@@ -189,19 +189,27 @@ export default class EntityQuery<T = any>
                 }),
                 alias: Expression.identifier("c1")
             })
-        ] };
+            ],
+            orderBy: void 0
+        };
 
         const nq = new EntityQuery({ ... this, selectStatement: select });
 
-        const query = this.context.driver.compiler.compileExpression(nq, select);
-        const reader = await this.context.driver.executeReader(query);
-
+        const scope = new DisposableScope();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
         try {
+            query = this.context.driver.compiler.compileExpression(nq, select);
+            const reader = await this.context.driver.executeReader(query);
+            scope.register(reader);
             for await (const iterator of reader.next()) {
                 return iterator.c1 as number;
             }
+        } catch (error) {
+            session.error(`Failed executing ${query.text}`);
+            throw error;
         } finally {
-            await reader.dispose();
+            await scope.dispose();
         }
 
     }
