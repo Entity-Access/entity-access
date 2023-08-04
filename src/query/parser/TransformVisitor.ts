@@ -80,4 +80,8 @@ export default class TransformVisitor extends BabelVisitor<bpe.Node> {
         return bpe.objectProperty(key, value, node.computed, node.shorthand, node.decorators);
     }
 
+    visitArrayExpression(node: bpe.ArrayExpression): bpe.Node {
+        return bpe.arrayExpression(this.transform(node.elements));
+    }
+
 }
