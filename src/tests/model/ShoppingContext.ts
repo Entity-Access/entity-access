@@ -3,6 +3,7 @@ import Column from "../../decorators/Column.js";
 import { RelateTo } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
+import DateTime from "../../types/DateTime.js";
 
 export const statusPublished = "published";
 
@@ -21,6 +22,8 @@ export class ShoppingContext extends EntityContext {
     public orderItems = this.model.register(OrderItem);
 
     public users = this.model.register(User);
+
+    public userCategories = this.model.register(UserCategory);
 
 }
 
@@ -45,6 +48,8 @@ export class User {
 
     public orders: Order[];
 
+    public categories: UserCategory[];
+
 }
 
 @Table("Categories")
@@ -58,8 +63,34 @@ export class Category {
 
     public productCategories: ProductCategory[];
 
+    public users: UserCategory[];
+
 }
 
+@Table("UserCategories")
+export class UserCategory {
+
+    @Column({ key: true, dataType: "BigInt" })
+    @RelateTo(User, {
+        property: (uc) => uc.user,
+        inverseProperty: (u) => u.categories
+    })
+    public userID: number;
+
+    @Column({ key: true, dataType: "Char", length: 200 })
+    @RelateTo(Category, {
+        property: (uc) => uc.category,
+        inverseProperty: (c) => c.users
+    })
+    public categoryID: string;
+
+    @Column({})
+    public lastUpdated: DateTime;
+
+    public user: User;
+
+    public category: Category;
+}
 
 @Table("Products")
 export class Product {

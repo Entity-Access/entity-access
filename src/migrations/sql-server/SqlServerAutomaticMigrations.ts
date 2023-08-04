@@ -82,16 +82,18 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         for (const iterator of keys) {
             let def = iterator.columnName + " ";
             if (iterator.autoGenerate) {
-                def += this.getColumnDefinition(iterator) + " IDENTITY(1,1)";
+                def += `${this.getColumnDefinition(iterator)} NOT NULL IDENTITY(1,1)`;
             } else {
-                def += this.getColumnDefinition(iterator);
+                def += `${this.getColumnDefinition(iterator)} NOT NULL`;
             }
-            def += " NOT NULL primary key\r\n\t";
+            // def += " NOT NULL\r\n\t";
             fields.push(def);
         }
 
         await driver.executeQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
-            CREATE TABLE ${name} (${fields.join(",")});
+            CREATE TABLE ${name} (${fields.join(",")}
+            , CONSTRAINT PK_${name} PRIMARY KEY(${keys.map((x) => x.columnName)})
+            );
         END`);
 
     }

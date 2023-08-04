@@ -10,8 +10,7 @@ export default class IdentityService {
         return JSON.stringify({ type, keys });
     }
 
-    public static getIdentity(entity) {
-        const entityType = SchemaRegistry.model(Object.getPrototypeOf(entity).constructor);
+    public static getIdentity(entityType: EntityType, entity) {
         const keys = [];
         for (const iterator of entityType.keys) {
             const key = entity[iterator.name];
