@@ -196,7 +196,38 @@ export const ServiceCollection = {
     [registrationsSymbol]: registrations
 };
 
-export default function Inject(target, key, index?: number) {
+// const injectedMethodSymbol = Symbol("injectedMethod");
+
+// interface IInjectedFunction {
+//     (... a: any[]): any;
+//     [injectedMethodSymbol]?: { [key: string]: any };
+// }
+
+// function createInjectedMethod(target: any, methodName: string, parameterIndex: number, plist: any[]) {
+//     const method = target[methodName] as IInjectedFunction;
+//     let value = method;
+//     let parameterTypes = method[injectedMethodSymbol];
+//     if (!parameterTypes) {
+//         parameterTypes = [];
+//         function injectedMethod(... a: any[]) {
+//             for (let index = a.length; index < parameterTypes.length; index++) {
+//                 const element = parameterTypes[index];
+//                 a.push(ServiceProvider.resolve(this, element));
+//             }
+//             return method.apply(this, a);
+//         };
+//         target[methodName] = injectedMethod;
+//         value = injectedMethod;
+//         return {
+//             value,
+//             enumerable: true,
+//             configurable: true
+//         };
+//     }
+//     parameterTypes[parameterIndex] = plist[parameterIndex];
+// }
+
+export default function Inject(target, key, index?: number): any {
 
     if (index !== void 0) {
 
@@ -204,10 +235,10 @@ export default function Inject(target, key, index?: number) {
 
             // this is parameter inside a method...
             const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
-            const methods = (target[injectServiceKeysSymbol] ??= {});
-            const pTypes = (methods[key] ??= []);
+            // return createInjectedMethod(target, key, index, plist);
+            const method = target[key];
+            const pTypes = (method[injectServiceKeysSymbol] ??= []);
             pTypes[index] = plist[index];
-
         } else {
 
             const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);

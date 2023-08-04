@@ -28,7 +28,7 @@ export default class ChangeSet {
     }
 
     [privateUpdateEntry](entry: ChangeEntry) {
-        const jsonKey = IdentityService.getIdentity(entry.entity);
+        const jsonKey = IdentityService.getIdentity(entry.type, entry.entity);
         if (jsonKey) {
             if (entry.status === "deleted") {
                 this.identityMap.delete(jsonKey);
@@ -53,7 +53,7 @@ export default class ChangeSet {
             throw new EntityAccessError("Entity type not set");
         }
         const type = this.context.model.getEntityType(c);
-        const jsonKey = IdentityService.getIdentity(entity);
+        const jsonKey = IdentityService.getIdentity(type, entity);
         if (jsonKey) {
             const existing = this.identityMap.get(jsonKey);
             if (existing) {

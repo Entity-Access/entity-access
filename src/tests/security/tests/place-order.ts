@@ -8,6 +8,7 @@ import { ShoppingContext, User } from "../../model/ShoppingContext.js";
 import { createContext } from "../../model/createContext.js";
 import { ShoppingContextEvents } from "../ShoppingContextEvents.js";
 import { UserInfo } from "../events/UserInfo.js";
+import DateTime from "../../../types/DateTime.js";
 
 export default async function(this: TestConfig) {
 
@@ -24,6 +25,43 @@ export default async function(this: TestConfig) {
 
     await getNewOrders.call(this);
 
+    await createInterests.call(this);
+}
+
+async function createInterests(this: TestConfig) {
+    const global = new ServiceProvider();
+    global.add(BaseDriver, this.driver);
+    const scope = global.createScope();
+    try {
+        const userID = 2;
+        const user = new UserInfo();
+        user.userID = userID;
+        ServiceCollection.register("Singleton", Logger, () => Logger.instance);
+        scope.add(BaseDriver, this.driver);
+        scope.add(UserInfo, user);
+        ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
+        const context = scope.create(ShoppingContext);
+        context.verifyFilters = false;
+        context.raiseEvents = false;
+
+        const headPhone = await context.products.all().include((x) => x.categories).firstOrFail();
+        const category = headPhone.categories[0];
+
+        context.userCategories.add({
+            userID,
+            categoryID: category.categoryID,
+            lastUpdated: DateTime.utcNow
+        });
+
+        await context.saveChanges();
+
+        const userCategories = await context.userCategories.where({ userID }, (p) => (x) => x.userID === p.userID).count();
+
+        assert.equal(1, userCategories);
+
+    } finally {
+        scope.dispose();
+    }
 }
 
 async function getNewOrders(this: TestConfig) {

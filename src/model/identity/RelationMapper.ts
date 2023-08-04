@@ -64,7 +64,7 @@ export default class RelationMapper {
         }
 
         // see if anyone is waiting for us or not...
-        const identity = IdentityService.getIdentity(entry.entity);
+        const identity = IdentityService.getIdentity(entry.type, entry.entity);
         const pending = this.map.get(identity);
         if (pending && pending.length) {
             for (const iterator of pending) {
