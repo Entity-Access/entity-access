@@ -204,7 +204,8 @@ export default function Inject(target, key, index?: number) {
 
             // this is parameter inside a method...
             const plist = (Reflect as any).getMetadata("design:paramtypes", target, key);
-            const pTypes = (target[injectServiceKeysSymbol] ??= {})[key] = [];
+            const methods = (target[injectServiceKeysSymbol] ??= {});
+            const pTypes = (methods[key] ??= []);
             pTypes[index] = plist[index];
 
         } else {
