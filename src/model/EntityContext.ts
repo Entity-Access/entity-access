@@ -165,13 +165,14 @@ export default class EntityContext {
             for (const { status, change, change: { entity}, events } of pending) {
                 switch(status) {
                     case "inserted":
-                        await events.afterInsert(entity, entity);
+                        await events.afterInsert(entity, change);
                         continue;
                     case "deleted":
-                        await events.afterDelete(entity, entity);
+                        await events.afterDelete(entity, change);
                         continue;
                     case "modified":
-                        await events.afterUpdate(entity, entity);
+                        await events.afterUpdate(entity, change);
+                        change.clearUpdated();
                         continue;
                 }
             }
