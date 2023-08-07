@@ -127,7 +127,7 @@ export default class EntityQuery<T = any>
                 relationMapper.fix(entry);
             }
         } catch (error) {
-            session.error(`Failed loading ${query.text}\n${error.stack ?? error}`);
+            session.error(`Failed loading ${query?.text}\n${error.stack ?? error}`);
             throw error;
         } finally {
             await reader?.dispose();
