@@ -146,6 +146,8 @@ export default class EntityContext {
                     continue;
                 case "modified":
                     await events.beforeUpdate(iterator.entity, iterator);
+                    // we might need to update modified
+                    iterator.detect();
                     if (this.verifyFilters) {
                         verificationSession.queueVerification(iterator, events);
                     }
