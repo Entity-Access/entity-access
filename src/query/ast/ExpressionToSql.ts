@@ -536,7 +536,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             } else {
                 // we will add parameter in scope in case if it is not there
                 // this is the case when query is composed over already existing
-                // query
+                // there is still an error on this one...
                 pc.parameter = parameter = join.as as ParameterExpression;
                 type = join.model;
                 pc.chain = [... chain];
