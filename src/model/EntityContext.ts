@@ -146,8 +146,6 @@ export default class EntityContext {
                     continue;
                 case "modified":
                     await events.beforeUpdate(iterator.entity, iterator);
-                    // we might need to update modified
-                    iterator.detect();
                     if (this.verifyFilters) {
                         verificationSession.queueVerification(iterator, events);
                     }
@@ -193,6 +191,8 @@ export default class EntityContext {
                         iterator.apply(r);
                         break;
                     case "modified":
+                        // this will update the modified map
+                        iterator.detect();
                         if (iterator.modified.size > 0) {
                             const update = this.driver.createUpdateExpression(iterator);
                             await this.executeExpression(update, signal);
