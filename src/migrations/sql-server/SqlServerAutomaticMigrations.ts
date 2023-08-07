@@ -22,7 +22,10 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         await this.createColumns(driver, type, nonKeyColumns);
 
-        await this.createIndexes(context, type, nonKeyColumns.filter((x) => x.fkRelation && !x.fkRelation?.dotNotCreateIndex));
+        await this.createIndexes(context, type, nonKeyColumns.filter((x) =>
+            x.fkRelation
+            && (!x.key || type.keys.indexOf(x) !== 0)
+            && !x.fkRelation?.dotNotCreateIndex));
 
     }
 
