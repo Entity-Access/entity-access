@@ -534,9 +534,15 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 pc.parameter = parameter;
                 pc.chain = [ ... chain ];
             } else {
+                // we will add parameter in scope in case if it is not there
+                // this is the case when query is composed over already existing
+                // query
                 pc.parameter = parameter = join.as as ParameterExpression;
                 type = join.model;
                 pc.chain = [... chain];
+                if (!this.scope.get(parameter)) {
+                    this.scope.create({ parameter, model: type });
+                }
             }
         }
 
