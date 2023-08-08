@@ -139,7 +139,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const targetProperty = this.getPropertyChain(e.callee as ExpressionType);
         if (targetProperty) {
             const { parameter , identifier, chain } = targetProperty;
-            const existingTarget = this.scope.get(parameter);
+            const existingTarget = parameter; // this.scope.get(parameter);
             if (existingTarget) {
 
 
