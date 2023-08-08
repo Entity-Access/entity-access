@@ -2,7 +2,7 @@ import { DisposableScope } from "../../common/usingAsync.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
-import { filteredSymbol } from "../../model/events/EntityEvents.js";
+import { FilteredExpression, filteredSymbol } from "../../model/events/FilteredExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
@@ -162,7 +162,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             let select: SelectStatement;
 
                             if (this.source?.context) {
-                                const query = this.source.context.filteredQuery(relatedType, "include", false);
+                                const query = FilteredExpression.isFiltered(e)
+                                    ? this.source.context.query(relatedType)
+                                    : this.source.context.filteredQuery(relatedType, "include", false);
                                 select = { ... (query as EntityQuery).selectStatement };
                                 select.fields = [
                                     NumberLiteral.create({ value: 1})
@@ -455,9 +457,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
                     if (!relation.isCollection) {
 
-                        // for now this is working well
-
                         let columnName = fkColumn.columnName;
+                        // for inverse relation, we need to
+                        // use primary key of current model
                         if (relation.isInverseRelation) {
                             columnName = peModel.keys[0].columnName;
                         }

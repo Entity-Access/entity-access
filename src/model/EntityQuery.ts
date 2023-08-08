@@ -8,7 +8,7 @@ import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
-import { filteredSymbol } from "./events/EntityEvents.js";
+import { filteredSymbol } from "./events/FilteredExpression.js";
 import RelationMapper from "./identity/RelationMapper.js";
 
 export default class EntityQuery<T = any>
