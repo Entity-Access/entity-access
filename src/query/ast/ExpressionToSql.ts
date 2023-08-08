@@ -92,7 +92,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (joins?.length) {
             for (const iterator of joins) {
                 if (iterator.as) {
-                    this.scope.create({ parameter: iterator.as as ParameterExpression, model: iterator.model});
+                    this.scope.create({ parameter: iterator.as as ParameterExpression, model: iterator.model, selectStatement: e});
                 }
             }
             for (const iterator of joins) {
@@ -161,11 +161,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
                             if (this.source?.context) {
                                 const query = this.source.context.filteredQuery(relatedType, "include", false);
-                                // // check if we have filter...
-                                // const entityEvents = this.source.context.eventsFor(relatedType, false);
-                                // if (entityEvents) {
-                                //     query = entityEvents.includeFilter(query);
-                                // }
                                 select = { ... (query as EntityQuery).selectStatement };
                                 select.fields = [
                                     NumberLiteral.create({ value: 1})
