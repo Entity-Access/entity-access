@@ -457,6 +457,11 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
                         // for now this is working well
 
+                        let columnName = fkColumn.columnName;
+                        if (relation.isInverseRelation) {
+                            columnName = peModel.keys[0].columnName;
+                        }
+
                         const select = scope?.selectStatement ?? this.source?.selectStatement;
                         if (select) {
                             select.joins ??= [];
@@ -474,7 +479,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 model: joinParameter.model,
                                 source: Expression.identifier(relation.relatedEntity.name),
                                 where: Expression.equal(
-                                    Expression.member(pe, fkColumn.columnName),
+                                    Expression.member(pe, columnName),
                                     Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
                                 )
                             });

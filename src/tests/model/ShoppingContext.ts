@@ -80,7 +80,7 @@ export class UserProfile {
         property: (up) => up.user,
         inverseProperty: (u) => u.profile
     })
-    public userID: number;
+    public profileID: number;
 
     public fullName: string;
 
