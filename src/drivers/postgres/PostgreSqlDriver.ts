@@ -96,11 +96,15 @@ export default class PostgreSqlDriver extends BaseDriver {
 
     public async executeQuery(command: IQuery, signal?: AbortSignal) {
         const connection = await this.getConnection(signal);
+        let text = "";
         // we need to change parameter styles
         try {
             const q = toQuery(command);
+            text = q.text;
             const result = await connection.query(q.text, q.values);
             return result;
+        } catch (error) {
+            throw new Error(`Failed executing ${text}\n${error}`);
         } finally {
             if (!this.transaction) {
                 await connection[Symbol.asyncDisposable]();
