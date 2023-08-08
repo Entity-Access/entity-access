@@ -1,7 +1,7 @@
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import EntityQuery from "../../model/EntityQuery.js";
-import { ArrowFunctionExpression, ExistsExpression, Expression, ExpressionType, JoinExpression, ParameterExpression, SelectStatement, TableSource } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, ExistsExpression, Expression, ExpressionType, JoinExpression, NumberLiteral, ParameterExpression, SelectStatement, TableSource } from "../ast/Expressions.js";
 import ArrowToExpression from "../parser/ArrowToExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
 
@@ -129,7 +129,7 @@ export class QueryExpander {
             )
         );
 
-        parent = { ... parent };
+        parent = { ... parent, fields: [ NumberLiteral.one ] };
 
         parent.where = parent.where
             ? Expression.logicalAnd(parent.where, joinWhere)

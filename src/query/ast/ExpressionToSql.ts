@@ -1,3 +1,4 @@
+import { DisposableScope } from "../../common/usingAsync.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
@@ -66,8 +67,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitSelectStatement(e: SelectStatement): ITextQuery {
 
-        this.prepareStatement(e);
-
+        const dispose = this.prepareStatement(e);
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
@@ -78,14 +78,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             : this.visit(e.source);
         const as = e.sourceParameter ? prepare ` AS ${this.scope.nameOf(e.sourceParameter)}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
-        return prepare `SELECT
+        const result = prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
-    }
+        dispose();
+        return result;
+   }
     prepareStatement(e: SelectStatement) {
+        const list = [] as ParameterExpression[];
         // inject parameter and types if we don't have it..
         if (e.sourceParameter && e.model) {
             this.scope.create({ parameter: e.sourceParameter, selectStatement: e });
+            list.push(e.sourceParameter);
         }
 
         const joins = e.joins;
@@ -93,12 +97,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             for (const iterator of joins) {
                 if (iterator.as) {
                     this.scope.create({ parameter: iterator.as as ParameterExpression, model: iterator.model, selectStatement: e});
+                    list.push(iterator.as as ParameterExpression);
                 }
             }
             // for (const iterator of joins) {
             //     this.visit(iterator.where);
             // }
         }
+        return () => {
+            for (const iterator of list) {
+                this.scope.delete(iterator);
+            }
+        };
     }
 
     visitExpressionAs(e: ExpressionAs): ITextQuery {
@@ -213,7 +223,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             });
 
                             const r = this.visit(exists);
-                            // this.scope.delete(param1);
+                            this.scope.delete(param1);
+                            this.scope.delete(select.sourceParameter);
                             return r;
                         }
 
