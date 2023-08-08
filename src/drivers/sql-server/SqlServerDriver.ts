@@ -212,7 +212,7 @@ class SqlReader implements IDbReader {
         return Promise.resolve();
     }
     [disposableSymbol]?(): void {
-        this.dispose()?.catch((error) => console.error(error));
+        this.dispose()?.catch((error) => console.error(error.stack ?? error));
     }
 
 }

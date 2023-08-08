@@ -45,7 +45,7 @@ class DbReader implements IDbReader {
         try {
             await this.cursor.close();
         } catch (error) {
-            console.error(error);
+            console.error(error.stack ?? error);
         }
 
         try {
@@ -53,7 +53,7 @@ class DbReader implements IDbReader {
                 await this.client[Symbol.asyncDisposable]();
             }
         } catch (error) {
-            console.error(error);
+            console.error(error.stack ?? error);
         }
     }
 }
@@ -130,7 +130,7 @@ export default class PostgreSqlDriver extends BaseDriver {
                     await connection.end();
                 }
             } catch (error) {
-                console.error(error);
+                console.error(error.stack ?? error);
                 throw error;
             }
         };

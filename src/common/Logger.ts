@@ -18,7 +18,7 @@ export default class Logger implements IDisposable {
     }
 
     error(a) {
-        console.error(a);
+        console.error(a.stack ?? a);
         return this;
     }
 
@@ -39,7 +39,7 @@ export class ConsoleLogger extends Logger {
     }
 
     error(a) {
-        console.error(a);
+        console.error(a.stack ?? a);
         return this;
     }
 
