@@ -95,9 +95,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     this.scope.create({ parameter: iterator.as as ParameterExpression, model: iterator.model, selectStatement: e});
                 }
             }
-            for (const iterator of joins) {
-                this.visit(iterator.where);
-            }
+            // for (const iterator of joins) {
+            //     this.visit(iterator.where);
+            // }
         }
     }
 
