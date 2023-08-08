@@ -2,6 +2,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { filteredSymbol } from "../../model/events/EntityEvents.js";
+import { NotSupportedError } from "../parser/NotSupportedError.js";
 import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
@@ -217,7 +218,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             });
 
                             const r = this.visit(exists);
-                            this.scope.delete(param1);
+                            // this.scope.delete(param1);
                             return r;
                         }
 
@@ -432,6 +433,60 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return all;
     }
 
+    private resolveExpression(x: Expression): Expression {
+        if (x.type === "ParameterExpression") {
+            const p1 = x as ParameterExpression;
+            const scoped = this.scope.get(p1);
+            return scoped?.replace ?? p1;
+        }
+        if (x.type !== "MemberExpression") {
+            return x;
+        }
+        const me = x as MemberExpression;
+        const target = this.resolveExpression(me.target);
+        if (target.type === "ParameterExpression" && me.property.type === "Identifier") {
+            const id = me.property as Identifier;
+            const pe = target as ParameterExpression;
+            const scope = this.scope.get(pe);
+            const peModel = scope?.model;
+            if (peModel) {
+                const { relation, relation: { fkColumn } = {} } = peModel.getProperty(id.value);
+                if (relation &&  !relation.isInverseRelation && fkColumn) {
+                    const select = scope?.selectStatement ?? this.source?.selectStatement;
+                    if (select) {
+                        select.joins ??= [];
+                        let join = select.joins.find((j) => j.model === relation.relatedEntity);
+                        if (join) {
+                            // verify if join exits..
+                            return join.as;
+                        }
+                        const joinType = fkColumn.nullable ? "LEFT" : "INNER";
+                        const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
+                        joinParameter.model = relation.relatedEntity;
+                        join = JoinExpression.create({
+                            as: joinParameter,
+                            joinType,
+                            model: joinParameter.model,
+                            source: Expression.identifier(relation.relatedEntity.name),
+                            where: Expression.equal(
+                                Expression.member(pe, fkColumn.columnName),
+                                Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
+                            )
+                        });
+                        select.joins.push(join);
+                        this.scope.create({ parameter: joinParameter, model: peModel});
+                        return join.as;
+                    }
+                }
+            }
+        }
+        if (target !== me.target) {
+            // parameter is replaced...
+            return MemberExpression.create({ target, property: me.property });
+        }
+        return x;
+    }
+
     /**
      * This will also create and replace joins if query is provided.
      * @param x MemberExpression
@@ -439,37 +494,55 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
      */
     private getPropertyChain(x: Expression): IPropertyChain {
 
-        // first replace root parameters
-        // if (x.type === "MemberExpression") {
-        //     x = this.replaceParameters(x as MemberExpression);
-        // }
+        const resolved = this.resolveExpression(x);
+
+        if (resolved.type === "MemberExpression") {
+            x = resolved;
+        }
 
         const chain = [];
-        let me = (x as ExpressionType).type === "MemberExpression"
-            ? x as MemberExpression
-            : void 0;
-        while(me) {
+        while (x) {
+            if (x.type === "ParameterExpression") {
+                return { parameter: x as ParameterExpression, chain };
+            }
+            if (x.type === "Identifier") {
+                return { identifier: x as Identifier, chain };
+            }
+            if (x.type === "MemberExpression") {
+                const me = x as MemberExpression;
+                x = me.target;
+                chain.unshift((me.property as Identifier).value);
+            }
+        }
 
-            const target = me.target as ExpressionType;
+        throw new NotSupportedError();
 
-            const property = me.property as ExpressionType;
-            if (property.type !== "Identifier") {
-                return;
-            }
-            chain.unshift(property.value);
-            if (target === this.root) {
-                return { parameter: target, chain };
-            }
-            if (target.type === "ParameterExpression") {
-                return this.flatten({ parameter: target, chain });
-            }
-            if (target.type === "Identifier") {
-                return this.flatten({ identifier: target, chain });
-            }
-            me = target.type === "MemberExpression"
-                ? target as MemberExpression
-                : void 0;
-        };
+        // const chain = [];
+        // let me = (x as ExpressionType).type === "MemberExpression"
+        //     ? x as MemberExpression
+        //     : void 0;
+        // while(me) {
+
+        //     const target = me.target as ExpressionType;
+
+        //     const property = me.property as ExpressionType;
+        //     if (property.type !== "Identifier") {
+        //         return;
+        //     }
+        //     chain.unshift(property.value);
+        //     if (target === this.root) {
+        //         return { parameter: target, chain };
+        //     }
+        //     if (target.type === "ParameterExpression") {
+        //         return { parameter: target, chain };
+        //     }
+        //     if (target.type === "Identifier") {
+        //         return { identifier: target, chain };
+        //     }
+        //     me = target.type === "MemberExpression"
+        //         ? target as MemberExpression
+        //         : void 0;
+        // };
     }
 
     private flatten(pc: IPropertyChain) : IPropertyChain {

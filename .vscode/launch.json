@@ -28,8 +28,8 @@
             "program": "${workspaceFolder}/test.js",
             "args": [
                 "--test-file",
-                "./dist/tests/eternity/eternity-tests.js"
-                //,"${file}"
+                // "./dist/tests/eternity/eternity-tests.js"
+                "${file}"
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
