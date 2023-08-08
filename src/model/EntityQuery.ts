@@ -206,7 +206,7 @@ export default class EntityQuery<T = any>
                 return iterator.c1 as number;
             }
         } catch (error) {
-            session.error(`Failed executing ${query.text}`);
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
             throw error;
         } finally {
             await scope.dispose();

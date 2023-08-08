@@ -448,33 +448,42 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             const scope = this.scope.get(pe);
             const peModel = scope?.model;
             if (peModel) {
-                const { relation, relation: { fkColumn } = {} } = peModel.getProperty(id.value);
-                if (relation &&  !relation.isInverseRelation && fkColumn) {
-                    const select = scope?.selectStatement ?? this.source?.selectStatement;
-                    if (select) {
-                        select.joins ??= [];
-                        let join = select.joins.find((j) => j.model === relation.relatedEntity);
-                        if (join) {
-                            // verify if join exits..
+                const { relation } = peModel.getProperty(id.value);
+                if (relation) {
+
+                    const { fkColumn } = relation;
+
+                    if (!relation.isCollection) {
+
+                        // for now this is working well
+
+                        const select = scope?.selectStatement ?? this.source?.selectStatement;
+                        if (select) {
+                            select.joins ??= [];
+                            let join = select.joins.find((j) => j.model === relation.relatedEntity);
+                            if (join) {
+                                // verify if join exits..
+                                return join.as;
+                            }
+                            const joinType = fkColumn.nullable ? "LEFT" : "INNER";
+                            const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
+                            joinParameter.model = relation.relatedEntity;
+                            join = JoinExpression.create({
+                                as: joinParameter,
+                                joinType,
+                                model: joinParameter.model,
+                                source: Expression.identifier(relation.relatedEntity.name),
+                                where: Expression.equal(
+                                    Expression.member(pe, fkColumn.columnName),
+                                    Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
+                                )
+                            });
+                            select.joins.push(join);
+                            this.scope.create({ parameter: joinParameter, model: peModel});
                             return join.as;
                         }
-                        const joinType = fkColumn.nullable ? "LEFT" : "INNER";
-                        const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
-                        joinParameter.model = relation.relatedEntity;
-                        join = JoinExpression.create({
-                            as: joinParameter,
-                            joinType,
-                            model: joinParameter.model,
-                            source: Expression.identifier(relation.relatedEntity.name),
-                            where: Expression.equal(
-                                Expression.member(pe, fkColumn.columnName),
-                                Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
-                            )
-                        });
-                        select.joins.push(join);
-                        this.scope.create({ parameter: joinParameter, model: peModel});
-                        return join.as;
                     }
+
                 }
             }
         }

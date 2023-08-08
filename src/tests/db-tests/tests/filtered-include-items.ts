@@ -18,5 +18,11 @@ export default async function(this: TestConfig) {
     const first = category.productCategories[0];
     assert.notEqual(0, first.product.prices.length);
 
+    const count = await context.categories
+        .where({ headPhoneCategory }, (p) => (x) => x.categoryID === p.headPhoneCategory && x.productCategories.some((pc) => pc.productID > 0))
+        .count();
+
+    assert.notEqual(0, count);
+
 
 }
