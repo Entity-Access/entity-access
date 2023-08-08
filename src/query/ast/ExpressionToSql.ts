@@ -479,7 +479,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 )
                             });
                             select.joins.push(join);
-                            this.scope.create({ parameter: joinParameter, model: relation.relatedEntity});
+                            this.scope.create({ parameter: joinParameter, model: relation.relatedEntity, selectStatement: select});
                             return join.as;
                         }
                     }
