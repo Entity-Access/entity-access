@@ -205,6 +205,9 @@ export default class EntityQuery<T = any>
             for await (const iterator of reader.next()) {
                 return iterator.c1 as number;
             }
+            // this is special case when database does not return any count
+            // like sql server
+            return 0;
         } catch (error) {
             session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
             throw error;
