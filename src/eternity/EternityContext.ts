@@ -131,8 +131,8 @@ export default class EternityContext {
     }
 
     public async start(signal?: AbortSignal) {
+        console.log(`Started executing workflow jobs`);
         while(!signal?.aborted) {
-            console.log(`Executing workflow jobs`);
             try {
                 const total = await this.processQueueOnce(signal);
                 if (total > 0) {
@@ -143,7 +143,6 @@ export default class EternityContext {
                 console.error(error);
             }
             const ws = (this.waiter = new AbortController()).signal;
-            console.log(`Waiting for new workflow jobs`);
             await sleep(15000, ws);
         }
     }
