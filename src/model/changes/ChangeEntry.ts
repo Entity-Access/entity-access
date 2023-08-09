@@ -32,14 +32,14 @@ export default class ChangeEntry<T = any> implements IChanges {
 
     private pending: (() => void)[];
 
-    private dependents: ChangeEntry[];
+    private dependents: Set<ChangeEntry>;
 
     constructor(p: IChanges, changeSet: ChangeSet) {
         Object.setPrototypeOf(p, ChangeEntry.prototype);
         const ce = p as ChangeEntry;
         ce.changeSet = changeSet;
         ce.pending = [];
-        ce.dependents = [];
+        ce.dependents = new Set();
         ce.modified = new Map();
         return ce;
     }
@@ -118,9 +118,7 @@ export default class ChangeEntry<T = any> implements IChanges {
 
 
         if (this.modified.size > 0) {
-            if (this.status !== "inserted") {
-                this.status = "modified";
-            }
+            this.status = "modified";
         } else {
             this.status = "unchanged";
         }
@@ -215,7 +213,10 @@ export default class ChangeEntry<T = any> implements IChanges {
             const keyValue = related[rKey.name];
             if (keyValue === void 0) {
 
-                relatedChanges.dependents.push(this);
+                if(relatedChanges.dependents.has(this)) {
+                    continue;
+                }
+                relatedChanges.dependents.add(this);
 
                 this.order++;
 

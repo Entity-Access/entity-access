@@ -89,8 +89,6 @@ export default class EntityContext {
             return 0;
         }
 
-        this.changeSet.detectChanges();
-
         if(!this.raiseEvents) {
             return this.saveChangesWithoutEvents(signal);
         }
@@ -127,7 +125,7 @@ export default class EntityContext {
 
         const pending = [] as { status: ChangeEntry["status"], change: ChangeEntry , events: EntityEvents<any>  }[];
 
-        for (const iterator of this.changeSet.entries) {
+        for (const iterator of this.changeSet.getChanges()) {
 
             const events = this.eventsFor(iterator.type.typeClass);
             switch(iterator.status) {
@@ -183,7 +181,7 @@ export default class EntityContext {
 
     protected async saveChangesWithoutEvents(signal: AbortSignal) {
         return this.driver.runInTransaction(async () => {
-            const copy = [].concat(this.changeSet.entries) as ChangeEntry[];
+            const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
             for (const iterator of copy) {
                 switch (iterator.status) {
                     case "inserted":
