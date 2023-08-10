@@ -97,6 +97,9 @@ export default class EternityStorage {
         const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id && x.isWorkflow === true).first();
         if (r !== null) {
             return {
+                id,
+                parentID: r.parentID,
+                lockTTL: r.lockedTTL,
                 updated: r.updated,
                 eta: r.eta,
                 queued: r.queued,
@@ -145,6 +148,7 @@ export default class EternityStorage {
             }
 
             w.state ||= "queued";
+            w.updated = DateTime.utcNow;
             await db.saveChanges();
         });
     }

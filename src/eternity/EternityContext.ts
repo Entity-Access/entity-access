@@ -79,9 +79,11 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             try {
 
                 const types = old[injectServiceKeysSymbol] as any[];
-                for (let index = a.length; index < types.length; index++) {
-                    const element = ServiceProvider.resolve(this, types[index]);
-                    a.push(element);
+                if (types) {
+                    for (let index = a.length; index < types.length; index++) {
+                        const element = ServiceProvider.resolve(this, types[index]);
+                        a.push(element);
+                    }
                 }
                 lastResult = (await old.apply(this, a)) ?? 0;
                 step.output = JSON.stringify(lastResult);
@@ -249,7 +251,7 @@ export default class EternityContext {
             throw new ActivitySuspendedError();
         }
 
-        await this.queue(type, input, { id });
+        await this.queue(type, input, { id, parentID: w.id });
         throw new ActivitySuspendedError();
     }
 
@@ -289,6 +291,7 @@ export default class EternityContext {
                 if (error instanceof ActivitySuspendedError) {
                     // this will update last id...
                     workflow.eta = clock.utcNow.add(error.ttl);
+                    workflow.lockedTTL = null;
                     await this.storage.save(workflow);
                     return;
                 }
@@ -306,16 +309,17 @@ export default class EternityContext {
                 // make parent's eta approach now sooner..
             }
 
+            workflow.lockedTTL = null;
             await this.storage.save(workflow);
 
             if (workflow.parentID) {
                 const parent = await this.storage.get(workflow.parentID);
                 if (parent) {
+                    parent.lockTTL = null;
                     parent.eta = clock.utcNow;
                     await this.storage.save(parent);
                 }
             }
-
             // workflow finished successfully...
 
         } finally {
