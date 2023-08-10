@@ -1,6 +1,8 @@
+import { IClassOf } from "../decorators/IClassOf.js";
 import Inject from "../di/di.js";
 import DateTime from "../types/DateTime.js";
 import TimeSpan from "../types/TimeSpan.js";
+import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
 import EternityContext from "./EternityContext.js";
 import { WorkflowRegistry } from "./WorkflowRegistry.js";
 
@@ -54,5 +56,9 @@ export default abstract class Workflow<TIn = any, TOut = any> {
     public waitForExternalEvent(ts: TimeSpan, ... names: string[]) {
         // do nothing...
         return Promise.resolve("");
+    }
+
+    public async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn): Promise<TChildOut> {
+        return this.context.runChild(this, type, input);
     }
 }

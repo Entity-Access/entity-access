@@ -40,6 +40,8 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
 
         store.lastID = id;
 
+        let ttl = TimeSpan.fromSeconds(0);
+
         const step: Partial<WorkflowStorage> = {
             id,
             parentID: this.id,
@@ -63,10 +65,13 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             const eta = this.currentTime.add(maxTS);
             step.eta = eta;
 
+            ttl = maxTS;
+
             if (eta <= start) {
                 // time is up...
                 lastResult = "";
                 step.state = "done";
+                ttl = TimeSpan.fromSeconds(0);
             }
 
         } else {
@@ -101,7 +106,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             throw lastError;
         }
         if (step.state !== "done") {
-            throw new ActivitySuspendedError();
+            throw new ActivitySuspendedError(ttl);
         }
         return lastResult;
     };
@@ -163,7 +168,12 @@ export default class EternityContext {
     public async queue<T>(
         type: IClassOf<Workflow<T>>,
         input: Partial<T>,
-        { id, throwIfExists, eta }: { id?: string, throwIfExists?: boolean, eta?: DateTime } = {}) {
+        { id, throwIfExists, eta, parentID }: {
+            id?: string,
+            throwIfExists?: boolean,
+            eta?: DateTime,
+            parentID?: string
+        } = {}) {
         const clock = this.storage.clock;
         if (id) {
             const r = await this.storage.get(id);
@@ -193,6 +203,7 @@ export default class EternityContext {
             isWorkflow: true,
             queued: now,
             updated: now,
+            parentID,
             eta
         });
 
@@ -216,6 +227,32 @@ export default class EternityContext {
 
         return pending.length;
     }
+
+    async runChild(w: Workflow, type, input) {
+
+        // there might still be some workflows pending
+        // this will ensure even empty workflow !!
+        const schema = WorkflowRegistry.register(type, void 0);
+
+        const id = w.id + `-child(${schema.name},${JSON.stringify(input)})`;
+
+
+        const result = await this.storage.get(id);
+        if (result) {
+            const { state } = result;
+            if (state === "done") {
+                return JSON.parse(result.output);
+            }
+            if (state === "failed") {
+                throw new Error(result.error);
+            }
+            throw new ActivitySuspendedError();
+        }
+
+        await this.queue(type, input, { id });
+        throw new ActivitySuspendedError();
+    }
+
     private async run(workflow: WorkflowStorage) {
 
         const clock = this.storage.clock;
@@ -251,6 +288,7 @@ export default class EternityContext {
             } catch (error) {
                 if (error instanceof ActivitySuspendedError) {
                     // this will update last id...
+                    workflow.eta = clock.utcNow.add(error.ttl);
                     await this.storage.save(workflow);
                     return;
                 }
@@ -260,7 +298,25 @@ export default class EternityContext {
                 workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
             }
 
+            // in case of child workflow...
+            // eta will be set to one year...
+            if (workflow.parentID) {
+                workflow.eta = clock.utcNow.addYears(1);
+                // since we have finished.. we should
+                // make parent's eta approach now sooner..
+            }
+
             await this.storage.save(workflow);
+
+            if (workflow.parentID) {
+                const parent = await this.storage.get(workflow.parentID);
+                if (parent) {
+                    parent.eta = clock.utcNow;
+                    await this.storage.save(parent);
+                }
+            }
+
+            // workflow finished successfully...
 
         } finally {
             scope.dispose();
