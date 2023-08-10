@@ -112,7 +112,7 @@ export class QueryExpander {
             // for inverse relation, we need to
             // use primary key of current model
             if (!relation.isCollection) {
-                columnName = model.keys[0].columnName;
+                columnName = parent.model.keys[0].columnName;
             }
 
 
