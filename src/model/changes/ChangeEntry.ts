@@ -118,7 +118,9 @@ export default class ChangeEntry<T = any> implements IChanges {
 
 
         if (this.modified.size > 0) {
-            this.status = "modified";
+            if (this.status !== "inserted") {
+                this.status = "modified";
+            }
         } else {
             this.status = "unchanged";
         }
