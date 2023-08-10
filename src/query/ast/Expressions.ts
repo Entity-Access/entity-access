@@ -219,6 +219,8 @@ export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
 
+    preferLeftJoins: boolean;
+
     source: TableSource | ValuesStatement;
 
     sourceParameter: ParameterExpression;

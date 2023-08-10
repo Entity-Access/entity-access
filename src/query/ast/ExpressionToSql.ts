@@ -26,6 +26,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     protected readonly scope: ParameterScope = new ParameterScope();
 
+    private readonly selectStack = [] as SelectStatement[];
+
     constructor(
         private source: EntityQuery,
         public root: ParameterExpression,
@@ -41,6 +43,16 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (this.target) {
             this.scope.create({ parameter: target });
         }
+    }
+
+    visit(e1: Expression): ITextQuery {
+        if(e1.type === "SelectStatement") {
+            this.selectStack.push(e1 as SelectStatement);
+            const r = super.visit(e1);
+            this.selectStack.pop();
+            return r;
+        }
+        return super.visit(e1);
     }
 
     visitArray(e: Expression[], sep = ","): ITextQuery {
@@ -298,6 +310,19 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitBinaryExpression(e: BinaryExpression): ITextQuery {
 
+        // if it has OR .. make all joins LEFT join.
+        if (e.operator === "||" || e.operator === "OR") {
+            if (this.selectStack.length > 0) {
+                const last = this.selectStack[this.selectStack.length-1];
+                last.preferLeftJoins = true;
+                if (last.joins) {
+                    for (const iterator of last.joins) {
+                        delete iterator.joinType;
+                    }
+                }
+            }
+        }
+
         const left = e.left.type === "BinaryExpression"
             ? prepare `(${this.visit(e.left)})`
             : this.visit(e.left);
@@ -472,7 +497,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 // verify if join exits..
                                 return join.as;
                             }
-                            const joinType = fkColumn.nullable ? "LEFT" : "INNER";
+                            const joinType = select.preferLeftJoins ? "LEFT" : (fkColumn.nullable ? "LEFT" : "INNER");
                             const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
                             joinParameter.model = relation.relatedEntity;
                             join = JoinExpression.create({
