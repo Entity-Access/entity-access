@@ -15,4 +15,12 @@ export default async function(this: TestConfig) {
         .count();
 
     assert.equal(0, count);
+
+    // include inverse...
+    const all = await context.users.all()
+        .where({} , (p) => (x) => x.profile.photos.some((a) => true) || x.profile.photos.some((a) => true))
+        .include((x) => x.profile.photos)
+        .first();
+
+    assert.equal(null, all);
 }

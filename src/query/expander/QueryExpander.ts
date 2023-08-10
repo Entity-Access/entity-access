@@ -108,11 +108,13 @@ export class QueryExpander {
             //     ? Expression.logicalAnd(joinWhere, parent.where)
             //     : joinWhere;
 
+            let keyColumn = model.keys[0].columnName;
             let columnName = fk.columnName;
             // for inverse relation, we need to
             // use primary key of current model
             if (!relation.isCollection) {
-                columnName = parent.model.keys[0].columnName;
+                columnName = model.keys[0].columnName;
+                keyColumn = select.model.keys[0].columnName;
             }
 
 
@@ -129,7 +131,7 @@ export class QueryExpander {
                     ),
                     Expression.member(
                         select.sourceParameter,
-                        Expression.identifier(model.keys[0].columnName)
+                        Expression.identifier(keyColumn)
                     )
                 )
             }));
