@@ -27,7 +27,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
 
         const clock = context.storage.clock;
 
-        const existing = await context.storage.get(id);
+        const existing = await context.storage.getAny(id);
         if (existing) {
             if (existing.state === "failed" && existing.error) {
                 throw new Error(existing.error);
@@ -156,7 +156,7 @@ export default class EternityContext {
 
     public async get<T = any>(c: IClassOf<Workflow<any, T>> | string, id?: string): Promise<IWorkflowResult<T>> {
         id ??= (c as string);
-        const s = await this.storage.get(id);
+        const s = await this.storage.getWorkflow(id);
         if (s) {
             return {
                 state: s.state,
@@ -178,7 +178,7 @@ export default class EternityContext {
         } = {}) {
         const clock = this.storage.clock;
         if (id) {
-            const r = await this.storage.get(id);
+            const r = await this.storage.getWorkflow(id);
             if (r) {
                 if (throwIfExists) {
                     throw new EntityAccessError(`Workflow with ID ${id} already exists`);
@@ -187,7 +187,7 @@ export default class EternityContext {
             }
         } else {
             id = randomUUID();
-            while(await this.storage.get(id) !== null) {
+            while(await this.storage.getWorkflow(id) !== null) {
                 console.log(`Generating UUID again ${id}`);
                 id = randomUUID();
             }
@@ -243,7 +243,7 @@ export default class EternityContext {
             id = w.id + `-child(${schema.name},${await hash(inputID)})`;
         }
 
-        const result = await this.storage.get(id);
+        const result = await this.storage.getWorkflow(id);
         if (result) {
             const { state } = result;
             if (state === "done") {
@@ -319,7 +319,7 @@ export default class EternityContext {
             await this.storage.save(workflow);
 
             if (workflow.parentID) {
-                const parent = await this.storage.get(workflow.parentID);
+                const parent = await this.storage.getWorkflow(workflow.parentID);
                 if (parent) {
                     parent.lockTTL = null;
                     parent.lockToken = null;

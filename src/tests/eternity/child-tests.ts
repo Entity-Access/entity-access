@@ -114,6 +114,6 @@ export default async function(this: TestConfig) {
     mockClock.add(TimeSpan.fromSeconds(5));
     await c.processQueueOnce();
 
-    const r = await storage.get(id);
+    const r = await storage.getWorkflow(id);
     assert.equal("done", r.state);
 }

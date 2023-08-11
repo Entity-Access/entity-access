@@ -100,9 +100,30 @@ export default class EternityStorage {
 
     }
 
-    async get(id: string, input?) {
+    async getWorkflow(id: string) {
         const db = new WorkflowContext(this.driver);
         const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id && x.isWorkflow === true).first();
+        if (r !== null) {
+            return {
+                id,
+                parentID: r.parentID,
+                lockTTL: r.lockedTTL,
+                lockToken: r.lockToken,
+                updated: r.updated,
+                eta: r.eta,
+                queued: r.queued,
+                state: r.state,
+                output: r.output,
+                error: r.error
+            };
+        }
+        return null;
+    }
+
+
+    async getAny(id: string) {
+        const db = new WorkflowContext(this.driver);
+        const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id).first();
         if (r !== null) {
             return {
                 id,
