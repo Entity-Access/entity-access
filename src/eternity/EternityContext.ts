@@ -15,7 +15,7 @@ import sleep from "../common/sleep.js";
 
 async function  hash(text) {
     const sha256 = crypto.createHash("sha256");
-    return sha256.update(text).digest("hex");
+    return sha256.update(text).digest("base64");
 }
 
 function bindStep(context: EternityContext, store: WorkflowStorage, name: string, old: (... a: any[]) => any, unique = false) {
@@ -236,8 +236,12 @@ export default class EternityContext {
         // this will ensure even empty workflow !!
         const schema = WorkflowRegistry.register(type, void 0);
 
-        const id = w.id + `-child(${schema.name},${JSON.stringify(input)})`;
+        const inputID = JSON.stringify(input);
 
+        let id = w.id + `-child(${schema.name},${inputID})`;
+        if (id.length >= 200) {
+            id = w.id + `-child(${schema.name},${await hash(inputID)})`;
+        }
 
         const result = await this.storage.get(id);
         if (result) {
