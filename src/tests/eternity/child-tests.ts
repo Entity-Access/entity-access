@@ -50,7 +50,7 @@ class ChildWorkflow extends Workflow<[string, string], string> {
 class ParentWorkflow extends Workflow<string, string> {
 
     public async run(): Promise<any> {
-        const all = await Promise.all([
+        const all = await this.all([
             this.runChild(ChildWorkflow, [this.input, "1"]),
             this.runChild(ChildWorkflow, [this.input, "2"])
         ]);

@@ -93,7 +93,7 @@ export default class EntityQuery<T = any>
             signal?.throwIfAborted();
 
             query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
-            const reader = await this.context.driver.executeReader(query, signal);
+            const reader = await this.context.connection.executeReader(query, signal);
             scope.register(reader);
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
@@ -120,7 +120,7 @@ export default class EntityQuery<T = any>
         let reader: IDbReader;
         try {
             query = this.context.driver.compiler.compileExpression(this, select);
-            reader = await this.context.driver.executeReader(query, signal);
+            reader = await this.context.connection.executeReader(query, signal);
             for await (const iterator of reader.next(10, signal)) {
                 const item = select.model?.map(iterator) ?? iterator;
                 const entry = this.context.changeSet.getEntry(item, item);
@@ -200,7 +200,7 @@ export default class EntityQuery<T = any>
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(nq, select);
-            const reader = await this.context.driver.executeReader(query);
+            const reader = await this.context.connection.executeReader(query);
             scope.register(reader);
             for await (const iterator of reader.next()) {
                 return iterator.c1 as number;

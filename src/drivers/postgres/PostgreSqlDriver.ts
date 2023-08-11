@@ -5,7 +5,7 @@ import TimedCache from "../../common/cache/TimedCache.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
-import { BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
 export interface IPgSqlConnectionString extends IDbConnectionString {
@@ -66,11 +66,23 @@ export default class PostgreSqlDriver extends BaseDriver {
         return this.myCompiler;
     }
 
-    private transaction: IPooledObject<pg.Client>;
     private myCompiler = new QueryCompiler();
 
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
+    }
+
+    newConnection(): BaseConnection {
+        return new PostgreSqlConnection(this);
+    }
+}
+
+class PostgreSqlConnection extends BaseConnection {
+
+    private transaction: IPooledObject<pg.Client>;
+
+    private get config() {
+        return this.connectionString;
     }
 
     public async createTransaction(): Promise<IBaseTransaction> {
@@ -102,6 +114,7 @@ export default class PostgreSqlDriver extends BaseDriver {
             const q = toQuery(command);
             text = q.text;
             const result = await connection.query(q.text, q.values);
+            (result as any).updated = result.rowCount;
             return result;
         } catch (error) {
             throw new Error(`Failed executing ${text}\n${error}`);

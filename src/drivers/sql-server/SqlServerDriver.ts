@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
-import { BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
 import sql from "mssql";
 import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
@@ -19,11 +19,27 @@ export default class SqlServerDriver extends BaseDriver {
     }
 
     private sqlQueryCompiler = new SqlServerQueryCompiler();
-    private transaction: sql.Transaction;
 
     constructor(private readonly config: ISqlServerConnectionString) {
         super(config);
         config.server = config.host;
+    }
+
+    newConnection(): BaseConnection {
+        return new SqlServerConnection(this, this.config);
+    }
+}
+
+export class SqlServerConnection extends BaseConnection {
+
+    private transaction: sql.Transaction;
+
+    private get sqlQueryCompiler() {
+        return this.compiler as SqlServerQueryCompiler;
+    }
+
+    constructor(driver, private config: ISqlServerConnectionString) {
+        super(driver);
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
@@ -64,15 +80,10 @@ export default class SqlServerDriver extends BaseDriver {
 
     public ensureDatabase() {
         const create = async () => {
-            const defaultDb = "master";
-
+            const config = { ... this.config, database: "master" };
             const db = this.config.database;
-            this.config.database = defaultDb;
 
-            const connection = await this.newRequest();
-            // @ts-expect-error readonly
-            this.config = { ... this.config };
-            this.config.database = db;
+            const connection = await this.newConnection(config);
 
             const createSql = `IF NOT EXISTS (SELECT name FROM master.dbo.sysdatabases WHERE name = ${SqlServerLiteral.escapeLiteral(db)}) BEGIN
                 CREATE DATABASE ${db};
@@ -137,8 +148,7 @@ export default class SqlServerDriver extends BaseDriver {
         return (await this.newConnection()).request();
     }
 
-    private newConnection() {
-        const config = this.config;
+    private newConnection(config = this.config) {
         const key = config.server + "//" + config.database + "/" + config.user;
         return namedPool.getOrCreateAsync(config.server + "://" + config.database,
             () => {

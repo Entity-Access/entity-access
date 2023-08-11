@@ -1,4 +1,4 @@
-import { BaseDriver } from "../drivers/base/BaseDriver.js";
+import { BaseConnection, BaseDriver } from "../drivers/base/BaseDriver.js";
 import ChangeSet from "./changes/ChangeSet.js";
 import EntityModel from "./EntityModel.js";
 import { Expression } from "../query/ast/Expressions.js";
@@ -28,7 +28,13 @@ export default class EntityContext {
         return this[isChanging];
     }
 
+    public get connection() {
+        return this._connection ??= this.driver.newConnection();
+    }
+
     private postSaveChangesQueue: { task: () => any, order: number }[];
+
+    private _connection: BaseConnection;
 
     constructor(
         @Inject
@@ -180,7 +186,7 @@ export default class EntityContext {
     }
 
     protected async saveChangesWithoutEvents(signal: AbortSignal) {
-        return this.driver.runInTransaction(async () => {
+        return this.connection.runInTransaction(async () => {
             const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
             for (const iterator of copy) {
                 switch (iterator.status) {
@@ -212,7 +218,7 @@ export default class EntityContext {
 
     private async executeExpression(expression: Expression, signal: AbortSignal) {
         const { text, values } = this.driver.compiler.compileExpression(null, expression);
-        const r = await this.driver.executeQuery({ text, values }, signal);
+        const r = await this.connection.executeQuery({ text, values }, signal);
         return r.rows?.[0];
     }
 

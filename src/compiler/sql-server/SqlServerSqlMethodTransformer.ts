@@ -33,23 +33,26 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         },
     },
     date: {
+        now() {
+            return prepareAny `GETUTCDATE()`;
+        },
         addDays(d, n) {
-            return prepareAny `DateAdd(DAY, ${d}, ${n})`;
+            return prepareAny `DateAdd(DAY, ${n}, ${d})`;
         },
         addHours(d, n) {
-            return prepareAny `DateAdd(HOUR, ${d}, ${n})`;
+            return prepareAny `DateAdd(HOUR, ${n}, ${d})`;
         },
         addMinutes(d, n) {
-            return prepareAny `DateAdd(MINUTE, ${d}, ${n})`;
+            return prepareAny `DateAdd(MINUTE, ${n}, ${d})`;
         },
         addMonths(d, n) {
-            return prepareAny `DateAdd(MONTH, ${d}, ${n})`;
+            return prepareAny `DateAdd(MONTH, ${n}, ${d})`;
         },
         addSeconds(d, n) {
-            return prepareAny `DateAdd(SECOND, ${d}, ${n})`;
+            return prepareAny `DateAdd(SECOND, ${n}, ${d})`;
         },
         addYears(d, n) {
-            return prepareAny `DateAdd(YEAR, ${d}, ${n})`;
+            return prepareAny `DateAdd(YEAR, ${n}, ${d})`;
         },
         dayOf(d) {
             return prepareAny `DATE_PART(day, ${d})`;

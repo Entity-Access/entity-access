@@ -11,9 +11,9 @@ export async function createContext(driver: BaseDriver) {
     Object.setPrototypeOf(copy, Object.getPrototypeOf(driver));
     const context = new ShoppingContext(copy);
 
-    await context.driver.ensureDatabase();
+    await context.connection.ensureDatabase();
 
-    await context.driver.automaticMigrations().migrate(context);
+    await context.connection.automaticMigrations().migrate(context);
 
     await seed(context);
 

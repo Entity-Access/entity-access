@@ -239,7 +239,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             }
 
             if (identifier?.value === "Sql") {
-                const argList = e.arguments.map((x) => this.visit(x));
+                const argList = e.arguments?.map((x) => this.visit(x)) ?? [];
                 const transformedCallee = this.compiler.sqlMethodTransformer(this.compiler, chain, argList as any[]);
                 if (transformedCallee) {
                     return prepare `${transformedCallee}`;
@@ -269,27 +269,29 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const propertyChain = this.getPropertyChain(me);
         if (propertyChain) {
             const { parameter, identifier, chain } = propertyChain;
-            if (parameter === this.root) {
-                // we have a parameter...
-                return [(p) => p[chain[0]]];
-            }
-            if (parameter.value) {
-                const value = parameter.value;
-                return [() => value[chain[0]]];
-            }
-            const scope = this.scope.get(parameter);
-            if (scope.isRuntimeParam) {
-                return [(p) => p[chain[0]]];
-            }
-            const name = this.scope.nameOf(parameter);
+            if (parameter) {
+                if (parameter === this.root) {
+                    // we have a parameter...
+                    return [(p) => p[chain[0]]];
+                }
+                if (parameter.value) {
+                    const value = parameter.value;
+                    return [() => value[chain[0]]];
+                }
+                const scope = this.scope.get(parameter);
+                if (scope.isRuntimeParam) {
+                    return [(p) => p[chain[0]]];
+                }
+                const name = this.scope.nameOf(parameter);
 
-            // need to change name as per naming convention here...
-            const namingConvention = this.compiler.namingConvention;
-            if (scope.model && namingConvention) {
-                chain[0] = namingConvention(chain[0]);
-            }
+                // need to change name as per naming convention here...
+                const namingConvention = this.compiler.namingConvention;
+                if (scope.model && namingConvention) {
+                    chain[0] = namingConvention(chain[0]);
+                }
 
-            return [ QueryParameter.create(() => name) , "." , chain.join(".")];
+                return [ QueryParameter.create(() => name) , "." , chain.join(".")];
+            }
         }
 
         const { target, computed, property } = me;

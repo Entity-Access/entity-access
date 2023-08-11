@@ -20,6 +20,9 @@
         },
         {
             "type": "node",
+            "runtimeArgs": [
+                "--enable-source-maps"
+            ],
             "request": "launch",
             "name": "Run Selected Test File",
             "skipFiles": [

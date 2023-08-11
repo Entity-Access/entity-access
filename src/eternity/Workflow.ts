@@ -36,29 +36,63 @@ export default abstract class Workflow<TIn = any, TOut = any> {
 
     public failedPreserveTime: TimeSpan = TimeSpan.fromDays(1);
 
-    @Inject
-    protected context: EternityContext;
-
-    constructor(p: Partial<Workflow>) {
-        Object.setPrototypeOf(p, new.target.prototype);
-        const w = p as Workflow;
-        w.preserveTime = TimeSpan.fromMinutes(5);
-        w.failedPreserveTime = TimeSpan.fromDays(1);
-        return w;
+    constructor(
+        {
+            sequence,
+            input,
+            id,
+            eta,
+            currentTime
+        }: {
+            sequence: string,
+            input: TIn,
+            id: string,
+            eta: DateTime,
+            currentTime: DateTime
+        },
+        protected context: EternityContext
+    ) {
+        this.input = input;
+        this.id = id;
+        this.eta = eta;
+        this.currentTime = currentTime;
+        this.sequence = sequence;
     }
 
     public abstract run(): Promise<TOut>;
 
-    public delay(ts: TimeSpan) {
+    protected delay(ts: TimeSpan) {
         return Promise.resolve("");
     }
 
-    public waitForExternalEvent(ts: TimeSpan, ... names: string[]) {
+    protected waitForExternalEvent(ts: TimeSpan, ... names: string[]) {
         // do nothing...
         return Promise.resolve("");
     }
 
-    public async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn): Promise<TChildOut> {
+    protected async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn): Promise<TChildOut> {
         return this.context.runChild(this, type, input);
+    }
+
+    protected async all<T extends readonly unknown[] | []>(values: T): Promise<{ -readonly [P in keyof T]: Awaited<T[P]> }>{
+        let suspended: ActivitySuspendedError;
+        try {
+            const r = await Promise.all(values.map(async (x) => {
+                try {
+                    return await x;
+                } catch (error) {
+                    if (error instanceof ActivitySuspendedError) {
+                        suspended = error;
+                    }
+                    throw error;
+                }
+            }));
+            return r as any;
+        } catch (error) {
+            if (suspended) {
+                throw suspended;
+            }
+            throw error;
+        }
     }
 }

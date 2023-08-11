@@ -1,3 +1,5 @@
+import DateTime from "../types/DateTime.js";
+
 export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;
@@ -55,6 +57,7 @@ export interface ISql {
     },
 
     date: {
+        now(): DateTime,
         yearOf(d: Date): number;
         monthOf(d: Date): number;
         dayOf(d: Date): number;

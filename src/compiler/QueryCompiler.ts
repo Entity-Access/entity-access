@@ -6,6 +6,7 @@ import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
 import EntityQuery from "../model/EntityQuery.js";
 import { NamingConventions } from "./NamingConventions.js";
+import RawQuery from "./RawQuery.js";
 
 export class CompiledQuery {
     constructor(
@@ -68,6 +69,12 @@ export default class QueryCompiler {
         const toSql = new this.expressionToSql(source ?? null, null, (exp as SelectStatement)?.sourceParameter ?? source?.selectStatement?.sourceParameter, this);
         const query = toSql.visit(exp);
         return this.invoke(query);
+    }
+
+    public compileToRawQuery(source: EntityQuery, exp: Expression, pe: ParameterExpression) {
+        const toSql = new this.expressionToSql(source ?? null, pe, null, this);
+        const query = toSql.visit(exp);
+        return new RawQuery(query);
     }
 
     private invoke(query: ITextQuery, p: any = {}) {

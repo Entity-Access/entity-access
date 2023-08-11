@@ -1,6 +1,6 @@
 import { IColumn } from "../../decorators/IColumn.js";
 import { IIndex } from "../../decorators/IIndex.js";
-import { BaseDriver } from "../../drivers/base/BaseDriver.js";
+import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
@@ -16,7 +16,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const nonKeyColumns = type.nonKeys;
         const keys = type.keys;
 
-        const driver = context.driver;
+        const driver = context.connection;
 
         await this.createTable(driver, type, keys);
 
@@ -43,7 +43,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         }
     }
 
-    async createColumns(driver: BaseDriver, type: EntityType, nonKeyColumns: IColumn[]) {
+    async createColumns(driver: BaseConnection, type: EntityType, nonKeyColumns: IColumn[]) {
 
         const name = type.schema
         ? type.schema + "." + type.name
@@ -70,7 +70,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
     }
 
-    async createTable(driver: BaseDriver, type: EntityType, keys: IColumn[]) {
+    async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
 
         const name = type.schema
             ? type.schema + "." + type.name
@@ -102,7 +102,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
     }
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
-        const driver = context.driver;
+        const driver = context.connection;
         const name = type.schema
             ? type.schema + "." + type.name
             : type.name;

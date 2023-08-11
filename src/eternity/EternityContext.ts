@@ -274,7 +274,7 @@ export default class EternityContext {
             const schema = WorkflowRegistry.getByName(workflow.name);
             const { eta, id, updated } = workflow;
             const input = JSON.parse(workflow.input);
-            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) });
+            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) }, this);
             for (const iterator of schema.activities) {
                 instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
             }
@@ -292,6 +292,7 @@ export default class EternityContext {
                     // this will update last id...
                     workflow.eta = clock.utcNow.add(error.ttl);
                     workflow.lockedTTL = null;
+                    workflow.lockToken = null;
                     await this.storage.save(workflow);
                     return;
                 }
@@ -310,12 +311,14 @@ export default class EternityContext {
             }
 
             workflow.lockedTTL = null;
+            workflow.lockToken = null;
             await this.storage.save(workflow);
 
             if (workflow.parentID) {
                 const parent = await this.storage.get(workflow.parentID);
                 if (parent) {
                     parent.lockTTL = null;
+                    parent.lockToken = null;
                     parent.eta = clock.utcNow;
                     await this.storage.save(parent);
                 }
