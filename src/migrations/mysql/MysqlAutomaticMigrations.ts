@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
 import { IColumn } from "../../decorators/IColumn.js";
 import { IIndex } from "../../decorators/IIndex.js";
-import { BaseDriver } from "../../drivers/base/BaseDriver.js";
+import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import MysqlMigrations from "./MysqlMigrations.js";
@@ -15,7 +16,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
         const nonKeyColumns = type.nonKeys;
         const keys = type.keys;
 
-        const driver = context.driver;
+        const driver = context.connection;
 
         await this.createTable(driver, type, keys);
 
@@ -30,7 +31,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
     async createIndexes(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
             const filter = iterator.nullable
-                ? `${this.compiler.quotedLiteral(iterator.columnName)} IS NOT NULL`
+                ? `${iterator.columnName} IS NOT NULL`
                 : "";
             const indexDef: IIndex = {
                 name: `IX_${type.name}_${iterator.columnName}`,
@@ -41,11 +42,11 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
         }
     }
 
-    async createColumns(driver: BaseDriver, type: EntityType, nonKeyColumns: IColumn[]) {
+    async createColumns(driver: BaseConnection, type: EntityType, nonKeyColumns: IColumn[]) {
 
         const name = type.schema
-        ? this.compiler.quotedLiteral(type.schema) + "." + this.compiler.quotedLiteral(type.name)
-        : this.compiler.quotedLiteral(type.name);
+        ? type.schema + "." + type.name
+        : type.name;
 
         if (nonKeyColumns.length > 1) {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -56,14 +57,14 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
             if(await this.exists(driver, {
                 from: "INFORMATION_SCHEMA.COLUMNS",
                 where: {
-                    "TABLE_SCHEMA": driver.connectionString.database,
+                    "TABLE_SCHEMA": driver.driver.connectionString.database,
                     "COLUMN_NAME": iterator.columnName,
                     "TABLE_NAME": type.name
                 }
             })) {
                 continue;
             }
-            const columnName = this.compiler.quotedLiteral(iterator.columnName);
+            const columnName = iterator.columnName;
             let def = `ALTER TABLE ${name} ADD COLUMN ${columnName} `;
             def += this.getColumnDefinition(iterator);
             if (iterator.nullable !== true) {
@@ -77,11 +78,11 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
 
     }
 
-    async createTable(driver: BaseDriver, type: EntityType, keys: IColumn[]) {
+    async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
 
         const name = type.schema
-            ? this.compiler.quotedLiteral(type.schema) + "." + this.compiler.quotedLiteral(type.name)
-            : this.compiler.quotedLiteral(type.name);
+            ? type.schema + "." + type.name
+            : type.name;
 
         if (keys.length > 1) {
             keys.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -90,7 +91,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
         const fields = [];
 
         for (const iterator of keys) {
-            let def = this.compiler.quotedLiteral(iterator.columnName) + " ";
+            let def = `${iterator.columnName} `;
             if (iterator.autoGenerate) {
                 def += iterator.dataType === "BigInt" ? "BIGINT " : "INT ";
             } else {
@@ -108,16 +109,16 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
     }
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
-        const driver = context.driver;
+        const driver = context.connection;
         const name = type.schema
-        ? this.compiler.quotedLiteral(type.schema) + "." + this.compiler.quotedLiteral(type.name)
-        : this.compiler.quotedLiteral(type.name);
-        const indexName =  this.compiler.quotedLiteral(index.name);
+        ? type.schema + "." + type.name
+        : type.name;
+        const indexName =  index.name;
 
         if (await this.exists(driver, {
             from: "information_schema.statistics",
             where: {
-                "table_schema": driver.connectionString.database,
+                "table_schema": context.driver.connectionString.database,
                 "table_name": type.name,
                 "index_name": indexName
             }
@@ -127,7 +128,7 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
 
         const columns = [];
         for (const column of index.columns) {
-            const columnName = this.compiler.quotedLiteral(column.name);
+            const columnName = column.name;
             columns.push(`${columnName} ${column.descending ? "DESC" : "ASC"}`);
         }
         let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX ${indexName} ON ${name} ( ${columns.join(", ")})`;
@@ -137,15 +138,15 @@ export default class MysqlAutomaticMigrations extends MysqlMigrations {
         await driver.executeQuery(query);
     }
 
-    async exists(driver: BaseDriver, { from, where }) {
+    async exists(driver: BaseConnection, { from, where }) {
         const values = [];
         let test = "";
         for (const key in where) {
             if (Object.prototype.hasOwnProperty.call(where, key)) {
                 const element = where[key];
                 test = test
-                    ? `${test} AND ${this.compiler.quotedLiteral(key)}=$${values.length+1}`
-                    : `${this.compiler.quotedLiteral(key)}=$${values.length+1}`;
+                    ? `${test} AND ${key}=$${values.length+1}`
+                    : `${key}=$${values.length+1}`;
                 values.push(element);
             }
         }

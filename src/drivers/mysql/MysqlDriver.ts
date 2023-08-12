@@ -60,7 +60,7 @@ class MySqlConnection extends BaseConnection {
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
         const connection = await this.getConnection(signal);
         const q = toQuery(command);
-        return new MysqlReader()
+        return new MysqlReader(connection, q, signal);
     }
 
     public async executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
@@ -69,15 +69,15 @@ class MySqlConnection extends BaseConnection {
         try {
             const conn = await this.getConnection();
             disposables.register(conn);
-            const results = await conn.query(c.text, c.values);
-            if (Array.isArray(results)) {
+            const [rows, fields] = await conn.query(c.text, c.values);
+            if(Array.isArray(rows)) {
                 return {
-                    rows: results
+                    rows,
+                    updated: 0
                 };
             }
-            
             return {
-                rows: results
+                updated: rows.affectedRows
             };
         } finally {
             await disposables.dispose();
@@ -172,18 +172,17 @@ class MysqlReader implements IDbReader {
 
     private pending: any[] = [];
 
-    constructor(private conn: mysql.PoolConnection, private query: IQuery) {}
+    constructor(private conn: mysql.Connection, private query: { text: string, values?: any[]}, private signal?: AbortSignal) {}
 
     async *next(min?: number, signal?: AbortSignal): AsyncGenerator<IRecord, any, any> {
-        const c = prepare(this.query);
+        const [rows] = await this.conn.query(this.query.text, this.query.values) as any[][];
+        yield *rows;
+    }
 
-    }
-    dispose(): Promise<any> {
-        this.conn.release();
-        return Promise.resolve();
-    }
-    [disposableSymbol]() {
-        this.conn.release();
+    async dispose(): Promise<any> {
+        if (this.conn) {
+            await this.conn[Symbol.asyncDisposable];
+        }
     }
 
 }
