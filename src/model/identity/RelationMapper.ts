@@ -49,9 +49,13 @@ export default class RelationMapper {
             }
             entity[iterator.name] = parent;
 
-            const coll = (parent[iterator.relatedRelation.name] ??= []) as any[];
-            if(!coll.includes(entity)){
-                coll.push(entity);
+            if (iterator.relatedRelation.isCollection) {
+                const coll = (parent[iterator.relatedRelation.name] ??= []) as any[];
+                if(!coll.includes(entity)){
+                    coll.push(entity);
+                }
+            } else {
+                parent[iterator.relatedRelation.name] = entity;
             }
         }
 
@@ -60,7 +64,7 @@ export default class RelationMapper {
         }
 
         // see if anyone is waiting for us or not...
-        const identity = IdentityService.getIdentity(entry.entity);
+        const identity = IdentityService.getIdentity(entry.type, entry.entity);
         const pending = this.map.get(identity);
         if (pending && pending.length) {
             for (const iterator of pending) {

@@ -1,4 +1,4 @@
-import { BaseDriver } from "../drivers/base/BaseDriver.js";
+import { BaseConnection, BaseDriver } from "../drivers/base/BaseDriver.js";
 import ChangeSet from "./changes/ChangeSet.js";
 import EntityModel from "./EntityModel.js";
 import { Expression } from "../query/ast/Expressions.js";
@@ -11,6 +11,7 @@ import ContextEvents from "./events/ContextEvents.js";
 import Inject, { ServiceProvider } from "../di/di.js";
 import EntityAccessError from "../common/EntityAccessError.js";
 import Logger from "../common/Logger.js";
+import { FilteredExpression } from "./events/FilteredExpression.js";
 
 const isChanging = Symbol("isChanging");
 
@@ -27,7 +28,13 @@ export default class EntityContext {
         return this[isChanging];
     }
 
+    public get connection() {
+        return this._connection ??= this.driver.newConnection();
+    }
+
     private postSaveChangesQueue: { task: () => any, order: number }[];
+
+    private _connection: BaseConnection;
 
     constructor(
         @Inject
@@ -35,7 +42,7 @@ export default class EntityContext {
         @Inject
         private events?: ContextEvents,
         @Inject
-        private logger?: Logger
+        public readonly logger?: Logger
     ) {
         this.raiseEvents = !!events;
     }
@@ -56,6 +63,27 @@ export default class EntityContext {
         return query;
     }
 
+    filteredQuery<T>(type: IClassOf<T>, mode: "read" | "include" | "modify" | "delete" | "none", fail = false, parentType?, key?) {
+        const query = this.model.register(type).asQuery();
+        if (!this.verifyFilters || mode === "none") {
+            return FilteredExpression.markAsFiltered(query);
+        }
+        const events = this.eventsFor(type, fail);
+        if (events) {
+            switch(mode) {
+                case "read":
+                    return FilteredExpression.markAsFiltered(events.filter(query) ?? query);
+                case "include":
+                    return FilteredExpression.markAsFiltered(events.includeFilter(query, parentType, key) ?? query);
+                case "modify":
+                    return FilteredExpression.markAsFiltered(events.modify(query) ?? query);
+                case "delete":
+                    return FilteredExpression.markAsFiltered(events.delete(query) ?? query);
+            }
+        }
+        return FilteredExpression.markAsFiltered(query);
+    }
+
     public async saveChanges(signal?: AbortSignal) {
 
         if (this[isChanging]) {
@@ -66,8 +94,6 @@ export default class EntityContext {
             this.queuePostSaveTask(() => this.saveChanges(signal));
             return 0;
         }
-
-        this.changeSet.detectChanges();
 
         if(!this.raiseEvents) {
             return this.saveChangesWithoutEvents(signal);
@@ -105,7 +131,7 @@ export default class EntityContext {
 
         const pending = [] as { status: ChangeEntry["status"], change: ChangeEntry , events: EntityEvents<any>  }[];
 
-        for (const iterator of this.changeSet.entries) {
+        for (const iterator of this.changeSet.getChanges()) {
 
             const events = this.eventsFor(iterator.type.typeClass);
             switch(iterator.status) {
@@ -137,20 +163,21 @@ export default class EntityContext {
             await verificationSession.verifyAsync();
         }
 
-        await this.driver.runInTransaction(() => this.saveChangesWithoutEvents(signal));
+        await this.saveChangesWithoutEvents(signal);
 
         if (pending.length > 0) {
 
             for (const { status, change, change: { entity}, events } of pending) {
                 switch(status) {
                     case "inserted":
-                        await events.afterInsert(entity, entity);
+                        await events.afterInsert(entity, change);
                         continue;
                     case "deleted":
-                        await events.afterDelete(entity, entity);
+                        await events.afterDelete(entity, change);
                         continue;
                     case "modified":
-                        await events.afterUpdate(entity, entity);
+                        await events.afterUpdate(entity, change);
+                        change.clearUpdated();
                         continue;
                 }
             }
@@ -159,34 +186,39 @@ export default class EntityContext {
     }
 
     protected async saveChangesWithoutEvents(signal: AbortSignal) {
-        for (const iterator of this.changeSet.entries) {
-            switch (iterator.status) {
-                case "inserted":
-                    const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
-                    const r = await this.executeExpression(insert, signal);
-                    iterator.apply(r);
-                    break;
-                case "modified":
-                    if (iterator.modified.size > 0) {
-                        const update = this.driver.createUpdateExpression(iterator);
-                        await this.executeExpression(update, signal);
-                    }
-                    iterator.apply({});
-                    break;
-                case "deleted":
-                    const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
-                    if (deleteQuery) {
-                        await this.executeExpression(deleteQuery, signal);
-                    }
-                    iterator.apply({});
-                    break;
+        return this.connection.runInTransaction(async () => {
+            const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
+            for (const iterator of copy) {
+                switch (iterator.status) {
+                    case "inserted":
+                        const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
+                        const r = await this.executeExpression(insert, signal);
+                        iterator.apply(r);
+                        break;
+                    case "modified":
+                        // this will update the modified map
+                        iterator.detect();
+                        if (iterator.modified.size > 0) {
+                            const update = this.driver.createUpdateExpression(iterator);
+                            await this.executeExpression(update, signal);
+                            iterator.apply(update);
+                        }
+                        break;
+                    case "deleted":
+                        const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
+                        if (deleteQuery) {
+                            await this.executeExpression(deleteQuery, signal);
+                        }
+                        iterator.apply({});
+                        break;
+                }
             }
-        }
+        });
     }
 
     private async executeExpression(expression: Expression, signal: AbortSignal) {
         const { text, values } = this.driver.compiler.compileExpression(null, expression);
-        const r = await this.driver.executeQuery({ text, values }, signal);
+        const r = await this.connection.executeQuery({ text, values }, signal);
         return r.rows?.[0];
     }
 

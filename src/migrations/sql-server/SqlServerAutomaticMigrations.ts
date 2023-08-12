@@ -1,6 +1,6 @@
 import { IColumn } from "../../decorators/IColumn.js";
 import { IIndex } from "../../decorators/IIndex.js";
-import { BaseDriver } from "../../drivers/base/BaseDriver.js";
+import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
@@ -16,23 +16,26 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const nonKeyColumns = type.nonKeys;
         const keys = type.keys;
 
-        const driver = context.driver;
+        const driver = context.connection;
 
         await this.createTable(driver, type, keys);
 
         await this.createColumns(driver, type, nonKeyColumns);
 
-        await this.createIndexes(context, type, nonKeyColumns.filter((x) => x.fkRelation && !x.fkRelation?.dotNotCreateIndex));
+        await this.createIndexes(context, type, nonKeyColumns.filter((x) =>
+            x.fkRelation
+            && (!x.key || type.keys.indexOf(x) !== 0)
+            && !x.fkRelation?.dotNotCreateIndex));
 
     }
 
     async createIndexes(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
             const filter = iterator.nullable
-                ? `${ SqlServerLiteral.quotedLiteral(iterator.columnName)} IS NOT NULL`
+                ? `${ iterator.columnName} IS NOT NULL`
                 : "";
             const indexDef: IIndex = {
-                name: `IX_${type.name}_${iterator.columnName}`,
+                name: `IX_${type.name}_${iterator.name}`,
                 columns: [{ name: iterator.columnName, descending: iterator.indexOrder !== "ascending"}],
                 filter
             };
@@ -40,18 +43,18 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         }
     }
 
-    async createColumns(driver: BaseDriver, type: EntityType, nonKeyColumns: IColumn[]) {
+    async createColumns(driver: BaseConnection, type: EntityType, nonKeyColumns: IColumn[]) {
 
         const name = type.schema
-        ? SqlServerLiteral.quotedLiteral(type.schema) + "." + SqlServerLiteral.quotedLiteral(type.name)
-        : SqlServerLiteral.quotedLiteral(type.name);
+        ? type.schema + "." + type.name
+        : type.name;
 
         if (nonKeyColumns.length > 1) {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
         for (const iterator of nonKeyColumns) {
-            const columnName = SqlServerLiteral.quotedLiteral(iterator.columnName);
+            const columnName = iterator.columnName;
             let def = `IF COL_LENGTH(${ SqlServerLiteral.escapeLiteral(name)}, ${ SqlServerLiteral.escapeLiteral(columnName)}) IS NULL ALTER TABLE ${name} ADD ${columnName} `;
             def += this.getColumnDefinition(iterator);
             if (iterator.nullable === true) {
@@ -67,11 +70,11 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
     }
 
-    async createTable(driver: BaseDriver, type: EntityType, keys: IColumn[]) {
+    async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
 
         const name = type.schema
-            ? SqlServerLiteral.quotedLiteral(type.schema) + "." + SqlServerLiteral.quotedLiteral(type.name)
-            : SqlServerLiteral.quotedLiteral(type.name);
+            ? type.schema + "." + type.name
+            : type.name;
 
         if (keys.length > 1) {
             keys.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -80,31 +83,33 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const fields = [];
 
         for (const iterator of keys) {
-            let def = SqlServerLiteral.quotedLiteral(iterator.columnName) + " ";
+            let def = iterator.columnName + " ";
             if (iterator.autoGenerate) {
-                def += this.getColumnDefinition(iterator) + " IDENTITY(1,1)";
+                def += `${this.getColumnDefinition(iterator)} NOT NULL IDENTITY(1,1)`;
             } else {
-                def += this.getColumnDefinition(iterator);
+                def += `${this.getColumnDefinition(iterator)} NOT NULL`;
             }
-            def += " NOT NULL primary key\r\n\t";
+            // def += " NOT NULL\r\n\t";
             fields.push(def);
         }
 
         await driver.executeQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
-            CREATE TABLE ${name} (${fields.join(",")});
+            CREATE TABLE ${name} (${fields.join(",")}
+            , CONSTRAINT PK_${name} PRIMARY KEY(${keys.map((x) => x.columnName)})
+            );
         END`);
 
     }
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
-        const driver = context.driver;
+        const driver = context.connection;
         const name = type.schema
-            ? SqlServerLiteral.quotedLiteral(type.schema) + "." + SqlServerLiteral.quotedLiteral(type.name)
-            : SqlServerLiteral.quotedLiteral(type.name);
-        const indexName =  SqlServerLiteral.quotedLiteral(index.name);
+            ? type.schema + "." + type.name
+            : type.name;
+        const indexName =  index.name;
         const columns = [];
         for (const column of index.columns) {
-            const columnName = SqlServerLiteral.quotedLiteral(column.name);
+            const columnName = column.name;
             columns.push(`${columnName} ${column.descending ? "DESC" : "ASC"}`);
         }
         let query = `IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = '${indexName}' AND object_id = OBJECT_ID('${name}'))

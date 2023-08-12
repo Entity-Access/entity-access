@@ -1,16 +1,24 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
 import Logger from "../../common/Logger.js";
 import { TypeInfo } from "../../common/TypeInfo.js";
-import { IEntityRelation } from "../../decorators/IColumn.js";
+import { IColumn, IEntityRelation } from "../../decorators/IColumn.js";
 import { ServiceProvider } from "../../di/di.js";
-import EntityType from "../../entity-query/EntityType.js";
-import { ConditionalExpression, Constant, ExistsExpression, Expression, Identifier, ParameterExpression, QuotedLiteral, SelectStatement, TemplateLiteral, ValuesStatement } from "../../query/ast/Expressions.js";
+import { ConditionalExpression, ExistsExpression, Expression, NumberLiteral, ParameterExpression, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import EntityContext from "../EntityContext.js";
 import EntityQuery from "../EntityQuery.js";
 import ChangeEntry from "../changes/ChangeEntry.js";
 import EntityEvents, { ForeignKeyFilter } from "../events/EntityEvents.js";
 
 type KeyValueArray = [string, any][];
+
+const isKeyEmpty = (key: any, columnName: IColumn) => {
+    switch(columnName.dataType) {
+        case "BigInt":
+        case "Int":
+            return !key || key === 0 || key === "0";
+    }
+    return key === null || key === "";
+};
 
 export default class VerificationSession {
 
@@ -32,6 +40,9 @@ export default class VerificationSession {
                 const key = entity[iterator.name];
                 if (key === void 0) {
                     break;
+                }
+                if (isKeyEmpty(key, iterator)) {
+                    continue;
                 }
                 keys.push([iterator.columnName, key]);
             }
@@ -60,6 +71,9 @@ export default class VerificationSession {
             const fkValue = entity[fk.name];
             if (fkValue === void 0) {
                 // not set... ignore..
+                continue;
+            }
+            if (isKeyEmpty(fkValue, relation.fkColumn)) {
                 continue;
             }
             this.queueEntityForeignKey(change, relation, fkValue);
@@ -106,7 +120,7 @@ export default class VerificationSession {
         const eq = query as EntityQuery;
         for (const [key, value] of keys) {
             const test = Expression.equal(
-                Expression.member(eq.selectStatement.sourceParameter, Expression.quotedLiteral(key)),
+                Expression.member(eq.selectStatement.sourceParameter, Expression.identifier(key)),
                 Expression.constant(value)
             );
             compare = compare
@@ -127,10 +141,10 @@ export default class VerificationSession {
         this.select.sourceParameter = ParameterExpression.create({ name: "x"});
         const source = ValuesStatement.create({
             values: [
-                [Identifier.create({ value: "1"})]
+                [NumberLiteral.one]
             ],
-            as: QuotedLiteral.create({ literal: "a"}),
-            fields: [QuotedLiteral.create({ literal: "a"})]
+            as: Expression.identifier("a"),
+            fields: [Expression.identifier("a")]
         });
         this.select.source = source;
         const compiler = this.context.driver.compiler;
@@ -138,7 +152,7 @@ export default class VerificationSession {
         const logger = ServiceProvider.resolve(this.context, Logger);
         const session = logger.newSession();
         try {
-            const { rows: [ { error }]} = await this.context.driver.executeQuery(query);
+            const { rows: [ { error }]} = await this.context.connection.executeQuery(query);
             if (error) {
                 session.error(`Failed executing ${query.text}\n[${query.values.join(",")}]\n${error?.stack ?? error}`);
                 EntityAccessError.throw(error);
@@ -151,7 +165,7 @@ export default class VerificationSession {
     addError(query: EntityQuery, compare: Expression, error: string) {
         const select = { ... query.selectStatement};
         select.fields = [
-            Expression.identifier("1")
+            NumberLiteral.one
         ];
 
         const where = select.where

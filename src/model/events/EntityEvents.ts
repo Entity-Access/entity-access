@@ -8,13 +8,6 @@ import ChangeEntry from "../changes/ChangeEntry.js";
 
 const done = Promise.resolve() as Promise<void>;
 
-/**
- * When an expression is already filtered, we should assume that
- * Events author has taken care of filtering and does not require
- * nested filtering.
- */
-export const filteredSymbol = Symbol("filtered");
-
 export class ForeignKeyFilter<T = any, TE = any> {
 
     public type: EntityType;
@@ -75,23 +68,23 @@ export default class EntityEvents<T> {
         return filter.modify();
     }
 
-    afterInsert(entity: T, entry: ChangeEntry): void | Promise<void> {
+    afterInsert(entity: T, entry: ChangeEntry<T>): void | Promise<void> {
         return done;
     }
 
-    beforeUpdate(entity: T, entry: ChangeEntry): void | Promise<void> {
+    beforeUpdate(entity: T, entry: ChangeEntry<T>): void | Promise<void> {
         return done;
     }
 
-    afterUpdate(entity: T, entry: ChangeEntry): void | Promise<void> {
+    afterUpdate(entity: T, entry: ChangeEntry<T>): void | Promise<void> {
         return done;
     }
 
-    beforeDelete(entity: T, entry: ChangeEntry): void | Promise<void> {
+    beforeDelete(entity: T, entry: ChangeEntry<T>): void | Promise<void> {
         return done;
     }
 
-    afterDelete(entity: T, entry: ChangeEntry): void | Promise<void> {
+    afterDelete(entity: T, entry: ChangeEntry<T>): void | Promise<void> {
         return done;
     }
 

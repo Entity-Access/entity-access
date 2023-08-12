@@ -1,5 +1,5 @@
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, QuotedLiteral, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -15,8 +15,6 @@ export default abstract class Visitor<T = any> {
                 return this.visitConstant(e);
             case "ExpressionAs":
                 return this.visitExpressionAs(e);
-            case "QuotedLiteral":
-                return this.visitQuotedLiteral(e);
             case "SelectStatement":
                 return this.visitSelectStatement(e);
             case "TableLiteral":
@@ -69,9 +67,19 @@ export default abstract class Visitor<T = any> {
                 return this.visitParameterExpression(e);
             case "ArrayExpression":
                 return this.visitArrayExpression(e);
+            case "NotExists":
+                return this.visitNotExists(e);
+            case "UnionAllStatement":
+                return this.visitUnionAllStatement(e);
         }
         const c: never = e;
         throw new Error(`${e1.type} Not implemented`);
+    }
+    visitUnionAllStatement(e: UnionAllStatement): T {
+        throw new NotSupportedError("Union All");
+    }
+    visitNotExists(e: NotExits): T {
+        throw new NotSupportedError("Not Exists");
     }
     visitArrayExpression(e: ArrayExpression): T {
         throw new NotSupportedError("Array Expression");
@@ -158,10 +166,6 @@ export default abstract class Visitor<T = any> {
     }
 
     visitSelectStatement(e: SelectStatement): T {
-        return;
-    }
-
-    visitQuotedLiteral(e: QuotedLiteral): T {
         return;
     }
 

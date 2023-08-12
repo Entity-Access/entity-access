@@ -17,30 +17,51 @@ export interface IChange {
     newValue: any;
 }
 
-export default class ChangeEntry implements IChanges {
+export default class ChangeEntry<T = any> implements IChanges {
 
     type: EntityType;
-    entity: any;
+    entity: T;
     order: number;
     original: any;
     status: "detached" | "attached" | "inserted" | "modified" | "deleted" | "unchanged";
 
     modified: Map<IColumn, IChange>;
+    updated: Map<IColumn, IChange>;
 
     changeSet: ChangeSet;
 
     private pending: (() => void)[];
 
-    private dependents: ChangeEntry[];
+    private dependents: Set<ChangeEntry>;
 
     constructor(p: IChanges, changeSet: ChangeSet) {
         Object.setPrototypeOf(p, ChangeEntry.prototype);
         const ce = p as ChangeEntry;
         ce.changeSet = changeSet;
         ce.pending = [];
-        ce.dependents = [];
+        ce.dependents = new Set();
         ce.modified = new Map();
         return ce;
+    }
+
+    /**
+     * Returns true if the field is modified
+     * @param field property of the entity
+     * @returns true/false
+     */
+    public isModified(field: keyof T) {
+        const column = this.type.getColumn(field as string);
+        return this.modified.has(column);
+    }
+
+    /**
+     * Returns true if the field was updated in the database
+     * @param field property of the entity
+     * @returns true/false
+     */
+    public isUpdated(field: keyof T) {
+        const column = this.type.getColumn(field as string);
+        return this.updated.has(column);
     }
 
     public detect() {
@@ -84,9 +105,9 @@ export default class ChangeEntry implements IChanges {
         this.detectDependencies();
 
         for (const iterator of columns) {
-            const oldValue = original[iterator.columnName];
+            const oldValue = original[iterator.name];
             const newValue = entity[iterator.name];
-            if (entity[iterator.name] !== original[iterator.columnName]) {
+            if (entity[iterator.name] !== original[iterator.name]) {
                 let modifiedEntry = this.modified.get(iterator);
                 if (!modifiedEntry) {
                     modifiedEntry = { column: iterator, oldValue, newValue };
@@ -97,7 +118,9 @@ export default class ChangeEntry implements IChanges {
 
 
         if (this.modified.size > 0) {
-            this.status = "modified";
+            if (this.status !== "inserted") {
+                this.status = "modified";
+            }
         } else {
             this.status = "unchanged";
         }
@@ -136,8 +159,15 @@ export default class ChangeEntry implements IChanges {
         this.pending.length = 0;
         this.original = { ... this.entity };
 
+        if (this.status === "modified") {
+            this.updated = new Map(this.modified);
+        }
         this.status = "unchanged";
         this.modified.clear();
+    }
+
+    public clearUpdated() {
+        this.updated = null;
     }
 
     /**
@@ -185,7 +215,10 @@ export default class ChangeEntry implements IChanges {
             const keyValue = related[rKey.name];
             if (keyValue === void 0) {
 
-                relatedChanges.dependents.push(this);
+                if(relatedChanges.dependents.has(this)) {
+                    continue;
+                }
+                relatedChanges.dependents.add(this);
 
                 this.order++;
 
@@ -197,7 +230,9 @@ export default class ChangeEntry implements IChanges {
                 relatedChanges.pending.push(() => {
                     this.entity[fk.fkColumn.name] = related[rKey.name];
                 });
-                this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                if (this.status !== "inserted") {
+                    this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+                }
                 continue;
             }
 

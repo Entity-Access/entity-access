@@ -1,8 +1,9 @@
+import EntityAccessError from "../../common/EntityAccessError.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, Expression, InsertStatement, QuotedLiteral, ReturnUpdated, TableLiteral, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
 
@@ -46,18 +47,27 @@ export interface IQueryResult {
     updated?: number;
 }
 
-export abstract class BaseDriver {
-    abstract get compiler(): QueryCompiler;
+export interface IBaseTransaction {
+    commit(): Promise<any>;
+    rollback(): Promise<any>;
+    dispose(): Promise<any>;
+}
 
-    constructor(public readonly connectionString: IDbConnectionString) {}
+export abstract class BaseConnection {
 
-    public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
+    protected compiler: QueryCompiler;
 
-    public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
+    protected connectionString: IDbConnectionString;
+
+    private currentTransaction: IBaseTransaction;
+
+
+    constructor(public driver: BaseDriver) {
+        this.compiler = driver.compiler;
+        this.connectionString = driver.connectionString;
+    }
 
     public abstract ensureDatabase(): Promise<any>;
-
-    public abstract runInTransaction<T = any>(fx?: () => Promise<T>): Promise<T>;
 
     /**
      * This migrations only support creation of missing items.
@@ -65,12 +75,52 @@ export abstract class BaseDriver {
      */
     public abstract automaticMigrations(): Migrations;
 
+
+    public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
+
+    public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
+
+    public abstract createTransaction(): Promise<IBaseTransaction>;
+
+    public async runInTransaction<T = any>(fx?: () => Promise<T>) {
+        if(this.currentTransaction) {
+            // nested transactions... do not worry
+            // just pass through
+            return await fx();
+        }
+        let failed = true;
+        let tx: IBaseTransaction;
+        try {
+            tx = this.currentTransaction = await this.createTransaction();
+            const result = await fx();
+            await tx.commit();
+            failed = false;
+            return result;
+        } finally {
+            if (failed) {
+                await tx?.rollback();
+            }
+            await tx?.dispose();
+            this.currentTransaction = null;
+        }
+    }
+}
+
+export abstract class BaseDriver {
+    abstract get compiler(): QueryCompiler;
+
+
+    constructor(public readonly connectionString: IDbConnectionString) {}
+
+    abstract newConnection(): BaseConnection;
+
+
     createInsertExpression(type: EntityType, entity: any): InsertStatement {
-        const returnFields = [] as QuotedLiteral[];
-        const fields = [] as QuotedLiteral[];
+        const returnFields = [] as Identifier[];
+        const fields = [] as Identifier[];
         const values = [] as Constant[];
         for (const iterator of type.columns) {
-            const literal = QuotedLiteral.create({ literal: iterator.columnName });
+            const literal = Identifier.create({ value: iterator.columnName });
             if (iterator.autoGenerate) {
                 returnFields.push(literal);
                 continue;
@@ -83,8 +133,8 @@ export abstract class BaseDriver {
             values.push(Constant.create({ value }));
         }
 
-        const name = QuotedLiteral.create({ literal: type.name });
-        const schema = type.schema ? QuotedLiteral.create({ literal: type.schema }) : void 0;
+        const name = Expression.identifier(type.name);
+        const schema = type.schema ? Expression.identifier(type.schema) : void 0;
 
         return InsertStatement.create({
             table: TableLiteral.create({
@@ -103,7 +153,7 @@ export abstract class BaseDriver {
         const set = [] as BinaryExpression[];
         for (const [key, change] of entry.modified) {
             set.push(BinaryExpression.create({
-                left: QuotedLiteral.create({ literal: key.columnName}),
+                left: Expression.identifier(key.columnName),
                 operator: "=",
                 right: Constant.create({ value: change.newValue ?? null })
             }));
@@ -111,7 +161,7 @@ export abstract class BaseDriver {
         let where = null as Expression;
         for (const iterator of entry.type.keys) {
             const compare = BinaryExpression.create({
-                left: QuotedLiteral.create({ literal: iterator.columnName }),
+                left: Expression.identifier(iterator.columnName),
                 operator: "=",
                 right: Constant.create({ value: entry.entity[iterator.name]})
             });
@@ -138,7 +188,7 @@ export abstract class BaseDriver {
                 return null;
             }
             const compare = BinaryExpression.create({
-                left: QuotedLiteral.create({ literal: iterator.columnName }),
+                left: Expression.identifier(iterator.columnName),
                 operator: "=",
                 right: Constant.create({ value: key })
             });

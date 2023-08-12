@@ -9,14 +9,14 @@ export type ISqlMethodTransformer = (compiler: QueryCompiler, callee: string[], 
 
 export class QueryParameter {
 
-    static create(name: () => string, quotedLiteral: (n: string) => string ) {
-        return new QueryParameter(name, quotedLiteral);
+    static create(name: () => string) {
+        return new QueryParameter(name);
     }
 
-    constructor(public name: () => string, public quotedLiteral: (n: string) => string) {}
+    constructor(public name: () => string) {}
 
     toString() {
-        return this.quotedLiteral(this.name());
+        return this.name();
     }
 }
 

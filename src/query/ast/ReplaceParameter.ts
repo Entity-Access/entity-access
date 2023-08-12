@@ -1,8 +1,10 @@
-import { Expression } from "@babel/types";
+import { Expression } from "./Expressions.js";
 
 export default class ReplaceParameter {
 
-    public static replace(tree: Expression | Expression[], from: Expression, to: Expression) {
+    public static replace<T>(tree: T, from: Expression, to: Expression): T;
+    public static replace<T>(tree: T[], from: Expression, to: Expression): T[];
+    public static replace<T>(tree: T | T[], from: Expression, to: Expression) {
         if (!tree) {
             return tree;
         }
@@ -11,26 +13,27 @@ export default class ReplaceParameter {
         }
         if (Array.isArray(tree)) {
             const copy = [];
-            let index = 0;
             for (const iterator of tree) {
-                Object.defineProperty(copy, index++, {
-                    value: this.replace(iterator, from, to),
-                    writable: false,
-                    enumerable: true
-                });
+                if (iterator && typeof iterator === "object") {
+                    copy.push(this.replace(iterator, from, to));
+                    continue;
+                }
+                copy.push(iterator);
             }
             return tree;
         }
         if (!(tree as any).type) {
             return tree;
         }
-        const treeCopy = {};
+        const treeCopy = {} as any;
         for (const key in tree) {
             if (Object.prototype.hasOwnProperty.call(tree, key)) {
                 const element = tree[key];
-                Object.defineProperty(treeCopy, key, {
-                    value: this.replace(element, from, to)
-                });
+                if (element && typeof element === "object") {
+                    treeCopy[key] = this.replace(element, from, to);
+                    continue;
+                }
+                treeCopy[key] = element;
             }
         }
         Object.setPrototypeOf(treeCopy, Object.getPrototypeOf(tree));

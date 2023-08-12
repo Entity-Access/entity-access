@@ -1,8 +1,9 @@
 import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
-import { RelateTo } from "../../decorators/Relate.js";
+import Relate, { RelateTo, RelateToOne } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
+import DateTime from "../../types/DateTime.js";
 
 export const statusPublished = "published";
 
@@ -22,6 +23,11 @@ export class ShoppingContext extends EntityContext {
 
     public users = this.model.register(User);
 
+    public userCategories = this.model.register(UserCategory);
+
+    public userProfiles = this.model.register(UserProfile);
+
+    public profilePhotos = this.model.register(ProfilePhoto);
 }
 
 @Table("Users")
@@ -41,9 +47,13 @@ export class User {
     @Column({ dataType: "Char", length: 200 })
     public userName: string;
 
+    public profile: UserProfile;
+
     public ownedProducts: Product[];
 
     public orders: Order[];
+
+    public categories: UserCategory[];
 
 }
 
@@ -58,8 +68,71 @@ export class Category {
 
     public productCategories: ProductCategory[];
 
+    public users: UserCategory[];
+
 }
 
+@Table("UserProfile")
+export class UserProfile {
+
+    @Column({ key: true, dataType: "BigInt"})
+    @RelateToOne(User, {
+        property: (up) => up.user,
+        inverseProperty: (u) => u.profile
+    })
+    public profileID: number;
+
+    public fullName: string;
+
+    public user: User;
+
+    public photos: ProfilePhoto[];
+
+}
+
+@Table("ProfilePhotos")
+export class ProfilePhoto {
+
+    @Column({ key: true, dataType: "BigInt", autoGenerate: true })
+    public photoID: number;
+
+    @Column ({ dataType: "BigInt"})
+    @RelateTo(UserProfile, {
+        property: (pp) => pp.profile,
+        inverseProperty: (up) => up.photos
+    })
+    public profileID: number;
+
+    @Column({ dataType: "Char"})
+    public url: string;
+
+    public profile: UserProfile;
+}
+
+@Table("UserCategories")
+export class UserCategory {
+
+    @Column({ key: true, dataType: "BigInt" })
+    @RelateTo(User, {
+        property: (uc) => uc.user,
+        inverseProperty: (u) => u.categories
+    })
+    public userID: number;
+
+    @Column({ key: true, dataType: "Char", length: 200 })
+    @RelateTo(Category, {
+        property: (uc) => uc.category,
+        inverseProperty: (c) => c.users
+    })
+    public categoryID: string;
+
+    @Column({})
+    public lastUpdated: DateTime;
+
+    public user: User;
+
+    public category: Category;
+}
 
 @Table("Products")
 export class Product {
@@ -143,6 +216,11 @@ export class ProductPrice {
 }
 
 @Table("Orders")
+@Index({
+    name: "IX_Orders_PO",
+    columns: [{ name: (x) => x.purchaseOrder , descending: false }],
+    filter: (x) => x.purchaseOrder !== null
+})
 export class Order {
 
     @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
@@ -157,6 +235,9 @@ export class Order {
         inverseProperty: (user) => user.orders
     })
     public customerID: number;
+
+    @Column({ dataType: "Char", length: 200, nullable: true})
+    public purchaseOrder: string;
 
     public orderItems: OrderItem[];
 

@@ -1,7 +1,8 @@
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import EntityQuery from "../../model/EntityQuery.js";
-import { ArrowFunctionExpression, ExistsExpression, Expression, ExpressionType, JoinExpression, ParameterExpression, SelectStatement, TableSource } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, ExistsExpression, Expression, ExpressionType, JoinExpression, NumberLiteral, ParameterExpression, SelectStatement, TableSource } from "../ast/Expressions.js";
+import ReplaceParameter from "../ast/ReplaceParameter.js";
 import ArrowToExpression from "../parser/ArrowToExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
 
@@ -75,12 +76,12 @@ export class QueryExpander {
         const { relation } = mp;
         const { relatedTypeClass: propertyType } = relation;
 
-        let query = this.context.query(propertyType);
+        const query = this.context.filteredQuery(propertyType, "include", false, model, p.value);
         // if (this.filter) {
-            const events = this.context.eventsFor(propertyType, false);
-            if (events) {
-                query = events.includeFilter(query, model, p.value) ?? query;
-            }
+            // const events = this.context.eventsFor(propertyType, false);
+            // if (events) {
+            //     query = events.includeFilter(query, model, p.value) ?? query;
+            // }
         // }
         const select = { ... (query as EntityQuery).selectStatement };
 
@@ -92,28 +93,51 @@ export class QueryExpander {
 
         if(relation.isInverseRelation) {
 
-            joinWhere = Expression.equal(
-                Expression.member(
-                    parent.sourceParameter,
-                    Expression.quotedLiteral(fk.columnName)
-                ),
-                Expression.member(
-                    select.sourceParameter,
-                    Expression.quotedLiteral(model.keys[0].columnName)
-                )
-            );
-            // load parent..
-            where = parent.where
-                ? Expression.logicalAnd(joinWhere, parent.where)
-                : joinWhere;
+            // joinWhere = Expression.equal(
+            //     Expression.member(
+            //         parent.sourceParameter,
+            //         Expression.identifier(fk.columnName)
+            //     ),
+            //     Expression.member(
+            //         select.sourceParameter,
+            //         Expression.identifier(model.keys[0].columnName)
+            //     )
+            // );
+            // // load parent..
+            // where = parent.where
+            //     ? Expression.logicalAnd(joinWhere, parent.where)
+            //     : joinWhere;
+
+            let keyColumn = model.keys[0].columnName;
+            let columnName = fk.columnName;
+            // for inverse relation, we need to
+            // use primary key of current model
+            if (!relation.isCollection) {
+                columnName = model.keys[0].columnName;
+                keyColumn = select.model.keys[0].columnName;
+            }
+
 
             const joins = (select.joins ??= []);
             joins.push(JoinExpression.create({
+                joinType: "LEFT",
                 source: parent.source as TableSource,
                 as: parent.sourceParameter,
                 model,
-                where
+                where: Expression.equal(
+                    Expression.member(
+                        parent.sourceParameter,
+                        Expression.identifier(columnName)
+                    ),
+                    Expression.member(
+                        select.sourceParameter,
+                        Expression.identifier(keyColumn)
+                    )
+                )
             }));
+            // if (parent.joins?.length) {
+            //     joins.push(... parent.joins);
+            // }
             (this.select.include ??= []).push(select);
             return [select, relation.relatedEntity];
         }
@@ -121,15 +145,15 @@ export class QueryExpander {
         joinWhere = Expression.equal(
             Expression.member(
                 parent.sourceParameter,
-                Expression.quotedLiteral(fk.columnName)
+                Expression.identifier(fk.columnName)
             ),
             Expression.member(
                 select.sourceParameter,
-                Expression.quotedLiteral(relation.relatedEntity.keys[0].columnName)
+                Expression.identifier(relation.relatedEntity.keys[0].columnName)
             )
         );
 
-        parent = { ... parent };
+        parent = { ... parent, fields: [ NumberLiteral.one ] };
 
         parent.where = parent.where
             ? Expression.logicalAnd(parent.where, joinWhere)

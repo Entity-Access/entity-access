@@ -8,11 +8,11 @@ export const privateUpdateEntry = Symbol("updateEntry");
 
 export default class ChangeSet {
 
-    public readonly entries: ChangeEntry[] = [];
-
     get [identityMapSymbol]() {
         return this.identityMap;
     }
+
+    private readonly entries: ChangeEntry[] = [];
 
     private entryMap: Map<any, ChangeEntry> = new Map();
 
@@ -27,8 +27,31 @@ export default class ChangeSet {
 
     }
 
+    *getChanges(max = 5) {
+
+        const set = new Set<ChangeEntry>();
+
+        let total = 0;
+
+        do {
+            this.detectChanges();
+            if (total === this.entries.length) {
+                break;
+            }
+            for (const iterator of this.entries) {
+                if (set.has(iterator)) {
+                    continue;
+                }
+                set.add(iterator);
+                total++;
+                yield iterator;
+            }
+        } while (max-- > 0);
+
+    }
+
     [privateUpdateEntry](entry: ChangeEntry) {
-        const jsonKey = IdentityService.getIdentity(entry.entity);
+        const jsonKey = IdentityService.getIdentity(entry.type, entry.entity);
         if (jsonKey) {
             if (entry.status === "deleted") {
                 this.identityMap.delete(jsonKey);
@@ -52,8 +75,8 @@ export default class ChangeSet {
         if (c === Object) {
             throw new EntityAccessError("Entity type not set");
         }
-        const type = SchemaRegistry.model(c);
-        const jsonKey = IdentityService.getIdentity(entity);
+        const type = this.context.model.getEntityType(c);
+        const jsonKey = IdentityService.getIdentity(type, entity);
         if (jsonKey) {
             const existing = this.identityMap.get(jsonKey);
             if (existing) {

@@ -20,6 +20,6 @@ export interface IDisposable {
 }
 
 export function disposeDisposable(d: IDisposable) {
-    const f = d[Symbol.disposable] ?? d[Symbol.asyncDisposable];
-    f?.()?.catch((error) => console.error(error));
+    const f = (d[Symbol.disposable] ?? d[Symbol.asyncDisposable]) as (...a: any) => any;
+    f?.call(d)?.catch((error) => console.error(error.stack ?? error));
 }

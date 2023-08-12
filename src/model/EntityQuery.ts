@@ -1,12 +1,14 @@
 import Logger from "../common/Logger.js";
 import { DisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
+import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, QuotedLiteral, SelectStatement } from "../query/ast/Expressions.js";
+import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
+import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
-import { filteredSymbol } from "./events/EntityEvents.js";
+import { filteredSymbol } from "./events/FilteredExpression.js";
 import RelationMapper from "./identity/RelationMapper.js";
 
 export default class EntityQuery<T = any>
@@ -69,9 +71,8 @@ export default class EntityQuery<T = any>
     }
 
     async *enumerate(): AsyncGenerator<T, any, unknown> {
-        const logger = ServiceProvider.resolve(this.context, Logger);
         const scope = new DisposableScope();
-        const session = logger.newSession();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query: { text: string, values: any[]};
         try {
             scope.register(session);
@@ -92,13 +93,13 @@ export default class EntityQuery<T = any>
             signal?.throwIfAborted();
 
             query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
-            const reader = await this.context.driver.executeReader(query, signal);
+            const reader = await this.context.connection.executeReader(query, signal);
             scope.register(reader);
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
-                    Object.setPrototypeOf(iterator, type.typeClass.prototype);
+                    const item = type?.map(iterator) ?? iterator;
                     // set identity...
-                    const entry = this.context.changeSet.getEntry(iterator, iterator);
+                    const entry = this.context.changeSet.getEntry(item, item);
                     relationMapper.fix(entry);
                     yield entry.entity;
                     continue;
@@ -115,19 +116,21 @@ export default class EntityQuery<T = any>
     }
 
     async load(relationMapper: RelationMapper, session: Logger, select: SelectStatement, signal: AbortSignal) {
-        const query = this.context.driver.compiler.compileExpression(this, select);
-        const reader = await this.context.driver.executeReader(query, signal);
+        let query: { text, values };
+        let reader: IDbReader;
         try {
+            query = this.context.driver.compiler.compileExpression(this, select);
+            reader = await this.context.connection.executeReader(query, signal);
             for await (const iterator of reader.next(10, signal)) {
-                Object.setPrototypeOf(iterator, select.model.typeClass.prototype);
-                const entry = this.context.changeSet.getEntry(iterator, iterator);
+                const item = select.model?.map(iterator) ?? iterator;
+                const entry = this.context.changeSet.getEntry(item, item);
                 relationMapper.fix(entry);
             }
         } catch (error) {
-            session.error(`Failed loading ${query.text}\n${error.stack ?? error}`);
+            session.error(`Failed loading ${query?.text}\n${error.stack ?? error}`);
             throw error;
         } finally {
-            await reader.dispose();
+            await reader?.dispose();
         }
     }
 
@@ -184,21 +187,32 @@ export default class EntityQuery<T = any>
                     callee: Identifier.create({ value: "COUNT"}),
                     arguments: [ Identifier.create({ value: "*"})]
                 }),
-                alias: QuotedLiteral.create({ literal: "count" })
+                alias: Expression.identifier("c1")
             })
-        ] };
+            ],
+            orderBy: void 0
+        };
 
         const nq = new EntityQuery({ ... this, selectStatement: select });
 
-        const query = this.context.driver.compiler.compileExpression(nq, select);
-        const reader = await this.context.driver.executeReader(query);
-
+        const scope = new DisposableScope();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
         try {
+            query = this.context.driver.compiler.compileExpression(nq, select);
+            const reader = await this.context.connection.executeReader(query);
+            scope.register(reader);
             for await (const iterator of reader.next()) {
-                return iterator.count as number;
+                return iterator.c1 as number;
             }
+            // this is special case when database does not return any count
+            // like sql server
+            return 0;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
         } finally {
-            await reader.dispose();
+            await scope.dispose();
         }
 
     }

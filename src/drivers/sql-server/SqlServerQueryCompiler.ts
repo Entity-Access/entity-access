@@ -1,3 +1,4 @@
+import { NamingConventions } from "../../compiler/NamingConventions.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import SqlServerSqlMethodTransformer from "../../compiler/sql-server/SqlServerSqlMethodTransformer.js";
 import ArrowToExpression from "../../query/parser/ArrowToExpression.js";
@@ -9,14 +10,16 @@ export default class SqlServerQueryCompiler extends QueryCompiler {
     constructor({
         arrowToExpression = ArrowToExpression,
         expressionToSql = ExpressionToSqlServer,
-        quotedLiteral = SqlServerLiteral.quotedLiteral,
+        // quotedLiteral = SqlServerLiteral.quotedLiteral,
+        namingConvention = NamingConventions.pascalCase,
         escapeLiteral = SqlServerLiteral.escapeLiteral,
         sqlMethodTransformer = SqlServerSqlMethodTransformer
     }: Partial<QueryCompiler> = {}) {
         super({
             arrowToExpression,
             expressionToSql,
-            quotedLiteral,
+            namingConvention,
+            // quotedLiteral,
             escapeLiteral,
             sqlMethodTransformer
         });

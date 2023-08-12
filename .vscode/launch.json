@@ -7,11 +7,33 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Run All Tests",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/test.js",
+            "args": [
+            ],
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "runtimeArgs": [
+                "--enable-source-maps"
+            ],
+            "request": "launch",
+            "name": "Run Selected Test File",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/test.js",
+            "args": [
+                "--test-file",
+                // "./dist/tests/eternity/eternity-tests.js"
+                "${file}"
+            ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
             ]

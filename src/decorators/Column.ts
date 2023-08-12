@@ -18,6 +18,9 @@ export default function Column(cfg: Omit<Omit<IColumn, "name">, "type"> = {}): a
                 c[k] = element;
             }
         }
+        if (cfg.columnName) {
+            cfg.explicitName = true;
+        }
         c.columnName ??= key;
         c.name = key;
         c.nullable ??= false;
@@ -46,7 +49,7 @@ function typeFrom(c: IColumn, jsType: any): ISqlType {
             return "BigInt";
         case Date:
         case DateTime:
-            return "DateTime";
+            return "DateTimeOffset";
         case Boolean:
             return "Boolean";
     }

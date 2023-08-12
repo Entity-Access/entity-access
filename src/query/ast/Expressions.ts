@@ -29,9 +29,9 @@ export abstract class Expression {
         return ArrayExpression.create({ elements });
     }
 
-    static as(expression: Expression, alias: QuotedLiteral | string) {
+    static as(expression: Expression, alias: Identifier | string) {
         if (typeof alias === "string") {
-            alias = Expression.quotedLiteral(alias);
+            alias = Expression.identifier(alias);
         }
         return ExpressionAs.create({
             expression,
@@ -46,10 +46,6 @@ export abstract class Expression {
 
     static constant(value: string) {
         return Constant.create({ value });
-    }
-
-    static quotedLiteral(name: string) {
-        return QuotedLiteral.create({ literal: name });
     }
 
     static parameter(name: string) {
@@ -74,6 +70,10 @@ export abstract class Expression {
     }
 
     static equal(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "="});
+    }
+
+    static assign(left: Expression, right: Expression) {
         return BinaryExpression.create({ left, right, operator: "="});
     }
 
@@ -124,7 +124,7 @@ export abstract class Expression {
         return copy;
     }
 
-    readonly type: never | string;
+    readonly type: ExpressionType["type"];
 
 }
 
@@ -133,10 +133,10 @@ export class ArrayExpression extends Expression {
     elements: Expression[];
 }
 
-export class PartialExpression extends Expression {
-    readonly type = "PartialExpression";
-    query: ITextQuery;
-}
+// export class PartialExpression extends Expression {
+//     readonly type = "PartialExpression";
+//     query: ITextQuery;
+// }
 
 export class BinaryExpression extends Expression {
 
@@ -155,8 +155,8 @@ export class CoalesceExpression extends Expression {
 
 export class ValuesStatement extends Expression {
     readonly type = "ValuesStatement";
-    as: QuotedLiteral;
-    fields: QuotedLiteral[];
+    as: Identifier;
+    fields: Identifier[];
     values: Expression[][];
 }
 
@@ -164,6 +164,11 @@ export class OrderByExpression extends Expression {
     readonly type = "OrderByExpression";
     target: Expression;
     descending: boolean;
+}
+
+export class NotExits extends Expression {
+    readonly type = "NotExists";
+    target: Expression;
 }
 
 export class ExistsExpression extends Expression {
@@ -210,7 +215,7 @@ export class ArrowFunctionExpression extends Expression {
     body: Expression;
 }
 
-export type TableSource = SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
+export type TableSource = SelectStatement | Identifier | ExpressionAs | TableLiteral;
 
 export type Expand = { [key: string]: string | Expand };
 
@@ -218,11 +223,13 @@ export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
 
+    preferLeftJoins: boolean;
+
     source: TableSource | ValuesStatement;
 
     sourceParameter: ParameterExpression;
 
-    fields: (Expression | QuotedLiteral | ExpressionAs)[];
+    fields: (Expression | Identifier | ExpressionAs)[];
 
     where: Expression;
 
@@ -256,8 +263,8 @@ export class ConditionalExpression extends Expression {
 export class JoinExpression extends Expression {
     readonly type = "JoinExpression";
     joinType: "LEFT" | "INNER";
-    source: SelectStatement | QuotedLiteral | ExpressionAs | TableLiteral;
-    as: QuotedLiteral | ParameterExpression;
+    source: SelectStatement | Identifier | ExpressionAs | TableLiteral;
+    as: Identifier | ParameterExpression;
     where: Expression;
     model: EntityType;
 }
@@ -265,7 +272,7 @@ export class JoinExpression extends Expression {
 export class ReturnUpdated extends Expression {
     readonly type = "ReturnUpdated";
 
-    fields: QuotedLiteral[];
+    fields: Identifier[];
 
     changes: "INSERTED" | "DELETED" | "UPDATED";
 }
@@ -295,6 +302,9 @@ export class BooleanLiteral extends Expression {
 }
 
 export class NumberLiteral extends Expression {
+
+    static one = NumberLiteral.create({ value: 1 });
+
     readonly type = "NumberLiteral";
     public value: number;
 }
@@ -318,34 +328,34 @@ export class TemplateLiteral extends Expression {
     public value: Expression[];
 }
 
-export class QuotedLiteral extends Expression {
+// export class QuotedLiteral extends Expression {
 
-    static propertyChain(... properties: string[]): Expression {
-        const literal = properties.pop();
-        const property = QuotedLiteral.create({ literal });
-        if (properties.length === 0) {
-            return property;
-        }
-        return MemberExpression.create({
-            target: QuotedLiteral.propertyChain(... properties),
-            property
-        });
-    }
+//     static propertyChain(... properties: string[]): Expression {
+//         const literal = properties.pop();
+//         const property = QuotedLiteral.create({ literal });
+//         if (properties.length === 0) {
+//             return property;
+//         }
+//         return MemberExpression.create({
+//             target: QuotedLiteral.propertyChain(... properties),
+//             property
+//         });
+//     }
 
-    readonly type = "QuotedLiteral";
-    public literal: string;
-}
+//     readonly type = "QuotedLiteral";
+//     public literal: string;
+// }
 
 export class ExpressionAs extends Expression {
     readonly type = "ExpressionAs";
     expression: Expression;
-    alias: QuotedLiteral;
+    alias: Identifier;
 }
 
 export class TableLiteral extends Expression {
     readonly type = "TableLiteral";
-    schema: QuotedLiteral;
-    name: QuotedLiteral;
+    schema: Identifier;
+    name: Identifier;
 
 }
 
@@ -363,7 +373,7 @@ export class UpdateStatement extends Expression {
 
     readonly type = "UpdateStatement";
 
-    table: TableLiteral | QuotedLiteral;
+    table: TableLiteral | Identifier;
 
     set: BinaryExpression[];
 
@@ -371,9 +381,14 @@ export class UpdateStatement extends Expression {
 
 }
 
+export class UnionAllStatement extends Expression {
+    readonly type = "UnionAllStatement";
+    queries: Expression[];
+}
+
 export class DeleteStatement extends Expression {
     readonly type = "DeleteStatement";
-    table: TableLiteral | QuotedLiteral;
+    table: TableLiteral | Identifier
     where: Expression;
 }
 
@@ -382,7 +397,7 @@ export type ExpressionType =
     ValuesStatement |
     SelectStatement |
     Constant|
-    QuotedLiteral|
+    // QuotedLiteral|
     ExpressionAs|
     TableLiteral|
     InsertStatement|
@@ -407,5 +422,7 @@ export type ExpressionType =
     NewObjectExpression |
     ParameterExpression |
     ArrayExpression |
+    NotExits |
+    UnionAllStatement |
     TemplateElement
 ;

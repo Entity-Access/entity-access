@@ -32,8 +32,8 @@ export interface IBaseQuery<T> {
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
 
-    thenBy<P>(parameters: P, fx: (p: P) => (x: T) => any);
-    thenByDescending<P>(parameters: P, fx: (p: P) => (x: T) => any);
+    thenBy<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
+    thenByDescending<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
 }
 
 export interface IEntityQuery<T> extends IBaseQuery<T> {
