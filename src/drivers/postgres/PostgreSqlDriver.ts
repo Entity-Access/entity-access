@@ -25,6 +25,8 @@ export interface IPgSqlConnectionString extends IDbConnectionString {
     idle_in_transaction_session_timeout?: number // number of milliseconds before terminating any session with an open idle transaction, default is no timeout
 };
 
+const pgID = Symbol("pgID");
+
 class DbReader implements IDbReader {
 
     constructor(private cursor: Cursor, private client: IPooledObject<pg.Client>) {
@@ -175,6 +177,8 @@ class PostgreSqlConnection extends BaseConnection {
             asyncFactory: async () => {
                 const c = new pg.Client(self.config);
                 await c.connect();
+                const row = await c.query("SELECT pg_backend_pid() as id");
+                c[pgID] = (row.rows as any).id;
                 return c;
             },
             destroy(item) {
@@ -186,13 +190,8 @@ class PostgreSqlConnection extends BaseConnection {
         }));
         const client = await pooledClient.acquire();
 
-        // const client = new Client(this.config);
-        // await client.connect();
-        const row = await client.query("SELECT pg_backend_pid() as id");
-        const clientId = (row.rows as any).id;
-        // there is no support to kill the query running inside
         if (signal) {
-            signal.addEventListener("abort", () => this.kill(clientId).catch((error) => console.error(error)));
+            signal.addEventListener("abort", () => this.kill(client[pgID]).catch((error) => console.error(error)));
         }
         return client;
     }

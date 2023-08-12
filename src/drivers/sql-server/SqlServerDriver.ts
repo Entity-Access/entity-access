@@ -44,7 +44,7 @@ export class SqlServerConnection extends BaseConnection {
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
         command = toQuery(command);
-        let rq = await this.newRequest();
+        let rq = await this.newRequest(signal);
 
         if (command) {
             let id = 1;
@@ -57,7 +57,7 @@ export class SqlServerConnection extends BaseConnection {
         return new SqlReader(rq, command);
     }
     public async executeQuery(command: IQuery, signal?: AbortSignal): Promise<any> {
-        let rq = await this.newRequest();
+        let rq = await this.newRequest(signal);
         command = toQuery(command);
 
         if (command) {
@@ -140,12 +140,21 @@ export class SqlServerConnection extends BaseConnection {
         return new SqlServerAutomaticMigrations(this.sqlQueryCompiler);
     }
 
-    protected async newRequest() {
-
+    protected async newRequest(signal: AbortSignal) {
+        let request: sql.Request;
         if (this.transaction) {
-            return this.transaction.request();
+            request = this.transaction.request();
+        } else {
+            request = (await this.newConnection()).request();
         }
-        return (await this.newConnection()).request();
+        if (signal) {
+            if (signal.aborted) {
+                request.cancel();
+                signal.throwIfAborted();
+            }
+            signal.onabort = () => request.cancel();
+        }
+        return request;
     }
 
     private newConnection(config = this.config) {
