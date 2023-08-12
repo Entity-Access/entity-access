@@ -1,6 +1,6 @@
 import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
-import { RelateTo } from "../../decorators/Relate.js";
+import Relate, { RelateTo, RelateToOne } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
 import DateTime from "../../types/DateTime.js";
@@ -25,6 +25,9 @@ export class ShoppingContext extends EntityContext {
 
     public userCategories = this.model.register(UserCategory);
 
+    public userProfiles = this.model.register(UserProfile);
+
+    public profilePhotos = this.model.register(ProfilePhoto);
 }
 
 @Table("Users")
@@ -43,6 +46,8 @@ export class User {
 
     @Column({ dataType: "Char", length: 200 })
     public userName: string;
+
+    public profile: UserProfile;
 
     public ownedProducts: Product[];
 
@@ -65,6 +70,43 @@ export class Category {
 
     public users: UserCategory[];
 
+}
+
+@Table("UserProfile")
+export class UserProfile {
+
+    @Column({ key: true, dataType: "BigInt"})
+    @RelateToOne(User, {
+        property: (up) => up.user,
+        inverseProperty: (u) => u.profile
+    })
+    public profileID: number;
+
+    public fullName: string;
+
+    public user: User;
+
+    public photos: ProfilePhoto[];
+
+}
+
+@Table("ProfilePhotos")
+export class ProfilePhoto {
+
+    @Column({ key: true, dataType: "BigInt", autoGenerate: true })
+    public photoID: number;
+
+    @Column ({ dataType: "BigInt"})
+    @RelateTo(UserProfile, {
+        property: (pp) => pp.profile,
+        inverseProperty: (up) => up.photos
+    })
+    public profileID: number;
+
+    @Column({ dataType: "Char"})
+    public url: string;
+
+    public profile: UserProfile;
 }
 
 @Table("UserCategories")

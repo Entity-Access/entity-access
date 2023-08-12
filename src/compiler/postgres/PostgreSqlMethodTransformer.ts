@@ -35,6 +35,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         },
     },
     date: {
+        now() {
+            return prepareAny `NOW()`;
+        },
         addDays(d, n) {
             return prepareAny `(${d} + (${n} * interval '1 day'))`;
         },

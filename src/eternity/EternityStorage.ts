@@ -1,11 +1,14 @@
+import { randomUUID } from "crypto";
 import Column from "../decorators/Column.js";
 import Index from "../decorators/Index.js";
 import Table from "../decorators/Table.js";
 import Inject, { RegisterScoped, RegisterSingleton, ServiceProvider } from "../di/di.js";
 import { BaseDriver } from "../drivers/base/BaseDriver.js";
 import EntityContext from "../model/EntityContext.js";
+import { BinaryExpression, CallExpression, Expression, NullExpression, NumberLiteral, UpdateStatement } from "../query/ast/Expressions.js";
 import DateTime from "../types/DateTime.js";
 import WorkflowClock from "./WorkflowClock.js";
+import RawQuery from "../compiler/RawQuery.js";
 
 @Table("Workflows")
 @Index({
@@ -53,6 +56,9 @@ export class WorkflowStorage {
     @Column({ nullable: true })
     public lockedTTL: DateTime;
 
+    @Column({ nullable: true })
+    public lockToken: string;
+
     @Column({ dataType: "AsciiChar", length: 10})
     public state: "queued" | "failed" | "done";
 
@@ -83,6 +89,8 @@ class WorkflowContext extends EntityContext {
 @RegisterSingleton
 export default class EternityStorage {
 
+    private lockQuery: RawQuery;
+
     constructor(
         @Inject
         private driver: BaseDriver,
@@ -92,11 +100,36 @@ export default class EternityStorage {
 
     }
 
-    async get(id: string, input?) {
+    async getWorkflow(id: string) {
         const db = new WorkflowContext(this.driver);
         const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id && x.isWorkflow === true).first();
         if (r !== null) {
             return {
+                id,
+                parentID: r.parentID,
+                lockTTL: r.lockedTTL,
+                lockToken: r.lockToken,
+                updated: r.updated,
+                eta: r.eta,
+                queued: r.queued,
+                state: r.state,
+                output: r.output,
+                error: r.error
+            };
+        }
+        return null;
+    }
+
+
+    async getAny(id: string) {
+        const db = new WorkflowContext(this.driver);
+        const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id).first();
+        if (r !== null) {
+            return {
+                id,
+                parentID: r.parentID,
+                lockTTL: r.lockedTTL,
+                lockToken: r.lockToken,
                 updated: r.updated,
                 eta: r.eta,
                 queued: r.queued,
@@ -131,7 +164,8 @@ export default class EternityStorage {
 
     async save(state: Partial<WorkflowStorage>) {
         const db = new WorkflowContext(this.driver);
-        await this.driver.runInTransaction(async () => {
+        const connection = db.connection;
+        await connection.runInTransaction(async () => {
             let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
             if (!w) {
                 w = db.workflows.add(state);
@@ -145,6 +179,7 @@ export default class EternityStorage {
             }
 
             w.state ||= "queued";
+            w.updated = DateTime.utcNow;
             await db.saveChanges();
         });
     }
@@ -152,29 +187,75 @@ export default class EternityStorage {
     async dequeue(signal?: AbortSignal) {
         const db = new WorkflowContext(this.driver);
         const now = this.clock.utcNow;
-        const lockedTTL = now.addMinutes(1);
-        return db.driver.runInTransaction(async () => {
-            const list = await db.workflows
-                .where({now}, (p) => (x) => x.eta <= p.now
-                    && (x.lockedTTL === null || x.lockedTTL <= p.now)
-                    && x.isWorkflow === true)
-                .orderBy({}, (p) => (x) => x.eta)
-                .thenBy({}, (p) => (x) => x.priority)
-                .limit(20)
-                .withSignal(signal)
-                .toArray();
-            for (const iterator of list) {
-                iterator.lockedTTL = lockedTTL;
+
+        if(!this.lockQuery) {
+
+            const type = db.model.getEntityType(WorkflowStorage);
+
+            const px = Expression.parameter("x");
+            const lockTokenField = type.getProperty("lockToken").field.columnName;
+            const lockTTLField = type.getProperty("lockedTTL").field.columnName;
+
+            const exp = UpdateStatement.create({
+                table: type.fullyQualifiedName,
+                set: [
+                    Expression.assign(
+                        Expression.identifier(lockTokenField),
+                        Expression.member(px, "lockToken")
+                    ),
+                    Expression.assign(
+                        Expression.identifier(lockTTLField),
+                        CallExpression.create({
+                            callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "addMinutes"),
+                            arguments: [CallExpression.create({
+                                callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "now")
+                            }),
+                            NumberLiteral.create({ value: 5 })
+                        ]
+                        })
+                    )
+                ],
+                where: Expression.logicalAnd(Expression.equal(
+                    Expression.identifier("id"),
+                    Expression.member(px, "id")
+                ), Expression.equal(
+                    Expression.identifier(lockTokenField),
+                    NullExpression.create({})
+                ))
+            });
+
+            this.lockQuery = this.driver.compiler.compileToRawQuery(null, exp, px);
+        }
+
+        const q = this.lockQuery;
+
+        const items = await db.workflows
+            .where({now}, (p) => (x) => x.eta <= p.now
+                && (x.lockedTTL === null || x.lockedTTL <= p.now)
+                && x.lockToken === null
+                && x.isWorkflow === true)
+            .orderBy({}, (p) => (x) => x.eta)
+            .thenBy({}, (p) => (x) => x.priority)
+            .limit(20)
+            .withSignal(signal)
+            .toArray();
+        const list: WorkflowStorage[] = [];
+        const uuid = randomUUID();
+        for (const iterator of items) {
+            // try to acquire lock...
+            iterator.lockToken = uuid;
+            const r = await q.invoke(db.connection, iterator);
+            if (r.updated > 0) {
+                list.push(iterator);
             }
-            await db.saveChanges(signal);
-            return list;
-        });
+        }
+        return list;
     }
 
     async seed() {
         const db = new WorkflowContext(this.driver);
-        await db.driver.ensureDatabase();
-        await db.driver.automaticMigrations().migrate(db);
+        await db.connection.ensureDatabase();
+        await db.connection.automaticMigrations().migrate(db);
     }
 
 }

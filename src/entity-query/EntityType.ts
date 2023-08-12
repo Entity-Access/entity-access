@@ -152,6 +152,7 @@ export default class EntityType {
         }
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
+        as.model = this;
         const fields = this.columns.map((c) => Expression.member(as, c.columnName));
         this.selectAll = SelectStatement.create({
             source,
@@ -168,6 +169,7 @@ export default class EntityType {
         }
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
+        as.model = this;
         const fields = [
             NumberLiteral.one
         ];

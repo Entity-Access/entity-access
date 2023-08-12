@@ -147,7 +147,12 @@ export class ServiceProvider implements IDisposable {
 
     private createFromDescriptor(sd: IServiceDescriptor): any {
         if(sd.factory) {
-            return sd.factory(this);
+            const instance = sd.factory(this);
+            instance[serviceProvider] = this;
+            instance[globalServiceProvider] = this[globalServiceProvider];
+            // initialize properties...
+            this.resolveProperties(instance);
+            return instance;
         }
         return this.createFromType(sd.key);
     }

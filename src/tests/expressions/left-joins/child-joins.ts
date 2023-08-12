@@ -61,7 +61,7 @@ o1.product_id,
 o1.price_id,
 o1.amount
 FROM order_items AS o1
- INNER JOIN products AS p ON o1.product_id = p.product_id
+ LEFT JOIN products AS p ON o1.product_id = p.product_id
 WHERE (o1.product_id = $1) OR (p.owner_id = $2)`;
 
 export default function() {

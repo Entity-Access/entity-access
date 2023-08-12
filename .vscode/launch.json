@@ -20,6 +20,9 @@
         },
         {
             "type": "node",
+            "runtimeArgs": [
+                "--enable-source-maps"
+            ],
             "request": "launch",
             "name": "Run Selected Test File",
             "skipFiles": [
@@ -28,8 +31,8 @@
             "program": "${workspaceFolder}/test.js",
             "args": [
                 "--test-file",
-                "./dist/tests/eternity/eternity-tests.js"
-                //,"${file}"
+                // "./dist/tests/eternity/eternity-tests.js"
+                "${file}"
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"

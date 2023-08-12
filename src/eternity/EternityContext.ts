@@ -15,7 +15,7 @@ import sleep from "../common/sleep.js";
 
 async function  hash(text) {
     const sha256 = crypto.createHash("sha256");
-    return sha256.update(text).digest("hex");
+    return sha256.update(text).digest("base64");
 }
 
 function bindStep(context: EternityContext, store: WorkflowStorage, name: string, old: (... a: any[]) => any, unique = false) {
@@ -27,7 +27,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
 
         const clock = context.storage.clock;
 
-        const existing = await context.storage.get(id);
+        const existing = await context.storage.getAny(id);
         if (existing) {
             if (existing.state === "failed" && existing.error) {
                 throw new Error(existing.error);
@@ -39,6 +39,8 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
         }
 
         store.lastID = id;
+
+        let ttl = TimeSpan.fromSeconds(0);
 
         const step: Partial<WorkflowStorage> = {
             id,
@@ -63,10 +65,13 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             const eta = this.currentTime.add(maxTS);
             step.eta = eta;
 
+            ttl = maxTS;
+
             if (eta <= start) {
                 // time is up...
                 lastResult = "";
                 step.state = "done";
+                ttl = TimeSpan.fromSeconds(0);
             }
 
         } else {
@@ -74,9 +79,11 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             try {
 
                 const types = old[injectServiceKeysSymbol] as any[];
-                for (let index = a.length; index < types.length; index++) {
-                    const element = ServiceProvider.resolve(this, types[index]);
-                    a.push(element);
+                if (types) {
+                    for (let index = a.length; index < types.length; index++) {
+                        const element = ServiceProvider.resolve(this, types[index]);
+                        a.push(element);
+                    }
                 }
                 lastResult = (await old.apply(this, a)) ?? 0;
                 step.output = JSON.stringify(lastResult);
@@ -101,7 +108,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             throw lastError;
         }
         if (step.state !== "done") {
-            throw new ActivitySuspendedError();
+            throw new ActivitySuspendedError(ttl);
         }
         return lastResult;
     };
@@ -131,8 +138,8 @@ export default class EternityContext {
     }
 
     public async start(signal?: AbortSignal) {
+        console.log(`Started executing workflow jobs`);
         while(!signal?.aborted) {
-            console.log(`Executing workflow jobs`);
             try {
                 const total = await this.processQueueOnce(signal);
                 if (total > 0) {
@@ -143,14 +150,13 @@ export default class EternityContext {
                 console.error(error);
             }
             const ws = (this.waiter = new AbortController()).signal;
-            console.log(`Waiting for new workflow jobs`);
             await sleep(15000, ws);
         }
     }
 
     public async get<T = any>(c: IClassOf<Workflow<any, T>> | string, id?: string): Promise<IWorkflowResult<T>> {
         id ??= (c as string);
-        const s = await this.storage.get(id);
+        const s = await this.storage.getWorkflow(id);
         if (s) {
             return {
                 state: s.state,
@@ -164,10 +170,15 @@ export default class EternityContext {
     public async queue<T>(
         type: IClassOf<Workflow<T>>,
         input: Partial<T>,
-        { id, throwIfExists, eta }: { id?: string, throwIfExists?: boolean, eta?: DateTime } = {}) {
+        { id, throwIfExists, eta, parentID }: {
+            id?: string,
+            throwIfExists?: boolean,
+            eta?: DateTime,
+            parentID?: string
+        } = {}) {
         const clock = this.storage.clock;
         if (id) {
-            const r = await this.storage.get(id);
+            const r = await this.storage.getWorkflow(id);
             if (r) {
                 if (throwIfExists) {
                     throw new EntityAccessError(`Workflow with ID ${id} already exists`);
@@ -176,7 +187,7 @@ export default class EternityContext {
             }
         } else {
             id = randomUUID();
-            while(await this.storage.get(id) !== null) {
+            while(await this.storage.getWorkflow(id) !== null) {
                 console.log(`Generating UUID again ${id}`);
                 id = randomUUID();
             }
@@ -194,6 +205,7 @@ export default class EternityContext {
             isWorkflow: true,
             queued: now,
             updated: now,
+            parentID,
             eta
         });
 
@@ -217,6 +229,36 @@ export default class EternityContext {
 
         return pending.length;
     }
+
+    async runChild(w: Workflow, type, input) {
+
+        // there might still be some workflows pending
+        // this will ensure even empty workflow !!
+        const schema = WorkflowRegistry.register(type, void 0);
+
+        const inputID = JSON.stringify(input);
+
+        let id = w.id + `-child(${schema.name},${inputID})`;
+        if (id.length >= 200) {
+            id = w.id + `-child(${schema.name},${await hash(inputID)})`;
+        }
+
+        const result = await this.storage.getWorkflow(id);
+        if (result) {
+            const { state } = result;
+            if (state === "done") {
+                return JSON.parse(result.output);
+            }
+            if (state === "failed") {
+                throw new Error(result.error);
+            }
+            throw new ActivitySuspendedError();
+        }
+
+        await this.queue(type, input, { id, parentID: w.id });
+        throw new ActivitySuspendedError();
+    }
+
     private async run(workflow: WorkflowStorage) {
 
         const clock = this.storage.clock;
@@ -236,7 +278,7 @@ export default class EternityContext {
             const schema = WorkflowRegistry.getByName(workflow.name);
             const { eta, id, updated } = workflow;
             const input = JSON.parse(workflow.input);
-            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) });
+            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) }, this);
             for (const iterator of schema.activities) {
                 instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
             }
@@ -252,15 +294,40 @@ export default class EternityContext {
             } catch (error) {
                 if (error instanceof ActivitySuspendedError) {
                     // this will update last id...
+                    workflow.eta = clock.utcNow.add(error.ttl);
+                    workflow.lockedTTL = null;
+                    workflow.lockToken = null;
                     await this.storage.save(workflow);
                     return;
                 }
                 workflow.error = JSON.stringify(error.stack ?? error);
+                console.error(error);
                 workflow.state = "failed";
                 workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
             }
 
+            // in case of child workflow...
+            // eta will be set to one year...
+            if (workflow.parentID) {
+                workflow.eta = clock.utcNow.addYears(1);
+                // since we have finished.. we should
+                // make parent's eta approach now sooner..
+            }
+
+            workflow.lockedTTL = null;
+            workflow.lockToken = null;
             await this.storage.save(workflow);
+
+            if (workflow.parentID) {
+                const parent = await this.storage.getWorkflow(workflow.parentID);
+                if (parent) {
+                    parent.lockTTL = null;
+                    parent.lockToken = null;
+                    parent.eta = clock.utcNow;
+                    await this.storage.save(parent);
+                }
+            }
+            // workflow finished successfully...
 
         } finally {
             scope.dispose();

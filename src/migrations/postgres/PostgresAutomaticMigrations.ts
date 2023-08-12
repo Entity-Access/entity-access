@@ -1,6 +1,6 @@
 import { IColumn } from "../../decorators/IColumn.js";
 import { IIndex } from "../../decorators/IIndex.js";
-import { BaseDriver } from "../../drivers/base/BaseDriver.js";
+import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import Migrations from "../Migrations.js";
@@ -15,13 +15,16 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         const nonKeyColumns = type.nonKeys;
         const keys = type.keys;
 
-        const driver = context.driver;
+        const driver = context.connection;
 
         await this.createTable(driver, type, keys);
 
         await this.createColumns(driver, type, nonKeyColumns);
 
-        await this.createIndexes(context, type, nonKeyColumns.filter((x) => x.fkRelation && !x.fkRelation?.dotNotCreateIndex));
+        await this.createIndexes(context, type, nonKeyColumns.filter((x) =>
+            x.fkRelation
+            && (!x.key || type.keys.indexOf(x) !== 0)
+            && !x.fkRelation?.dotNotCreateIndex));
 
     }
 
@@ -39,7 +42,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         }
     }
 
-    async createColumns(driver: BaseDriver, type: EntityType, nonKeyColumns: IColumn[]) {
+    async createColumns(driver: BaseConnection, type: EntityType, nonKeyColumns: IColumn[]) {
 
         const name = type.schema
         ? type.schema + "." + type.name
@@ -64,7 +67,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
     }
 
-    async createTable(driver: BaseDriver, type: EntityType, keys: IColumn[]) {
+    async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
 
         const name = type.schema
             ? type.schema + "." + type.name
@@ -95,7 +98,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
     }
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
-        const driver = context.driver;
+        const driver = context.connection;
         const name = type.schema
         ? type.schema + "." + type.name
         : type.name;

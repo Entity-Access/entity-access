@@ -5,7 +5,7 @@ import TimedCache from "../../common/cache/TimedCache.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
-import { BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
 export interface IPgSqlConnectionString extends IDbConnectionString {
@@ -24,6 +24,8 @@ export interface IPgSqlConnectionString extends IDbConnectionString {
     connectionTimeoutMillis?: number, // number of milliseconds to wait for connection, default is no timeout
     idle_in_transaction_session_timeout?: number // number of milliseconds before terminating any session with an open idle transaction, default is no timeout
 };
+
+const pgID = Symbol("pgID");
 
 class DbReader implements IDbReader {
 
@@ -66,11 +68,23 @@ export default class PostgreSqlDriver extends BaseDriver {
         return this.myCompiler;
     }
 
-    private transaction: IPooledObject<pg.Client>;
     private myCompiler = new QueryCompiler();
 
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
+    }
+
+    newConnection(): BaseConnection {
+        return new PostgreSqlConnection(this);
+    }
+}
+
+class PostgreSqlConnection extends BaseConnection {
+
+    private transaction: IPooledObject<pg.Client>;
+
+    private get config() {
+        return this.connectionString;
     }
 
     public async createTransaction(): Promise<IBaseTransaction> {
@@ -96,11 +110,16 @@ export default class PostgreSqlDriver extends BaseDriver {
 
     public async executeQuery(command: IQuery, signal?: AbortSignal) {
         const connection = await this.getConnection(signal);
+        let text = "";
         // we need to change parameter styles
         try {
             const q = toQuery(command);
+            text = q.text;
             const result = await connection.query(q.text, q.values);
+            (result as any).updated = result.rowCount;
             return result;
+        } catch (error) {
+            throw new Error(`Failed executing ${text}\n${error}`);
         } finally {
             if (!this.transaction) {
                 await connection[Symbol.asyncDisposable]();
@@ -158,6 +177,8 @@ export default class PostgreSqlDriver extends BaseDriver {
             asyncFactory: async () => {
                 const c = new pg.Client(self.config);
                 await c.connect();
+                const row = await c.query("SELECT pg_backend_pid() as id");
+                c[pgID] = (row.rows as any).id;
                 return c;
             },
             destroy(item) {
@@ -169,13 +190,8 @@ export default class PostgreSqlDriver extends BaseDriver {
         }));
         const client = await pooledClient.acquire();
 
-        // const client = new Client(this.config);
-        // await client.connect();
-        const row = await client.query("SELECT pg_backend_pid() as id");
-        const clientId = (row.rows as any).id;
-        // there is no support to kill the query running inside
         if (signal) {
-            signal.addEventListener("abort", () => this.kill(clientId).catch((error) => console.error(error)));
+            signal.addEventListener("abort", () => this.kill(client[pgID]).catch((error) => console.error(error)));
         }
         return client;
     }

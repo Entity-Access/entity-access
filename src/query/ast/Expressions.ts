@@ -73,6 +73,10 @@ export abstract class Expression {
         return BinaryExpression.create({ left, right, operator: "="});
     }
 
+    static assign(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "="});
+    }
+
     static create<T extends Expression>(this: IClassOf<T>, p: Partial<Omit<T, "type">>) {
         (p as any).type = (this as any).name;
         Object.setPrototypeOf(p, this.prototype);
@@ -218,6 +222,8 @@ export type Expand = { [key: string]: string | Expand };
 export class SelectStatement extends Expression {
 
     readonly type = "SelectStatement";
+
+    preferLeftJoins: boolean;
 
     source: TableSource | ValuesStatement;
 

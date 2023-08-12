@@ -9,7 +9,7 @@ export default async function (this: TestConfig) {
         return;
     }
 
-    const connection = this.driver;
+    const connection = this.driver.newConnection();
 
     await connection.ensureDatabase();
     // create table...

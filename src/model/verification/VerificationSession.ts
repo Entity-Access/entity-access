@@ -1,7 +1,7 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
 import Logger from "../../common/Logger.js";
 import { TypeInfo } from "../../common/TypeInfo.js";
-import { IEntityRelation } from "../../decorators/IColumn.js";
+import { IColumn, IEntityRelation } from "../../decorators/IColumn.js";
 import { ServiceProvider } from "../../di/di.js";
 import { ConditionalExpression, ExistsExpression, Expression, NumberLiteral, ParameterExpression, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import EntityContext from "../EntityContext.js";
@@ -10,6 +10,15 @@ import ChangeEntry from "../changes/ChangeEntry.js";
 import EntityEvents, { ForeignKeyFilter } from "../events/EntityEvents.js";
 
 type KeyValueArray = [string, any][];
+
+const isKeyEmpty = (key: any, columnName: IColumn) => {
+    switch(columnName.dataType) {
+        case "BigInt":
+        case "Int":
+            return !key || key === 0 || key === "0";
+    }
+    return key === null || key === "";
+};
 
 export default class VerificationSession {
 
@@ -31,6 +40,9 @@ export default class VerificationSession {
                 const key = entity[iterator.name];
                 if (key === void 0) {
                     break;
+                }
+                if (isKeyEmpty(key, iterator)) {
+                    continue;
                 }
                 keys.push([iterator.columnName, key]);
             }
@@ -59,6 +71,9 @@ export default class VerificationSession {
             const fkValue = entity[fk.name];
             if (fkValue === void 0) {
                 // not set... ignore..
+                continue;
+            }
+            if (isKeyEmpty(fkValue, relation.fkColumn)) {
                 continue;
             }
             this.queueEntityForeignKey(change, relation, fkValue);
@@ -137,7 +152,7 @@ export default class VerificationSession {
         const logger = ServiceProvider.resolve(this.context, Logger);
         const session = logger.newSession();
         try {
-            const { rows: [ { error }]} = await this.context.driver.executeQuery(query);
+            const { rows: [ { error }]} = await this.context.connection.executeQuery(query);
             if (error) {
                 session.error(`Failed executing ${query.text}\n[${query.values.join(",")}]\n${error?.stack ?? error}`);
                 EntityAccessError.throw(error);

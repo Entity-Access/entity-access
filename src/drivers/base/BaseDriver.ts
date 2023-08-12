@@ -53,18 +53,32 @@ export interface IBaseTransaction {
     dispose(): Promise<any>;
 }
 
-export abstract class BaseDriver {
-    abstract get compiler(): QueryCompiler;
+export abstract class BaseConnection {
+
+    protected compiler: QueryCompiler;
+
+    protected connectionString: IDbConnectionString;
 
     private currentTransaction: IBaseTransaction;
 
-    constructor(public readonly connectionString: IDbConnectionString) {}
+
+    constructor(public driver: BaseDriver) {
+        this.compiler = driver.compiler;
+        this.connectionString = driver.connectionString;
+    }
+
+    public abstract ensureDatabase(): Promise<any>;
+
+    /**
+     * This migrations only support creation of missing items.
+     * However, you can provide events to change existing items.
+     */
+    public abstract automaticMigrations(): Migrations;
+
 
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
     public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
-
-    public abstract ensureDatabase(): Promise<any>;
 
     public abstract createTransaction(): Promise<IBaseTransaction>;
 
@@ -90,12 +104,16 @@ export abstract class BaseDriver {
             this.currentTransaction = null;
         }
     }
+}
 
-    /**
-     * This migrations only support creation of missing items.
-     * However, you can provide events to change existing items.
-     */
-    public abstract automaticMigrations(): Migrations;
+export abstract class BaseDriver {
+    abstract get compiler(): QueryCompiler;
+
+
+    constructor(public readonly connectionString: IDbConnectionString) {}
+
+    abstract newConnection(): BaseConnection;
+
 
     createInsertExpression(type: EntityType, entity: any): InsertStatement {
         const returnFields = [] as Identifier[];
