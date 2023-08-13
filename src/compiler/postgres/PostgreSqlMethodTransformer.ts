@@ -11,6 +11,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
     in(a, array) {
         return prepareAny `${a} IN ${array}`;
     },
+    sum(a) {
+        return prepareAny `SUM(${a})`;
+    },
     cast: {
         asBigInt(a) {
             return prepareAny `(${a} ::bigint)`;

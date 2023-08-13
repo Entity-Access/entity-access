@@ -3,6 +3,7 @@ import DateTime from "../types/DateTime.js";
 export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;
+    sum<T>(a: number[]): number;
 
     cast: {
         asNumber(a: any): number;

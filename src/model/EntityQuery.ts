@@ -1,9 +1,10 @@
+import EntityAccessError from "../common/EntityAccessError.js";
 import Logger from "../common/Logger.js";
 import { DisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, Expression, ExpressionAs, Identifier, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
+import { CallExpression, Expression, ExpressionAs, Identifier, NewObjectExpression, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
 import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
@@ -29,10 +30,26 @@ export default class EntityQuery<T = any>
         return this.map(p, fx);
     }
 
-    map(p: any, fx: any): any {
-        // const source = this.source.copy();
-        // const { select } = source;
-        // const exp = this.source.context.driver.compiler.compileToExpression(source, p, fx);
+    map(parameters: any, fx: any): any {
+        return this.extend(parameters, fx, (select, body) => {
+            const fields = [] as Expression[];
+            switch(body.type) {
+                case "NewObjectExpression":
+                    const noe = body as NewObjectExpression;
+                    for (const iterator of noe.properties) {
+                        fields.push(ExpressionAs.create({
+                            expression: iterator.expression,
+                            alias: iterator.alias
+                        }));
+                    }
+                    break;
+                default:
+                    fields.push(body);
+                    break;
+
+            }
+            return { ... select, fields };
+        });
     }
 
     withSignal(signal: AbortSignal): any {
@@ -174,6 +191,47 @@ export default class EntityQuery<T = any>
 
     offset(n: number): any {
         return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, offset: n} });
+    }
+
+    async sum(parameters?:any, fx?: any): Promise<number> {
+        if (parameters !== void 0) {
+            return this.map(parameters, fx).sum();
+        }
+        const field = this.selectStatement.fields[0];
+        const select = { ... this.selectStatement, fields: [
+            ExpressionAs.create({
+                expression: CallExpression.create({
+                    callee: Identifier.create({ value: "SUM"}),
+                    arguments: [ field]
+                }),
+                alias: Expression.identifier("c1")
+            })
+            ],
+            orderBy: void 0
+        };
+
+        const nq = new EntityQuery({ ... this, selectStatement: select });
+
+        const scope = new DisposableScope();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
+        try {
+            query = this.context.driver.compiler.compileExpression(nq, select);
+            const reader = await this.context.connection.executeReader(query);
+            scope.register(reader);
+            for await (const iterator of reader.next()) {
+                return iterator.c1 as number;
+            }
+            // this is special case when database does not return any count
+            // like sql server
+            return 0;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
+        } finally {
+            await scope.dispose();
+        }
+
     }
 
     async count(parameters?:any, fx?: any): Promise<number> {
