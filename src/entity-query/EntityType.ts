@@ -11,6 +11,11 @@ import { IStringTransformer } from "../query/ast/IStringTransformer.js";
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
 
+export interface IEntityProperty {
+    field?: IColumn;
+    relation?: IEntityRelation;
+}
+
 
 /**
  * DbQuery represents sql equivalent table with columns...
@@ -65,7 +70,7 @@ export default class EntityType {
         return this.fieldMap.get(name) ?? { name };
     }
 
-    public getProperty(name: string) {
+    public getProperty(name: string): IEntityProperty {
         const field = this.fieldMap.get(name);
         const relation = this.relationMap.get(name);
         return { field, relation };
