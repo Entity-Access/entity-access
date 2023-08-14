@@ -9,10 +9,18 @@ const onlyAlphaNumeric = (x: string) => x.replace(/\W/g, "");
 export const PostgreSqlHelper: ISqlHelpers = {
     ... Sql,
     in(a, array) {
-        return prepareAny `${a} IN ${array}`;
+        return prepareAny`${a} IN ${array}`;
     },
-    sum(a) {
-        return prepareAny `SUM(${a})`;
+    coll: {
+        sum(a) {
+            return prepareAny `SUM(${a})`;
+        },
+        count(a) {
+            return prepareAny `COUNT(${a})`;
+        },
+        avg(a) {
+            return prepareAny `AVG(${a})`;
+        },
     },
     cast: {
         asBigInt(a) {

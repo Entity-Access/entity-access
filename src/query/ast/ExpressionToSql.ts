@@ -193,66 +193,65 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     expandMap(body: ArrowFunctionExpression, relation: IEntityProperty, e: CallExpression, parameter: ParameterExpression, targetType: EntityType): ITextQuery {
-        throw new EntityAccessError(`Nested map/select not yet supported`);
-        // const param1 = body.params[0];
-        // const relatedModel = relation.relation.relatedEntity;
-        // const relatedType = relatedModel.typeClass;
+        const param1 = body.params[0];
+        const relatedModel = relation.relation.relatedEntity;
+        const relatedType = relatedModel.typeClass;
 
-        // let select: SelectStatement;
+        let select: SelectStatement;
 
-        // if (this.source?.context) {
-        //     const query = FilteredExpression.isFiltered(e)
-        //         ? this.source.context.query(relatedType)
-        //         : this.source.context.filteredQuery(relatedType, "include", false);
-        //     select = { ...(query as EntityQuery).selectStatement };
-        // } else {
-        //     select = relatedModel.selectOneNumber();
-        // }
+        if (this.source?.context) {
+            const query = FilteredExpression.isFiltered(e)
+                ? this.source.context.query(relatedType)
+                : this.source.context.filteredQuery(relatedType, "include", false);
+            select = { ...(query as EntityQuery).selectStatement };
+        } else {
+            select = relatedModel.selectOneNumber();
+        }
 
-        // param1.model = relatedModel;
-        // this.scope.create({ parameter: param1, model: relatedModel, selectStatement: select });
-        // this.scope.alias(param1, select.sourceParameter, select);
-        // select.sourceParameter = param1;
-        // select[filteredSymbol] = true;
-        // const targetKey = MemberExpression.create({
-        //     target: parameter,
-        //     property: Identifier.create({
-        //         value: targetType.keys[0].columnName
-        //     })
-        // });
+        param1.model = relatedModel;
+        this.scope.create({ parameter: param1, model: relatedModel, selectStatement: select });
+        this.scope.alias(param1, select.sourceParameter, select);
+        select.sourceParameter = param1;
+        select[filteredSymbol] = true;
+        const targetKey = MemberExpression.create({
+            target: parameter,
+            property: Identifier.create({
+                value: targetType.keys[0].columnName
+            })
+        });
 
-        // const relatedKey = MemberExpression.create({
-        //     target: param1,
-        //     property: Identifier.create({
-        //         value: relation.relation.fkColumn.columnName
-        //     })
-        // });
+        const relatedKey = MemberExpression.create({
+            target: param1,
+            property: Identifier.create({
+                value: relation.relation.fkColumn.columnName
+            })
+        });
 
 
-        // const join = Expression.equal(targetKey, relatedKey);
+        const join = Expression.equal(targetKey, relatedKey);
 
-        // let where = select.where;
+        let where = select.where;
 
-        // if (where) {
-        //     where = BinaryExpression.create({
-        //         left: select.where,
-        //         operator: "AND",
-        //         right: join
-        //     });
-        // } else {
-        //     where = join;
-        // }
+        if (where) {
+            where = BinaryExpression.create({
+                left: select.where,
+                operator: "AND",
+                right: join
+            });
+        } else {
+            where = join;
+        }
 
-        // select.where = where;
+        select.where = where;
 
-        // const exists = ExistsExpression.create({
-        //     target: select
-        // });
+        const exists = ExistsExpression.create({
+            target: select
+        });
 
-        // const r = this.visit(exists);
-        // this.scope.delete(param1);
-        // this.scope.delete(select.sourceParameter);
-        // return r;
+        const r = this.visit(exists);
+        this.scope.delete(param1);
+        this.scope.delete(select.sourceParameter);
+        return r;
     }
 
     expandSome(body: ArrowFunctionExpression, relation: IEntityProperty, e: CallExpression, parameter: ParameterExpression, targetType: EntityType) {
