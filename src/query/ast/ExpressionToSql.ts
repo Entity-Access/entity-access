@@ -83,7 +83,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         this.prepareStatement(e);
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
-        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
         const source = e.source.type === "ValuesStatement"
@@ -91,6 +90,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             : this.visit(e.source);
         const as = e.sourceParameter ? prepare ` AS ${this.scope.nameOf(e.sourceParameter)}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
@@ -167,15 +167,17 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     const body = e.arguments?.[0] as ExpressionType;
                     if (body?.type === "ArrowFunctionExpression") {
                         const exists = this.expandSome(body, relation, e, parameter, targetType) as ExistsExpression;
-                        if (/^(some|any)$/i.test(chain[1])) {
+                        if (/^(some|any)$/.test(chain[1])) {
                             return this.visit(exists);
                         }
-                    }
-
-                    if (body?.type === "NewObjectExpression") {
-                        const select = this.expandCollection(relation, e, parameter, targetType);
-                        const fields = body.properties as ExpressionAs[];
-                        return this.visit({ ... select, fields } as SelectStatement);
+                        if (/^(map|select)$/.test(chain[1])) {
+                            const select = this.expandCollection(relation, e, parameter, targetType);
+                            const noe = body.body as NewObjectExpression;
+                            const p1 = body.params[0];
+                            this.scope.alias(select.sourceParameter, p1, select);
+                            const fields = noe.properties as ExpressionAs[];
+                            return this.visit({ ... select, fields } as SelectStatement);
+                        }
                     }
 
                     return this.visit(this.expandCollection(relation, e, parameter, targetType));

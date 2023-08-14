@@ -51,9 +51,9 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
-        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
 
         const fields = this.visitArray(e.fields, ",\n\t\t");
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
 
         const showTop = e.limit && !e.offset;
         const showFetch = e.limit && e.offset;
