@@ -4,9 +4,9 @@ export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;
     coll: {
-        sum<T>(a: number[]): number;
-        count<T>(a: number[]): number;
-        avg<T>(a: number[]): number
+        sum(a: number[]): number;
+        count(a: any[]): number;
+        avg(a: number[]): number
     }
 
     cast: {

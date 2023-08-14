@@ -163,20 +163,22 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 const targetType = existingTarget.model;
                 const relation = targetType?.getProperty(chain[0]);
                 if (relation) {
-                    if (/^(some|any)$/i.test(chain[1])) {
 
-                        const body = e.arguments[0] as ExpressionType;
-                        if (body.type === "ArrowFunctionExpression") {
-                            return this.expandSome(body, relation, e, parameter, targetType);
+                    const body = e.arguments?.[0] as ExpressionType;
+                    if (body?.type === "ArrowFunctionExpression") {
+                        const exists = this.expandSome(body, relation, e, parameter, targetType) as ExistsExpression;
+                        if (/^(some|any)$/i.test(chain[1])) {
+                            return this.visit(exists);
                         }
                     }
-                    if (/^(map|select)$/i.test(chain[1])) {
 
-                        const body = e.arguments[0] as ExpressionType;
-                        if (body.type === "ArrowFunctionExpression") {
-                            return this.expandMap(body, relation, e, parameter, targetType);
-                        }
+                    if (body?.type === "NewObjectExpression") {
+                        const select = this.expandCollection(relation, e, parameter, targetType);
+                        const fields = body.properties as ExpressionAs[];
+                        return this.visit({ ... select, fields } as SelectStatement);
                     }
+
+                    return this.visit(this.expandCollection(relation, e, parameter, targetType));
                 }
             }
 
@@ -192,8 +194,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return prepare `${this.visit(e.callee)}(${args})`;
     }
 
-    expandMap(body: ArrowFunctionExpression, relation: IEntityProperty, e: CallExpression, parameter: ParameterExpression, targetType: EntityType): ITextQuery {
-        const param1 = body.params[0];
+    expandCollection(relation: IEntityProperty, e: CallExpression, parameter: ParameterExpression, targetType: EntityType) {
         const relatedModel = relation.relation.relatedEntity;
         const relatedType = relatedModel.typeClass;
 
@@ -204,14 +205,14 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 ? this.source.context.query(relatedType)
                 : this.source.context.filteredQuery(relatedType, "include", false);
             select = { ...(query as EntityQuery).selectStatement };
+            select.fields = [
+                NumberLiteral.create({ value: 1 })
+            ];
         } else {
             select = relatedModel.selectOneNumber();
         }
 
-        param1.model = relatedModel;
-        this.scope.create({ parameter: param1, model: relatedModel, selectStatement: select });
-        this.scope.alias(param1, select.sourceParameter, select);
-        select.sourceParameter = param1;
+        this.scope.create({ parameter: select.sourceParameter, model: relatedModel, selectStatement: select });
         select[filteredSymbol] = true;
         const targetKey = MemberExpression.create({
             target: parameter,
@@ -221,7 +222,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         });
 
         const relatedKey = MemberExpression.create({
-            target: param1,
+            target: select.sourceParameter,
             property: Identifier.create({
                 value: relation.relation.fkColumn.columnName
             })
@@ -243,15 +244,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
 
         select.where = where;
-
-        const exists = ExistsExpression.create({
-            target: select
-        });
-
-        const r = this.visit(exists);
-        this.scope.delete(param1);
-        this.scope.delete(select.sourceParameter);
-        return r;
+        return select;
     }
 
     expandSome(body: ArrowFunctionExpression, relation: IEntityProperty, e: CallExpression, parameter: ParameterExpression, targetType: EntityType) {
@@ -315,11 +308,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const exists = ExistsExpression.create({
             target: select
         });
+        return exists;
 
-        const r = this.visit(exists);
-        this.scope.delete(param1);
-        this.scope.delete(select.sourceParameter);
-        return r;
+        // const r = this.visit(exists);
+        // this.scope.delete(param1);
+        // this.scope.delete(select.sourceParameter);
+        // return r;
     }
 
     visitIdentifier(e: Identifier): ITextQuery {
