@@ -172,11 +172,14 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                         }
                         if (/^(map|select)$/.test(chain[1])) {
                             const select = this.expandCollection(relation, e, parameter, targetType);
-                            const noe = body.body as NewObjectExpression;
-                            const p1 = body.params[0];
-                            this.scope.alias(select.sourceParameter, p1, select);
-                            const fields = noe.properties as ExpressionAs[];
-                            return this.visit({ ... select, fields } as SelectStatement);
+                            if (body.body.type === "NewObjectExpression") {
+                                const noe = body.body as NewObjectExpression;
+                                const p1 = body.params[0];
+                                this.scope.alias(select.sourceParameter, p1, select);
+                                const fields = noe.properties as ExpressionAs[];
+                                return this.visit({ ... select, fields } as SelectStatement);
+                            }
+                            return this.visit({ ... select, fields: [body.body] } as SelectStatement);
                         }
                     }
 
