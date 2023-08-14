@@ -4,7 +4,7 @@ import { DisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, Expression, ExpressionAs, Identifier, NewObjectExpression, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
+import { CallExpression, Expression, ExpressionAs, Identifier, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
 import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
@@ -200,10 +200,10 @@ export default class EntityQuery<T = any>
         const field = this.selectStatement.fields[0];
         const select = { ... this.selectStatement, fields: [
             ExpressionAs.create({
-                expression: CallExpression.create({
-                    callee: Identifier.create({ value: "SUM"}),
-                    arguments: [ field]
-                }),
+                expression: Expression.callExpression(
+                    "COALESCE",
+                    Expression.callExpression("SUM", field),
+                    NumberLiteral.zero),
                 alias: Expression.identifier("c1")
             })
             ],

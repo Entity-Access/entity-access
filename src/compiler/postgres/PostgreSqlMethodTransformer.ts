@@ -13,13 +13,13 @@ export const PostgreSqlHelper: ISqlHelpers = {
     },
     coll: {
         sum(a) {
-            return prepareAny `SUM(${a})`;
+            return prepareAny `COALESCE(SUM(${a}), 0.0)`;
         },
         count(a) {
             return prepareAny `COUNT(${a})`;
         },
         avg(a) {
-            return prepareAny `AVG(${a})`;
+            return prepareAny `COALESCE(AVG(${a}, 0.0)`;
         },
     },
     cast: {

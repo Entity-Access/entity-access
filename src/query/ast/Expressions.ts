@@ -25,6 +25,16 @@ const flattenedSelf = Symbol("flattenedSelf");
 
 export abstract class Expression {
 
+    static callExpression(callee: string | Expression, ... args: Expression[]) {
+        if(typeof callee === "string") {
+            callee = Expression.identifier(callee);
+        }
+        return CallExpression.create({
+            callee,
+            arguments: args
+        });
+    }
+
     static array(elements: Expression[]) {
         return ArrayExpression.create({ elements });
     }
@@ -304,6 +314,7 @@ export class BooleanLiteral extends Expression {
 export class NumberLiteral extends Expression {
 
     static one = NumberLiteral.create({ value: 1 });
+    static zero = NumberLiteral.create({ value: 0 });
 
     readonly type = "NumberLiteral";
     public value: number;
