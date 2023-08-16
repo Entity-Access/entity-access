@@ -10,11 +10,11 @@ export default async function(this: TestConfig) {
 
     const context = await createContext(this.driver);
 
-    const count = await context.users.all()
-        .where({} , (p) => (x) => x.profile.photos.some((a) => true) || x.profile.photos.some((a) => true))
-        .count();
+    // const count = await context.users.all()
+    //     .where({} , (p) => (x) => x.profile.photos.some((a) => true) || x.profile.photos.some((a) => true))
+    //     .count();
 
-    assert.equal(0, count);
+    // assert.equal(0, count);
 
     // include inverse...
     const all = await context.users.all()

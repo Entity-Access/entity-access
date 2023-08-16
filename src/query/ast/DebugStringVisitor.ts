@@ -134,7 +134,7 @@ export default class DebugStringVisitor extends Visitor<string> {
     }
 
     visitJoinExpression(e: JoinExpression): string {
-        return `\n${e.joinType} JOIN ${this.visit(e.source)}\n\t\tON ${this.visit(e.where)}\n`;
+        return `\n${e.joinType} JOIN ${this.visit(e.source)} ${this.visit(e.as)} \n\t\tON ${this.visit(e.where)}\n`;
     }
 
     visitOrderByExpression(e: OrderByExpression): string {

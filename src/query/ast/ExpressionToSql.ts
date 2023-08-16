@@ -353,6 +353,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 if (scope.isRuntimeParam) {
                     return [(p) => p[chain[0]]];
                 }
+
                 const name = this.scope.nameOf(parameter);
 
                 // need to change name as per naming convention here...
