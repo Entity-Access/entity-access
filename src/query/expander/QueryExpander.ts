@@ -1,4 +1,4 @@
-import { cloner } from "../../common/Cloner.js";
+import { cloner } from "../../common/cloner.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import EntityQuery from "../../model/EntityQuery.js";
