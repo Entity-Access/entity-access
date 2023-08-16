@@ -66,9 +66,20 @@ export class Category {
     @Column({ length: 200 })
     public name: string;
 
+    @Column({ dataType: "Char", length: 200, nullable: true })
+    @RelateTo(Category, {
+        property: (c) => c.parent,
+        inverseProperty: (c) => c.children
+    })
+    public parentID: string;
+
     public productCategories: ProductCategory[];
 
     public users: UserCategory[];
+
+    public children: Category[];
+
+    public parent: Category;
 
 }
 

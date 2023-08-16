@@ -236,7 +236,13 @@ export const headPhoneCategory = "head-phones";
 function addHeadPhones(context: ShoppingContext, now: Date, owner: User) {
     const category = context.categories.add({
         name: "Headphones",
-        categoryID: headPhoneCategory
+        categoryID: headPhoneCategory,
+        children: [
+            context.categories.add({
+                name: "Bluetooth",
+                categoryID: `${headPhoneCategory}/blue-tooth`
+            })
+        ]
     });
 
     const startDate = new Date();

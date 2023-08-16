@@ -119,6 +119,8 @@ export class QueryExpander {
 
 
             const joins = (select.joins ??= []);
+            const joinParameter = Expression.parameter(parent.sourceParameter.name);
+            joinParameter.model = parent.sourceParameter.model;
             joins.push(JoinExpression.create({
                 joinType: "LEFT",
                 source: parent.source as TableSource,
@@ -135,6 +137,13 @@ export class QueryExpander {
                     )
                 )
             }));
+
+            if (parent.where) {
+                select.where = select.where
+                    ? Expression.logicalAnd(select.where, parent.where)
+                    : parent.where;
+            }
+
             // if (parent.joins?.length) {
             //     joins.push(... parent.joins);
             // }
