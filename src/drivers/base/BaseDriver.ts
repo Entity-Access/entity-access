@@ -21,6 +21,7 @@ export interface IDbConnectionString {
     user?: string;
     password?: string;
     database?: string;
+    poolSize?: number;
 }
 
 export interface IDbReader extends IDisposable {

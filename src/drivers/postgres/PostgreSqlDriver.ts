@@ -83,7 +83,10 @@ export default class PostgreSqlDriver extends BaseDriver {
 
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
+        config.poolSize ??= 20;
         this.pool = new ObjectPool({
+            poolSize: config.poolSize,
+            maxSize: (config.poolSize) * 2,
             asyncFactory: async () => {
                 const c = new pg.Client(this.config);
                 await c.connect();
