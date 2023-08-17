@@ -150,10 +150,10 @@ export class QueryExpander {
             if (parent.joins?.length) {
                  joins.push(... parent.joins);
             }
-            Object.setPrototypeOf(select, SelectStatement.prototype);
+            // Object.setPrototypeOf(select, SelectStatement.prototype);
+            // const text = DebugStringVisitor.expressionToString(select);
+            // console.log(text);
             (this.select.include ??= []).push(select);
-            const text = DebugStringVisitor.expressionToString(select);
-            console.log(text);
             return [select, relation.relatedEntity];
         }
 

@@ -25,6 +25,10 @@ export default class SqlServerDriver extends BaseDriver {
         config.server = config.host;
     }
 
+    dispose() {
+        // do nothing
+    }
+
     newConnection(): BaseConnection {
         return new SqlServerConnection(this, this.config);
     }

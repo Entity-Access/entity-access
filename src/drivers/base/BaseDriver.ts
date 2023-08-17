@@ -114,6 +114,8 @@ export abstract class BaseDriver {
 
     abstract newConnection(): BaseConnection;
 
+    /** Must dispose ObjectPools */
+    abstract dispose();
 
     createInsertExpression(type: EntityType, entity: any): InsertStatement {
         const returnFields = [] as Identifier[];

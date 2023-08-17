@@ -1,7 +1,5 @@
 /* eslint-disable no-console */
-import EntityAccessError from "../../common/EntityAccessError.js";
 import ObjectPool, { IPooledObject } from "../../common/ObjectPool.js";
-import TimedCache from "../../common/cache/TimedCache.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
@@ -29,13 +27,26 @@ const pgID = Symbol("pgID");
 
 class DbReader implements IDbReader {
 
-    constructor(private cursor: Cursor, private client: IPooledObject<pg.Client>) {
+    cursor: Cursor<any>;
+    client: IPooledObject<pg.Client>;
+
+    constructor(
+        private command: IQuery,
+        private connection: PostgreSqlConnection,
+        private signal?: AbortSignal) {
 
     }
 
     async *next(min = 100) {
+
+        const connection = await this.connection.getConnection(this.signal);
+        if (!this.connection.isInTransaction) {
+            this.client = connection;
+        }
+        const q = toQuery(this.command);
+        const cursor = this.cursor = connection.query(new Cursor(q.text, q.values));
         do {
-            const rows = await this.cursor.read(min);
+            const rows = await cursor.read(min);
             yield *rows;
             if (rows.length === 0) {
                 break;
@@ -60,8 +71,6 @@ class DbReader implements IDbReader {
     }
 }
 
-const poolCache = new TimedCache<string, ObjectPool<pg.Client>>();
-
 export default class PostgreSqlDriver extends BaseDriver {
 
     public get compiler() {
@@ -70,21 +79,50 @@ export default class PostgreSqlDriver extends BaseDriver {
 
     private myCompiler = new QueryCompiler();
 
+    private pool: ObjectPool<pg.Client>;
+
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
+        this.pool = new ObjectPool({
+            asyncFactory: async () => {
+                const c = new pg.Client(this.config);
+                await c.connect();
+                const row = await c.query("SELECT pg_backend_pid() as id");
+                c[pgID] = (row.rows as any).id;
+                return c;
+            },
+            destroy(item) {
+                return item.end();
+            },
+            subscribeForRemoval(po, clear) {
+                po.on("end", clear);
+            },
+        });
+    }
+
+    dispose() {
+        this.pool?.dispose().catch(console.error);
     }
 
     newConnection(): BaseConnection {
-        return new PostgreSqlConnection(this);
+        return new PostgreSqlConnection(this, this.pool);
     }
 }
 
 class PostgreSqlConnection extends BaseConnection {
 
+    public get isInTransaction() {
+        return this.transaction as any as boolean;
+    }
+
     private transaction: IPooledObject<pg.Client>;
 
     private get config() {
         return this.connectionString;
+    }
+
+    constructor(driver: BaseDriver, private pool: ObjectPool<pg.Client>) {
+        super(driver);
     }
 
     public async createTransaction(): Promise<IBaseTransaction> {
@@ -93,7 +131,10 @@ class PostgreSqlConnection extends BaseConnection {
         return {
             commit: () => tx.query("COMMIT"),
             rollback: () => tx.query("ROLLBACK"),
-            dispose: () => (this.transaction = null, tx[Symbol.asyncDisposable]())
+            dispose: () => {
+                this.transaction = null;
+                return tx[Symbol.asyncDisposable]();
+            }
         };
     }
 
@@ -102,10 +143,7 @@ class PostgreSqlConnection extends BaseConnection {
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
-        const connection = await this.getConnection(signal);
-        const q = toQuery(command);
-        const cursor = connection.query(new Cursor(q.text, q.values));
-        return new DbReader(cursor, this.transaction ? void 0 : connection);
+        return new DbReader(command, this, signal);
     }
 
     public async executeQuery(command: IQuery, signal?: AbortSignal) {
@@ -161,7 +199,7 @@ class PostgreSqlConnection extends BaseConnection {
     }
 
 
-    private async getConnection(signal?: AbortSignal) {
+    public async getConnection(signal?: AbortSignal) {
 
         if (signal?.aborted) {
             throw new Error("Aborted");
@@ -171,24 +209,7 @@ class PostgreSqlConnection extends BaseConnection {
             return this.transaction;
         }
 
-        const key = `${this.config.host}:${this.config.port}//${this.config.database}?${this.config.user}&${this.config.password}`;
-
-        const pooledClient = poolCache.getOrCreate(key, this, (k, self) => new ObjectPool({
-            asyncFactory: async () => {
-                const c = new pg.Client(self.config);
-                await c.connect();
-                const row = await c.query("SELECT pg_backend_pid() as id");
-                c[pgID] = (row.rows as any).id;
-                return c;
-            },
-            destroy(item) {
-                return item.end();
-            },
-            subscribeForRemoval(po, clear) {
-                po.on("end", clear);
-            },
-        }));
-        const client = await pooledClient.acquire();
+        const client = await this.pool.acquire();
 
         if (signal) {
             signal.addEventListener("abort", () => this.kill(client[pgID]).catch((error) => console.error(error)));
