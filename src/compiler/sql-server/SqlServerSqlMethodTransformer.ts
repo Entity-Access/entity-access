@@ -7,10 +7,18 @@ import type QueryCompiler from "../QueryCompiler.js";
 export const SqlServerSqlHelper: ISqlHelpers = {
     ... Sql,
     in(a, array) {
-        return prepareAny `${a} IN ${array}`;
+        return prepareAny`${a} IN ${array}`;
     },
-    sum(a) {
-        return prepareAny `SUM(${a})`;
+    coll: {
+        sum(a) {
+            return prepareAny `COALESCE(SUM(${a}), 0.0)`;
+        },
+        count(a) {
+            return prepareAny `COUNT(${a})`;
+        },
+        avg(a) {
+            return prepareAny `COALESCE(AVG(${a}, 0.0)`;
+        },
     },
     cast: {
         asBigInt(a) {

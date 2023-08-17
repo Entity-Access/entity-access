@@ -13,12 +13,12 @@ interface IObjectPool<T> {
     /**
      * Max Number of Pooled objects, default is 20
      */
-    size?: number;
+    poolSize?: number;
 
     /**
      * Default is 50
      */
-    max?: number;
+    maxSize?: number;
 
     /**
      * Max wait in milliseconds before creating
@@ -34,6 +34,15 @@ export type IPooledObject<T> = T & { [Symbol.asyncDisposable](): Promise<any>; }
  */
 export default class ObjectPool<T> {
 
+    public get freeSize() {
+        return this.free.length;
+    }
+
+
+    public get currentSize() {
+        return this.total;
+    }
+
     private factory: () => T;
 
     private asyncFactory: () => Promise<T>;
@@ -42,28 +51,34 @@ export default class ObjectPool<T> {
 
     private subscribeForRemoval: (po: IPooledObject<T>, clear: () => void ) => void;
 
-    private size: number;
+    private maxSize: number;
 
-    private max: number;
+    private poolSize: number;
 
     private maxWait: number;
 
     private free: T[] = [];
 
-    private total: number;
+    private total: number = 0;
 
-    private awaited: Set<AbortController>;
+    private awaited: Set<AbortController> = new Set();
 
-    constructor(p: IObjectPool<T>) {
-        Object.setPrototypeOf(p, ObjectPool.prototype);
-        p.max ||= 20;
-        p.maxWait ||= 15000;
-        p.size ||= 50;
-        const r = p as unknown as ObjectPool<T>;
-        r.total = 0;
-        r.awaited = new Set();
-        r.free = [];
-        return p as unknown as ObjectPool<T>;
+    constructor({
+        maxSize = 40,
+        maxWait = 5000,
+        poolSize = 20,
+        asyncFactory,
+        factory,
+        destroy,
+        subscribeForRemoval
+    }: IObjectPool<T>) {
+        this.maxSize = maxSize;
+        this.maxWait = maxWait;
+        this.poolSize = poolSize;
+        this.asyncFactory = asyncFactory;
+        this.factory = factory;
+        this.destroy = destroy;
+        this.subscribeForRemoval = subscribeForRemoval;
     }
 
     public async dispose() {
@@ -81,7 +96,7 @@ export default class ObjectPool<T> {
     public async acquire(): Promise<IPooledObject<T>> {
         let item = this.free.pop();
         if(!item) {
-            if (this.total > this.size) {
+            if (this.total >= this.poolSize) {
                 const a = new AbortController();
                 this.awaited.add(a);
                 await sleep(this.maxWait, a.signal);
@@ -90,6 +105,12 @@ export default class ObjectPool<T> {
             }
         }
         if(!item) {
+
+            if (this.total >= this.maxSize) {
+                throw new EntityAccessError(`Maximum size of pool reached. Retry after sometime.`);
+            }
+            this.total++;
+
             // create new..
             if (this.factory) {
                 item = this.factory();
@@ -100,14 +121,10 @@ export default class ObjectPool<T> {
                 const index = this.free.indexOf(item);
                 this.free.splice(index, 1);
             });
-            if (this.total >= this.max) {
-                throw new EntityAccessError(`Maximum size of pool reached.`);
-            }
-            this.total++;
         }
         const pooledItem = item as IPooledObject<T>;
         pooledItem[Symbol.asyncDisposable] = async () => {
-            if (this.free.length < this.max) {
+            if (this.free.length < this.poolSize) {
                 this.free.push(item);
                 for (const iterator of this.awaited) {
                     this.awaited.delete(iterator);
