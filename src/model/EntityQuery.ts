@@ -188,7 +188,7 @@ export default class EntityQuery<T = any>
         }));
     }
 
-    trace(traceQuery: (text: string) => void) {
+    trace(traceQuery: (text: string) => void): any {
         return new EntityQuery({ ... this, traceQuery });
     }
 
