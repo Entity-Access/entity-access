@@ -3,9 +3,9 @@ import assert from "assert";
 import ObjectPool from "../../common/ObjectPool.js";
 import sleep from "../../common/sleep.js";
 
-let id = 1;
 
 export default async function () {
+    let id = 1;
     const logs = [] as string[];
     try {
         const pool = new ObjectPool({
@@ -28,25 +28,24 @@ export default async function () {
 
         assert.equal(2, c2.id);
 
-        assert.notEqual(c1, c2);
+        assert.notStrictEqual(c1, c2);
 
         await c1[Symbol.asyncDisposable]();
 
         assert.equal(pool.freeSize, 1);
 
         const c3 = await pool.acquire();
-        assert.equal(c1, c3);
-        assert.notEqual(c2, c3);
-        assert.equal(pool.freeSize, 0);
+        assert.strictEqual(c1, c3);
+        assert.notStrictEqual(c2, c3);
+        assert.strictEqual(pool.freeSize, 0);
 
         const c4 = await pool.acquire();
-        assert.notEqual(c4, c1);
-        assert.notEqual(c4, c2);
+        assert.notStrictEqual(c4, c1);
+        assert.notStrictEqual(c4, c2);
 
-        assert.equal(pool.currentSize, 3);
+        assert.strictEqual(pool.currentSize, 3);
 
         await c4[Symbol.asyncDisposable]();
-        logs.push(`c2 has disposable of type ${typeof c2[Symbol.asyncDisposable]} with ${c2}`);
         await c2[Symbol.asyncDisposable]();
 
         assert.equal(pool.currentSize, 3);

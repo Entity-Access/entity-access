@@ -2,6 +2,7 @@
 import EntityAccessError from "./EntityAccessError.js";
 import TimedCache from "./cache/TimedCache.js";
 import sleep from "./sleep.js";
+import "./IDisposable.js";
 
 interface IObjectPool<T> {
     factory?: () => T;
@@ -29,11 +30,8 @@ interface IObjectPool<T> {
     logger?: (text: string) => void;
 }
 
-const poolSymbol = Symbol("pool");
-
 export type IPooledObject<T> = T & {
     [Symbol.asyncDisposable](): Promise<any>;
-    [poolSymbol]: ObjectPool<T>;
 };
 
 /**
@@ -131,14 +129,18 @@ export default class ObjectPool<T> {
             this.free.splice(index, 1);
         });
 
+        return this.setupItem(item);
+    }
+
+
+    private setupItem(item: T) {
         const pooledItem = item as IPooledObject<T>;
-        pooledItem[poolSymbol] = this;
         pooledItem[Symbol.asyncDisposable] = async () => {
-            // delete this[Symbol.asyncDisposable];
-            this.logger?.(`Pooled item ${pooledItem} freed.`);
+            delete this[Symbol.asyncDisposable];
             if (this.free.length < this.poolSize) {
+                this.logger?.(`Pooled item ${pooledItem} freed.`);
                 this.free.push(pooledItem);
-                for (const iterator of this.awaited) {
+                for (const [iterator] of this.awaited.entries()) {
                     this.awaited.delete(iterator);
                     iterator.abort();
                     return;
@@ -146,13 +148,13 @@ export default class ObjectPool<T> {
                 return;
             }
             this.total--;
+            this.logger?.(`Pooled item ${pooledItem} destoryed.`);
             void this.destroy(pooledItem)?.catch(console.error);
         };
         this.logger?.(`Pooled item ${pooledItem} acquired.`);
         this.logger?.(`Item ${pooledItem} has disposable ${typeof pooledItem[Symbol.asyncDisposable]}`);
         return item as IPooledObject<T>;
     }
-
 }
 
 export class NamedObjectPool<T> {
