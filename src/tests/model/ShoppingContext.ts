@@ -1,6 +1,6 @@
 import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
-import Relate, { RelateTo, RelateToOne } from "../../decorators/Relate.js";
+import { RelateTo, RelateToOne } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
 import DateTime from "../../types/DateTime.js";
@@ -263,7 +263,8 @@ export class OrderItem {
     public orderItemID: number;
 
     @Column()
-    @RelateTo(Order, {
+    @RelateTo({
+        type: () => Order,
         property: (orderItem) => orderItem.order,
         inverseProperty: (order) => order.orderItems
     })

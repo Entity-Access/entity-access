@@ -123,19 +123,23 @@ export default class ObjectPool<T> {
             });
         }
         const pooledItem = item as IPooledObject<T>;
-        pooledItem[Symbol.asyncDisposable] = async () => {
-            if (this.free.length < this.poolSize) {
-                this.free.push(item);
-                for (const iterator of this.awaited) {
-                    this.awaited.delete(iterator);
+        const self = this;
+        pooledItem[Symbol.asyncDisposable] = async function(this: IPooledObject<T>) {
+            delete this[Symbol.asyncDisposable];
+            console.log(`Pooled item ${pooledItem} freed.`);
+            if (self.free.length < self.poolSize) {
+                self.free.push(this);
+                for (const iterator of self.awaited) {
+                    self.awaited.delete(iterator);
                     iterator.abort();
                     break;
                 }
             } else {
-                await this.destroy(item);
-                this.total--;
+                await self.destroy(this);
+                self.total--;
             }
         };
+        console.log(`Pooled item ${pooledItem} has disposable`);
         return item as IPooledObject<T>;
     }
 
