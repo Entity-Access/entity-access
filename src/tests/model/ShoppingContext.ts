@@ -1,9 +1,10 @@
 import EntityContext from "../../model/EntityContext.js";
 import Column from "../../decorators/Column.js";
-import Relate, { RelateTo, RelateToOne } from "../../decorators/Relate.js";
+import { RelateTo, RelateToOne } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
 import DateTime from "../../types/DateTime.js";
+import { UserFile } from "./UseFile.js";
 
 export const statusPublished = "published";
 
@@ -28,6 +29,8 @@ export class ShoppingContext extends EntityContext {
     public userProfiles = this.model.register(UserProfile);
 
     public profilePhotos = this.model.register(ProfilePhoto);
+
+    public userFiles = this.model.register(UserFile);
 }
 
 @Table("Users")
@@ -47,6 +50,14 @@ export class User {
     @Column({ dataType: "Char", length: 200 })
     public userName: string;
 
+    @Column({ dataType: "BigInt", nullable: true })
+    @RelateTo({
+        type: () => UserFile,
+        property: (u) => u.photo,
+        inverseProperty: (uf) => uf.photoUsers
+    })
+    public photoID: number;
+
     public profile: UserProfile;
 
     public ownedProducts: Product[];
@@ -55,6 +66,9 @@ export class User {
 
     public categories: UserCategory[];
 
+    public files: UserFile[];
+
+    public photo: UserFile;
 }
 
 @Table("Categories")
@@ -263,7 +277,8 @@ export class OrderItem {
     public orderItemID: number;
 
     @Column()
-    @RelateTo(Order, {
+    @RelateTo({
+        type: () => Order,
         property: (orderItem) => orderItem.order,
         inverseProperty: (order) => order.orderItems
     })

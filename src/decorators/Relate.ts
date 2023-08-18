@@ -2,95 +2,62 @@ import type { IClassOf } from "./IClassOf.js";
 import SchemaRegistry from "./SchemaRegistry.js";
 import NameParser from "./parser/NameParser.js";
 
-
-
-export default function Relate<T, TRelated>(c: IClassOf<TRelated>,
-    {
-        foreignKey: name, inverseProperty: inv, inverseKey: invKey, dotNotCreateIndex
-    }: {
-
-        foreignKey: (item: T) => any;
-
-        inverseProperty: (item: TRelated) => T[];
-
-        inverseKey?: (item: TRelated) => any;
-        dotNotCreateIndex?: boolean;
-    }
-
-) {
-    return (target: T, key: string): any => {
-
-        const cn = target.constructor ?? target;
-        const type = SchemaRegistry.model(cn);
-
-        type.addRelation({
-            type,
-            name: key,
-            foreignKey: NameParser.parseMember(name),
-            relatedTypeClass: c,
-            relatedName: NameParser.parseMember(inv),
-            relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
-            dotNotCreateIndex
-        });
-
-    };
+export interface IRelatedType<T, TRelated> {
+    property: (item: T) => TRelated;
+    inverseProperty: (item: TRelated) => T[];
+    inverseKey?: (item: TRelated) => any;
+    dotNotCreateIndex?: boolean;
 }
 
-export function RelateOne<T, TRelated>(c: IClassOf<TRelated>,
-    {
-        foreignKey: name, inverseProperty: inv, inverseKey: invKey, dotNotCreateIndex
-    }: {
-
-        foreignKey: (item: T) => any;
-
-        inverseProperty: (item: TRelated) => T;
-
-        inverseKey?: (item: TRelated) => any;
-        dotNotCreateIndex?: boolean;
-    }
-
-) {
-    return (target: T, key: string): any => {
-
-        const cn = target.constructor ?? target;
-        const type = SchemaRegistry.model(cn);
-
-        const r = type.addRelation({
-            type,
-            name: key,
-            foreignKey: NameParser.parseMember(name),
-            relatedTypeClass: c,
-            relatedName: NameParser.parseMember(inv),
-            relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
-            dotNotCreateIndex
-        });
-        r.relatedRelation.isCollection = false;
-    };
+export interface IRelatedTypeOne<T, TRelated> {
+    property: (item: T) => TRelated;
+    inverseProperty: (item: TRelated) => T;
+    inverseKey?: (item: TRelated) => any;
+    dotNotCreateIndex?: boolean;
 }
 
-export function RelateTo<T, TRelated>(c: IClassOf<TRelated>,
-    {
-        property,
-        inverseProperty, inverseKey: invKey, dotNotCreateIndex
-    }: {
+export interface IRelatedTypeWithType<T, TRelated> {
+    type: () => IClassOf<TRelated>,
+    property: (item: T) => TRelated;
+    inverseProperty: (item: TRelated) => T[];
+    inverseKey?: (item: TRelated) => any;
+    dotNotCreateIndex?: boolean;
+}
 
-        property: (item: T) => TRelated;
-        inverseProperty: (item: TRelated) => T[];
-        inverseKey?: (item: TRelated) => any;
-        dotNotCreateIndex?: boolean;
+export interface IRelatedTypeOneWithType<T, TRelated> {
+    type: () => IClassOf<TRelated>,
+    property: (item: T) => TRelated;
+    inverseProperty: (item: TRelated) => T;
+    inverseKey?: (item: TRelated) => any;
+    dotNotCreateIndex?: boolean;
+}
+export function RelateTo<T, TRelated>(p: IRelatedTypeWithType<T, TRelated>): (target: T, key: string) => any;
+export function RelateTo<T, TRelated>(c: IClassOf<TRelated>, p: IRelatedType<T, TRelated>): (target: T, key: string) => any;
+export function RelateTo(c, p?): any {
+
+    if (p === void 0) {
+        p = c;
+        // c = p.type?.();
+        if (p.type) {
+            c = void 0;
+        }
     }
 
-) {
-    return (target: T, foreignKey: string): any => {
+    const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex } = p;
+
+    return (target: any, foreignKey: string): any => {
 
         const cn = target.constructor ?? target;
-        const type = SchemaRegistry.model(cn);
+        const entityType = SchemaRegistry.model(cn);
 
-        type.addRelation({
-            type,
-            name: NameParser.parseMember(property),
+        const name = NameParser.parseMember(property);
+
+        entityType.addRelation({
+            type: entityType,
+            name,
             foreignKey,
             relatedTypeClass: c,
+            relatedTypeClassFactory: p.type,
             relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             dotNotCreateIndex
@@ -99,34 +66,69 @@ export function RelateTo<T, TRelated>(c: IClassOf<TRelated>,
     };
 }
 
+export function RelateToOne<T, TRelated>(p: IRelatedTypeOneWithType<T, TRelated>): (target: T, key: string) => any;
+export function RelateToOne<T, TRelated>(c: IClassOf<TRelated>, p: IRelatedTypeOne<T, TRelated>): (target: T, key: string) => any;
+export function RelateToOne(c, p?): any {
 
-export function RelateToOne<T, TRelated>(c: IClassOf<TRelated>,
-    {
-        property: name, inverseProperty: inv, inverseKey: invKey, dotNotCreateIndex
-    }: {
-
-        property: (item: T) => TRelated;
-        inverseProperty: (item: TRelated) => T;
-
-        inverseKey?: (item: TRelated) => any;
-        dotNotCreateIndex?: boolean;
+    if (p === void 0) {
+        p = c;
+        // c = p.type?.();
+        if (p.type) {
+            c = void 0;
+        }
     }
 
-) {
-    return (target: T, key: string): any => {
+    const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex } = p;
+
+    return (target: any, foreignKey: string): any => {
 
         const cn = target.constructor ?? target;
-        const type = SchemaRegistry.model(cn);
+        const entityType = SchemaRegistry.model(cn);
 
-        const r = type.addRelation({
-            type,
-            name: NameParser.parseMember(name),
-            foreignKey: key,
+        const name = NameParser.parseMember(property);
+
+        entityType.addRelation({
+            type: entityType,
+            name,
+            foreignKey,
             relatedTypeClass: c,
-            relatedName: NameParser.parseMember(inv),
+            relatedTypeClassFactory: p.type,
+            relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             dotNotCreateIndex,
             singleInverseRelation: true
         });
+
     };
 }
+
+// export function RelateToOne<T, TRelated>(c: IClassOf<TRelated>,
+//     {
+//         property: name, inverseProperty: inv, inverseKey: invKey, dotNotCreateIndex
+//     }: {
+
+//         property: (item: T) => TRelated;
+//         inverseProperty: (item: TRelated) => T;
+
+//         inverseKey?: (item: TRelated) => any;
+//         dotNotCreateIndex?: boolean;
+//     }
+
+// ) {
+//     return (target: T, key: string): any => {
+
+//         const cn = target.constructor ?? target;
+//         const type = SchemaRegistry.model(cn);
+
+//         const r = type.addRelation({
+//             type,
+//             name: NameParser.parseMember(name),
+//             foreignKey: key,
+//             relatedTypeClass: c,
+//             relatedName: NameParser.parseMember(inv),
+//             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
+//             dotNotCreateIndex,
+//             singleInverseRelation: true
+//         });
+//     };
+// }

@@ -2,6 +2,7 @@
 import EntityAccessError from "./EntityAccessError.js";
 import TimedCache from "./cache/TimedCache.js";
 import sleep from "./sleep.js";
+import "./IDisposable.js";
 
 interface IObjectPool<T> {
     factory?: () => T;
@@ -22,12 +23,16 @@ interface IObjectPool<T> {
 
     /**
      * Max wait in milliseconds before creating
-     * new object, default is 15 seconds with gap of 1 second each
+     * new object, default is 5 seconds
      */
     maxWait?: number;
+
+    logger?: (text: string) => void;
 }
 
-export type IPooledObject<T> = T & { [Symbol.asyncDisposable](): Promise<any>; };
+export type IPooledObject<T> = T & {
+    [Symbol.asyncDisposable](): Promise<any>;
+};
 
 /**
  * Most pool implementations are poor and are having too many errors.
@@ -63,10 +68,13 @@ export default class ObjectPool<T> {
 
     private awaited: Set<AbortController> = new Set();
 
+    private logger: (text: string) => void;
+
     constructor({
         maxSize = 40,
         maxWait = 5000,
         poolSize = 20,
+        logger,
         asyncFactory,
         factory,
         destroy,
@@ -79,6 +87,7 @@ export default class ObjectPool<T> {
         this.factory = factory;
         this.destroy = destroy;
         this.subscribeForRemoval = subscribeForRemoval;
+        this.logger = logger;
     }
 
     public async dispose() {
@@ -94,51 +103,58 @@ export default class ObjectPool<T> {
     }
 
     public async acquire(): Promise<IPooledObject<T>> {
-        let item = this.free.pop();
-        if(!item) {
+        let existing = this.free.pop();
+        if(!existing) {
             if (this.total >= this.poolSize) {
                 const a = new AbortController();
                 this.awaited.add(a);
                 await sleep(this.maxWait, a.signal);
                 this.awaited.delete(a);
-                item = this.free.pop();
+                existing = this.free.pop();
             }
         }
-        if(!item) {
-
-            if (this.total >= this.maxSize) {
-                throw new EntityAccessError(`Maximum size of pool reached. Retry after sometime.`);
-            }
-            this.total++;
-
-            // create new..
-            if (this.factory) {
-                item = this.factory();
-            } else {
-                item = await this.asyncFactory();
-            }
-            this.subscribeForRemoval(item as unknown as any, () => {
-                const index = this.free.indexOf(item);
-                this.free.splice(index, 1);
-            });
+        if(existing) {
+            return existing as IPooledObject<T>;
         }
-        const pooledItem = item as IPooledObject<T>;
-        pooledItem[Symbol.asyncDisposable] = async () => {
-            if (this.free.length < this.poolSize) {
-                this.free.push(item);
-                for (const iterator of this.awaited) {
-                    this.awaited.delete(iterator);
-                    iterator.abort();
-                    break;
-                }
-            } else {
-                await this.destroy(item);
-                this.total--;
-            }
-        };
-        return item as IPooledObject<T>;
+
+        if (this.total >= this.maxSize) {
+            throw new EntityAccessError(`Maximum size of pool reached. Retry after sometime.`);
+        }
+        this.total++;
+
+           // create new..
+        const item = this.factory?.() ?? (await this.asyncFactory());
+        this.subscribeForRemoval(item as unknown as any, () => {
+            const index = this.free.indexOf(item);
+            this.free.splice(index, 1);
+        });
+
+        return this.setupItem(item);
     }
 
+
+    private setupItem(item: T) {
+        const pooledItem = item as IPooledObject<T>;
+        pooledItem[Symbol.asyncDisposable] = async () => {
+            delete this[Symbol.asyncDisposable];
+            if (this.free.length < this.poolSize) {
+                this.logger?.(`Pooled item ${pooledItem} freed.`);
+                this.free.push(pooledItem);
+                for (const [iterator] of this.awaited.entries()) {
+                    this.awaited.delete(iterator);
+                    iterator.abort();
+                    return;
+                }
+                return;
+            }
+            this.total--;
+            this.logger?.(`Pooled item ${pooledItem} destoryed.`);
+            void this.destroy(pooledItem)?.catch(console.error);
+        };
+        this.logger?.(`Pooled item ${pooledItem} acquired.`);
+        this.logger?.(`Item ${pooledItem} has disposable ${typeof pooledItem[Symbol.asyncDisposable]}`);
+        return item as IPooledObject<T>;
+    }
 }
 
 export class NamedObjectPool<T> {

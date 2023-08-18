@@ -155,6 +155,12 @@ export abstract class BaseDriver {
     createUpdateExpression(entry: ChangeEntry) {
         const set = [] as BinaryExpression[];
         for (const [key, change] of entry.modified) {
+            if (!key.columnName) {
+                // some relations are getting into modified map
+                // till the time the concrete bug is found
+                // we will keep this check
+                continue;
+            }
             set.push(BinaryExpression.create({
                 left: Expression.identifier(key.columnName),
                 operator: "=",

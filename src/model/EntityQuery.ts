@@ -19,6 +19,7 @@ export default class EntityQuery<T = any>
     public type: EntityType;
     public selectStatement: SelectStatement;
     public signal?: AbortSignal;
+    public traceQuery: (text: string) => void;
     constructor (p: Partial<EntityQuery<any>>
     ) {
         // lets clone select...
@@ -110,6 +111,7 @@ export default class EntityQuery<T = any>
             signal?.throwIfAborted();
 
             query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
+            this.traceQuery?.(query.text);
             const reader = await this.context.connection.executeReader(query, signal);
             scope.register(reader);
             for await (const iterator of reader.next(10, signal)) {
@@ -137,6 +139,7 @@ export default class EntityQuery<T = any>
         let reader: IDbReader;
         try {
             query = this.context.driver.compiler.compileExpression(this, select);
+            this.traceQuery?.(query.text);
             reader = await this.context.connection.executeReader(query, signal);
             for await (const iterator of reader.next(10, signal)) {
                 const item = select.model?.map(iterator) ?? iterator;
@@ -183,6 +186,10 @@ export default class EntityQuery<T = any>
                 ? [ ... select.orderBy, OrderByExpression.create({ target, descending })]
                 : [OrderByExpression.create({ target, descending })]
         }));
+    }
+
+    trace(traceQuery: (text: string) => void): any {
+        return new EntityQuery({ ... this, traceQuery });
     }
 
     limit(n: number): any {

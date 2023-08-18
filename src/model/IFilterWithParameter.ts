@@ -31,6 +31,8 @@ export interface IBaseQuery<T> {
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
 
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
+
+    trace<DT>(tracer: (this: DT, text: string) => void): DT;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
