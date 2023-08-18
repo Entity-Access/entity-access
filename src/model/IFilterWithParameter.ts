@@ -25,9 +25,14 @@ export interface IBaseQuery<T> {
     count(): Promise<number>;
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 
+    sum(): Promise<number>;
+    sum<P>(parameters: P, fx: (p: P) => (x: T) => number): Promise<number>;
+
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
 
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
+
+    trace<DT>(tracer: (this: DT, text: string) => void): DT;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {

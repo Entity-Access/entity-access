@@ -1,6 +1,8 @@
+import { cloner } from "../../common/cloner.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import EntityQuery from "../../model/EntityQuery.js";
+import DebugStringVisitor from "../ast/DebugStringVisitor.js";
 import { ArrowFunctionExpression, ExistsExpression, Expression, ExpressionType, JoinExpression, NumberLiteral, ParameterExpression, SelectStatement, TableSource } from "../ast/Expressions.js";
 import ReplaceParameter from "../ast/ReplaceParameter.js";
 import ArrowToExpression from "../parser/ArrowToExpression.js";
@@ -23,6 +25,8 @@ export class QueryExpander {
     }
 
     expandNode(parent: SelectStatement, model: EntityType, node: ExpressionType): [SelectStatement, EntityType] {
+
+        parent = cloner.clone(parent);
 
         if (node.type === "ArrayExpression") {
             for (const iterator of node.elements) {
@@ -83,7 +87,7 @@ export class QueryExpander {
             //     query = events.includeFilter(query, model, p.value) ?? query;
             // }
         // }
-        const select = { ... (query as EntityQuery).selectStatement };
+        const select = cloner.clone((query as EntityQuery).selectStatement);
 
         let where: Expression;
         let joinWhere: Expression;
@@ -108,17 +112,18 @@ export class QueryExpander {
             //     ? Expression.logicalAnd(joinWhere, parent.where)
             //     : joinWhere;
 
-            let keyColumn = model.keys[0].columnName;
+            const keyColumn = model.keys[0].columnName;
             let columnName = fk.columnName;
             // for inverse relation, we need to
             // use primary key of current model
             if (!relation.isCollection) {
-                columnName = model.keys[0].columnName;
-                keyColumn = select.model.keys[0].columnName;
+                columnName = select.model.keys[0].columnName;
             }
 
 
             const joins = (select.joins ??= []);
+            // const joinParameter = Expression.parameter(parent.sourceParameter.name);
+            // joinParameter.model = parent.sourceParameter.model;
             joins.push(JoinExpression.create({
                 joinType: "LEFT",
                 source: parent.source as TableSource,
@@ -127,20 +132,32 @@ export class QueryExpander {
                 where: Expression.equal(
                     Expression.member(
                         parent.sourceParameter,
-                        Expression.identifier(columnName)
+                        Expression.identifier(keyColumn)
                     ),
                     Expression.member(
                         select.sourceParameter,
-                        Expression.identifier(keyColumn)
+                        Expression.identifier(columnName)
                     )
                 )
             }));
-            // if (parent.joins?.length) {
-            //     joins.push(... parent.joins);
-            // }
+
+            if (parent.where) {
+                select.where = select.where
+                    ? Expression.logicalAnd(select.where, parent.where)
+                    : parent.where;
+            }
+
+            if (parent.joins?.length) {
+                 joins.push(... parent.joins);
+            }
+            // Object.setPrototypeOf(select, SelectStatement.prototype);
+            // const text = DebugStringVisitor.expressionToString(select);
+            // console.log(text);
             (this.select.include ??= []).push(select);
             return [select, relation.relatedEntity];
         }
+
+        // if we can skip this if join already exists !!
 
         joinWhere = Expression.equal(
             Expression.member(
@@ -153,7 +170,7 @@ export class QueryExpander {
             )
         );
 
-        parent = { ... parent, fields: [ NumberLiteral.one ] };
+        parent = cloner.clone({ ... parent, fields: [ NumberLiteral.one ]});
 
         parent.where = parent.where
             ? Expression.logicalAnd(parent.where, joinWhere)

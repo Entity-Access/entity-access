@@ -1,10 +1,11 @@
+import EntityAccessError from "../../common/EntityAccessError.js";
 import { DisposableScope } from "../../common/usingAsync.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
-import EntityType from "../../entity-query/EntityType.js";
+import EntityType, { IEntityProperty } from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { FilteredExpression, filteredSymbol } from "../../model/events/FilteredExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
@@ -82,7 +83,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         this.prepareStatement(e);
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
-        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
         const source = e.source.type === "ValuesStatement"
@@ -90,6 +90,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             : this.visit(e.source);
         const as = e.sourceParameter ? prepare ` AS ${this.scope.nameOf(e.sourceParameter)}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
+        const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
@@ -162,79 +163,27 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 const targetType = existingTarget.model;
                 const relation = targetType?.getProperty(chain[0]);
                 if (relation) {
-                    if (/^(some|any)$/i.test(chain[1])) {
 
-                        const body = e.arguments[0] as ExpressionType;
-                        if (body.type === "ArrowFunctionExpression") {
-
-                            const param1 = body.params[0];
-                            const relatedModel = relation.relation.relatedEntity;
-                            const relatedType = relatedModel.typeClass;
-
-                            let select: SelectStatement;
-
-                            if (this.source?.context) {
-                                const query = FilteredExpression.isFiltered(e)
-                                    ? this.source.context.query(relatedType)
-                                    : this.source.context.filteredQuery(relatedType, "include", false);
-                                select = { ... (query as EntityQuery).selectStatement };
-                                select.fields = [
-                                    NumberLiteral.create({ value: 1})
-                                ];
-                            } else {
-                                select = relatedModel.selectOneNumber();
-                            }
-
-                            param1.model = relatedModel;
-                            this.scope.create({ parameter: param1, model: relatedModel, selectStatement: select });
-                            this.scope.alias(param1, select.sourceParameter, select);
-                            select.sourceParameter = param1;
-                            select[filteredSymbol] = true;
-                            const targetKey = MemberExpression.create({
-                                target: parameter,
-                                property: Identifier.create({
-                                    value: targetType.keys[0].columnName
-                                })
-                            });
-
-                            const relatedKey = MemberExpression.create({
-                                target: param1,
-                                property: Identifier.create({
-                                    value: relation.relation.fkColumn.columnName
-                                })
-                            });
-
-
-                            const join = Expression.logicalAnd(
-                                Expression.equal(targetKey, relatedKey),
-                                body.body
-                            );
-
-                            let where = select.where;
-
-                            if(where) {
-                                where = BinaryExpression.create({
-                                    left: select.where,
-                                    operator: "AND",
-                                    right: join
-                                });
-                            } else {
-                                where = join;
-                            }
-
-                            select.where = where;
-
-                            const exists = ExistsExpression.create({
-                                target: select
-                            });
-
-                            const r = this.visit(exists);
-                            this.scope.delete(param1);
-                            this.scope.delete(select.sourceParameter);
-                            return r;
+                    const body = e.arguments?.[0] as ExpressionType;
+                    if (body?.type === "ArrowFunctionExpression") {
+                        const exists = this.expandSome(body, relation, e, parameter, targetType) as ExistsExpression;
+                        if (/^(some|any)$/.test(chain[1])) {
+                            return this.visit(exists);
                         }
-
+                        if (/^(map|select)$/.test(chain[1])) {
+                            const select = this.expandCollection(relation, e, parameter, targetType);
+                            if (body.body.type === "NewObjectExpression") {
+                                const noe = body.body as NewObjectExpression;
+                                const p1 = body.params[0];
+                                this.scope.alias(select.sourceParameter, p1, select);
+                                const fields = noe.properties as ExpressionAs[];
+                                return this.visit({ ... select, fields } as SelectStatement);
+                            }
+                            return this.visit({ ... select, fields: [body.body] } as SelectStatement);
+                        }
                     }
+
+                    return this.visit(this.expandCollection(relation, e, parameter, targetType));
                 }
             }
 
@@ -248,6 +197,128 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
         const args = this.visitArray(e.arguments);
         return prepare `${this.visit(e.callee)}(${args})`;
+    }
+
+    expandCollection(relation: IEntityProperty, e: CallExpression, parameter: ParameterExpression, targetType: EntityType) {
+        const relatedModel = relation.relation.relatedEntity;
+        const relatedType = relatedModel.typeClass;
+
+        let select: SelectStatement;
+
+        if (this.source?.context) {
+            const query = FilteredExpression.isFiltered(e)
+                ? this.source.context.query(relatedType)
+                : this.source.context.filteredQuery(relatedType, "include", false);
+            select = { ...(query as EntityQuery).selectStatement };
+            select.fields = [
+                NumberLiteral.create({ value: 1 })
+            ];
+        } else {
+            select = relatedModel.selectOneNumber();
+        }
+
+        this.scope.create({ parameter: select.sourceParameter, model: relatedModel, selectStatement: select });
+        select[filteredSymbol] = true;
+        const targetKey = MemberExpression.create({
+            target: parameter,
+            property: Identifier.create({
+                value: targetType.keys[0].columnName
+            })
+        });
+
+        const relatedKey = MemberExpression.create({
+            target: select.sourceParameter,
+            property: Identifier.create({
+                value: relation.relation.fkColumn.columnName
+            })
+        });
+
+
+        const join = Expression.equal(targetKey, relatedKey);
+
+        let where = select.where;
+
+        if (where) {
+            where = BinaryExpression.create({
+                left: select.where,
+                operator: "AND",
+                right: join
+            });
+        } else {
+            where = join;
+        }
+
+        select.where = where;
+        return select;
+    }
+
+    expandSome(body: ArrowFunctionExpression, relation: IEntityProperty, e: CallExpression, parameter: ParameterExpression, targetType: EntityType) {
+        const param1 = body.params[0];
+        const relatedModel = relation.relation.relatedEntity;
+        const relatedType = relatedModel.typeClass;
+
+        let select: SelectStatement;
+
+        if (this.source?.context) {
+            const query = FilteredExpression.isFiltered(e)
+                ? this.source.context.query(relatedType)
+                : this.source.context.filteredQuery(relatedType, "include", false);
+            select = { ...(query as EntityQuery).selectStatement };
+            select.fields = [
+                NumberLiteral.create({ value: 1 })
+            ];
+        } else {
+            select = relatedModel.selectOneNumber();
+        }
+
+        param1.model = relatedModel;
+        this.scope.create({ parameter: param1, model: relatedModel, selectStatement: select });
+        this.scope.alias(param1, select.sourceParameter, select);
+        select.sourceParameter = param1;
+        select[filteredSymbol] = true;
+        const targetKey = MemberExpression.create({
+            target: parameter,
+            property: Identifier.create({
+                value: targetType.keys[0].columnName
+            })
+        });
+
+        const relatedKey = MemberExpression.create({
+            target: param1,
+            property: Identifier.create({
+                value: relation.relation.fkColumn.columnName
+            })
+        });
+
+
+        const join = Expression.logicalAnd(
+            Expression.equal(targetKey, relatedKey),
+            body.body
+        );
+
+        let where = select.where;
+
+        if (where) {
+            where = BinaryExpression.create({
+                left: select.where,
+                operator: "AND",
+                right: join
+            });
+        } else {
+            where = join;
+        }
+
+        select.where = where;
+
+        const exists = ExistsExpression.create({
+            target: select
+        });
+        return exists;
+
+        // const r = this.visit(exists);
+        // this.scope.delete(param1);
+        // this.scope.delete(select.sourceParameter);
+        // return r;
     }
 
     visitIdentifier(e: Identifier): ITextQuery {
@@ -282,6 +353,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 if (scope.isRuntimeParam) {
                     return [(p) => p[chain[0]]];
                 }
+
                 const name = this.scope.nameOf(parameter);
 
                 // need to change name as per naming convention here...

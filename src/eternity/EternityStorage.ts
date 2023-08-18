@@ -141,25 +141,33 @@ export default class EternityStorage {
         return null;
     }
 
+    /**
+     * Deletes given workflow and it's children
+     * @param id id to delete
+     * @returns true if all items are deleted
+     */
     async delete(id) {
         const db = new WorkflowContext(this.driver);
         const children = await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
             .limit(100)
             .toArray();
         for (const iterator of children) {
-            db.workflows.delete(iterator);
+            if(!await this.delete(iterator.id)){
+                return false;
+            }
         }
         await db.saveChanges();
         if (children.length === 100) {
-            return;
+            return false;
         }
 
         const w = await db.workflows.where({ id}, (p) => (x) => x.id === p.id).first();
         if (!w) {
-            return;
+            return true;
         }
         db.workflows.delete(w);
         await db.saveChanges();
+        return true;
     }
 
     async save(state: Partial<WorkflowStorage>) {

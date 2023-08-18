@@ -51,10 +51,11 @@ export default class TimedCache<TKey = any, T = any> {
     private clear(): void {
         const expired = [];
         const now = Date.now();
-        for (const [key, value] of this.map.entries()) {
+        for (const [key, value] of Array.from(this.map.entries())) {
             if(value.expire < now) {
                 expired.push(key);
                 // call dispose..
+                this.map.delete(key);
                 try {
                     const r = value.dispose?.(value.value);
                     if (r?.then) {
@@ -64,9 +65,6 @@ export default class TimedCache<TKey = any, T = any> {
                     console.error(error);
                 }
             }
-        }
-        for (const key of expired) {
-            this.map.delete(key);
         }
     }
 

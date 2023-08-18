@@ -21,6 +21,7 @@ export interface IDbConnectionString {
     user?: string;
     password?: string;
     database?: string;
+    poolSize?: number;
 }
 
 export interface IDbReader extends IDisposable {
@@ -114,6 +115,8 @@ export abstract class BaseDriver {
 
     abstract newConnection(): BaseConnection;
 
+    /** Must dispose ObjectPools */
+    abstract dispose();
 
     createInsertExpression(type: EntityType, entity: any): InsertStatement {
         const returnFields = [] as Identifier[];
@@ -152,6 +155,12 @@ export abstract class BaseDriver {
     createUpdateExpression(entry: ChangeEntry) {
         const set = [] as BinaryExpression[];
         for (const [key, change] of entry.modified) {
+            if (!key.columnName) {
+                // some relations are getting into modified map
+                // till the time the concrete bug is found
+                // we will keep this check
+                continue;
+            }
             set.push(BinaryExpression.create({
                 left: Expression.identifier(key.columnName),
                 operator: "=",

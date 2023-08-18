@@ -28,8 +28,8 @@ export default class ParameterScope {
 
     public nameOf(p: ParameterExpression) {
         const model = this.map.get(p);
-        p.name = model.name;
-        return model.name;
+        // p.name = model.name;
+        return model?.name ?? p.name;
     }
 
     public alias(

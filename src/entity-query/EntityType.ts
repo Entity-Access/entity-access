@@ -11,6 +11,11 @@ import { IStringTransformer } from "../query/ast/IStringTransformer.js";
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
 
+export interface IEntityProperty {
+    field?: IColumn;
+    relation?: IEntityRelation;
+}
+
 
 /**
  * DbQuery represents sql equivalent table with columns...
@@ -65,7 +70,7 @@ export default class EntityType {
         return this.fieldMap.get(name) ?? { name };
     }
 
-    public getProperty(name: string) {
+    public getProperty(name: string): IEntityProperty {
         const field = this.fieldMap.get(name);
         const relation = this.relationMap.get(name);
         return { field, relation };
@@ -147,9 +152,9 @@ export default class EntityType {
     }
 
     public selectAllFields() {
-        if (this.selectAll) {
-            return { ... this.selectAll };
-        }
+        // if (this.selectAll) {
+        //     return { ... this.selectAll };
+        // }
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
         as.model = this;
@@ -164,9 +169,9 @@ export default class EntityType {
     }
 
     public selectOneNumber() {
-        if (this.selectOne) {
-            return { ... this.selectOne };
-        }
+        // if (this.selectOne) {
+        //     return { ... this.selectOne };
+        // }
         const source = this.fullyQualifiedName;
         const as = Expression.parameter(this.name[0] + "1");
         as.model = this;

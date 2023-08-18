@@ -33,7 +33,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
                 throw new Error(existing.error);
             }
             if (existing.state === "done") {
-                (this as any).currentTime = existing.updated;
+                (this as any).currentTime = DateTime.from(existing.updated);
                 return JSON.parse(existing.output);
             }
         }

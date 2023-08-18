@@ -3,6 +3,11 @@ import DateTime from "../types/DateTime.js";
 export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;
+    coll: {
+        sum(a: number[]): number;
+        count(a: any[]): number;
+        avg(a: number[]): number
+    }
 
     cast: {
         asNumber(a: any): number;
