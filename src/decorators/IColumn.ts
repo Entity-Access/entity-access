@@ -86,6 +86,8 @@ export interface IEntityRelation {
 
     relatedTypeClass: IClassOf<any>;
 
+    relatedTypeClassFactory?: () => IClassOf<any>;
+
     fkColumn?: IColumn;
 
 

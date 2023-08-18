@@ -37,7 +37,10 @@ export function RelateTo(c, p?): any {
 
     if (p === void 0) {
         p = c;
-        c = p.type?.();
+        // c = p.type?.();
+        if (p.type) {
+            c = void 0;
+        }
     }
 
     const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex } = p;
@@ -53,7 +56,8 @@ export function RelateTo(c, p?): any {
             type: entityType,
             name,
             foreignKey,
-            relatedTypeClass: c ?? (Reflect as any).getMetadata("design:type", target, name),
+            relatedTypeClass: c,
+            relatedTypeClassFactory: p.type,
             relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             dotNotCreateIndex
@@ -68,7 +72,10 @@ export function RelateToOne(c, p?): any {
 
     if (p === void 0) {
         p = c;
-        c = p.type?.();
+        // c = p.type?.();
+        if (p.type) {
+            c = void 0;
+        }
     }
 
     const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex } = p;
@@ -84,7 +91,8 @@ export function RelateToOne(c, p?): any {
             type: entityType,
             name,
             foreignKey,
-            relatedTypeClass: c ?? (Reflect as any).getMetadata("design:type", target, name),
+            relatedTypeClass: c,
+            relatedTypeClassFactory: p.type,
             relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             dotNotCreateIndex,

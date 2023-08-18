@@ -4,6 +4,7 @@ import { RelateTo, RelateToOne } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
 import DateTime from "../../types/DateTime.js";
+import { UserFile } from "./UseFile.js";
 
 export const statusPublished = "published";
 
@@ -47,6 +48,13 @@ export class User {
     @Column({ dataType: "Char", length: 200 })
     public userName: string;
 
+    @RelateTo({
+        type: () => UserFile,
+        property: (u) => u.photo,
+        inverseProperty: (uf) => uf.photoUsers
+    })
+    public photoID: number;
+
     public profile: UserProfile;
 
     public ownedProducts: Product[];
@@ -55,6 +63,9 @@ export class User {
 
     public categories: UserCategory[];
 
+    public files: UserFile[];
+
+    public photo: UserFile;
 }
 
 @Table("Categories")
