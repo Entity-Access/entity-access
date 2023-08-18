@@ -12,14 +12,16 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 5. Planned - Oracle Driver (Need help, we do not have Oracle Expertise)
 
 ## Features
-1. Unit of Work and Repository Pattern
-2. Arrow function based query features with automatic joins.
+1. Arrow function based query features with automatic joins.
+2. Unit of Work and Repository Pattern
 3. Automatic Migrations for missing schema - this is done for fast development and deployment.
 4. Sql functions such as LIKE, You can add your own custom functions easily.
 5. Postgres Driver
 6. Sql Server Driver
 7. Automatic parameterization to safeguard sql injection attacks.
 8. Context Filters - This is a new concept where you can setup filters that will be used against saving/retrieving data.
+9. Sum and Count query methods.
+10. Composite Primary Key Support.
 
 ## Upcoming Features
 1. Projection - Split query mode only, single level only.
@@ -164,6 +166,16 @@ class OrderItem {
 }
 
 // You can use `RelateToOne` for one to one mapping.
+
+// To prevent circular dependency issues, you can also use different
+// arguments as shown below...
+
+    @RelateTo({
+        type: () => Product
+        property: (orderItem) => orderItem.product,
+        inverseProperty: (product) => product.orderItems
+    })
+    productID: number;
 ```
 
 ## Query Examples
@@ -335,7 +347,124 @@ Sql.myFunctions = {
 
 // now you can use this as shown below...
 
-context.customers.all()
-    .where({date}, (p) => (x) => x.birthDate < Sql.myFunctions.parseDate(p.date) );
+context.orders.all()
+    .where({amount}, (p) => (x) =>
+        Sql.mySchema.calculateAmount(x.total, x.units, x.taxId) < p.amount );
 
+```
+
+## Context Filters and Events
+
+Let's assume that you wan to setup filters in such a way that customer can only 
+access his own orders.
+
+In order to setup context filters and events, we need to use inbuilt dependency injection, to provide, access to current user and events.
+
+```typescript
+export class ProductEvents extends EntityEvents<Product> {
+
+    @Inject
+    user: User;
+
+    @Inject
+    notificationService: NotificationService;
+
+    filter(query: IEntityQuery<Product>) {
+        const { userID } = this.user ?? {};
+        if (userID) {
+
+            // user can only see products that
+            // user has purchased or products are
+            // active.
+
+            return query.where({ userID }, (p) =>
+                p.isActive
+                || x.orderItems.some((oi) =>
+                    oi.order.customerID === p.userID
+                )
+            );
+        }
+
+        // anonymous users can see only active products        
+        return query.where({ userID }, (p) => p.isActive);
+    }
+
+    /*
+    When you are using eager loading, you can avoid adding
+    extra filters for each relation if the parent is already
+    filtered. For example, if you are trying to list products
+    inside orders, since order is already filtered, you can 
+    return query as it is.
+    */
+    includeFilter(query: IEntityQuery<Product>, type, member) {
+        if(type === OrderItem) {
+            return query;
+        }
+        // for every other include
+        // use normal filter.
+        return this.filter(query);
+    }
+
+    /*
+    this will be called just before
+    save changes, before the actual editing occurs,
+    we will automatically determine if the product
+    can be edited or not by the current use.
+    */
+
+    /*
+    This will also work correctly when there are multiple
+    entities in the single transaction.
+    */
+    
+    modifyFilter(query: IEntityQuery<Product>) {
+        const { userID } = this.user ?? {};
+        if (userID) {
+
+            // user can only see products that
+            // user has purchased or products are
+            // active.
+
+            return query.where({ userID }, (p) =>
+                p.isActive
+                || x.orderItems.some((oi) =>
+                    oi.order.customerID === p.userID
+                )
+            );
+        }
+        throw new EntityAccessError(`Cannot edit the product`);
+    }
+
+    // after above filter has passed the entity
+    // following methods will be raised for every entity
+    beforeInsert(entity: Product, entry: ChangeEntry<Product>) {
+
+    }
+
+    // each of these methods, beforeInsert, afteInsert, beforeUpdate
+    // afterUpdate, beforeDelete and afterDelete are asynchronous and
+    // you can await on async methods.
+    async afterInsert(entity: Product, entry: ChangeEntry<Product>) {
+        await this.notificationService.notify(entity);
+    }
+
+}
+
+
+// register all events in context events..
+export class AppContextEvents extends ContextEvents{
+
+    constructor() {
+        this.register(Product, ProductEvents);
+    }
+}
+const allEvents = new AppContextEvents();
+
+// create context with context events.
+
+const db = new ShoppingContext(allEvents);
+
+
+// this will return the query with filter
+const products = db.filteredQuery<Product>(Product);
 ```
