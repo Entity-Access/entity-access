@@ -155,9 +155,6 @@ export abstract class BaseDriver {
     createUpdateExpression(entry: ChangeEntry) {
         const set = [] as BinaryExpression[];
         for (const [key, change] of entry.modified) {
-            if (!key.columnName) {
-                throw new EntityAccessError(`Configuration error no column name set for ${key.name}`);
-            }
             set.push(BinaryExpression.create({
                 left: Expression.identifier(key.columnName),
                 operator: "=",

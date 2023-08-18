@@ -232,7 +232,7 @@ export default class ChangeEntry<T = any> implements IChanges {
                 }
 
                 const fk = iterator;
-                if (!fk.fkColumn) {
+                if (!fk.fkColumn.columnName) {
                     throw new EntityAccessError(`Configuration error, fk not set for ${fk.name}`);
                 }
                 relatedChanges.pending.push(() => {
