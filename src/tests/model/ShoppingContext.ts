@@ -50,6 +50,7 @@ export class User {
     @Column({ dataType: "Char", length: 200 })
     public userName: string;
 
+    @Column({ dataType: "BigInt", nullable: true })
     @RelateTo({
         type: () => UserFile,
         property: (u) => u.photo,

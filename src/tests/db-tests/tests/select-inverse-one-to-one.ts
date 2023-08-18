@@ -30,4 +30,7 @@ export default async function(this: TestConfig) {
         .first();
 
     assert.equal(null, all);
+
+    const c = await context.userFiles.where({}, (p) => (x) => x.user.userID > 0).count();
+    assert.equal(0, c);
 }

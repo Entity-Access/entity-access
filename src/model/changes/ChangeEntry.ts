@@ -1,3 +1,4 @@
+import EntityAccessError from "../../common/EntityAccessError.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type ChangeSet from "./ChangeSet.js";
@@ -108,6 +109,9 @@ export default class ChangeEntry<T = any> implements IChanges {
             const oldValue = original[iterator.name];
             const newValue = entity[iterator.name];
             if (entity[iterator.name] !== original[iterator.name]) {
+                if (!iterator.columnName) {
+                    throw new EntityAccessError(`Column name for ${iterator.name} not set`);
+                }
                 let modifiedEntry = this.modified.get(iterator);
                 if (!modifiedEntry) {
                     modifiedEntry = { column: iterator, oldValue, newValue };
@@ -228,6 +232,9 @@ export default class ChangeEntry<T = any> implements IChanges {
                 }
 
                 const fk = iterator;
+                if (!fk.fkColumn) {
+                    throw new EntityAccessError(`Configuration error, fk not set for ${fk.name}`);
+                }
                 relatedChanges.pending.push(() => {
                     this.entity[fk.fkColumn.name] = related[rKey.name];
                 });
