@@ -29,6 +29,8 @@ export class ShoppingContext extends EntityContext {
     public userProfiles = this.model.register(UserProfile);
 
     public profilePhotos = this.model.register(ProfilePhoto);
+
+    public userFiles = this.model.register(UserFile);
 }
 
 @Table("Users")
