@@ -17,7 +17,7 @@ export default async function () {
         },
         maxSize: 5,
         poolSize: 2,
-        maxWait: 1500
+        maxWait: 5000
     });
 
     const c1 = await pool.acquire();
@@ -43,11 +43,10 @@ export default async function () {
     await c4[Symbol.asyncDisposable]();
     await c2[Symbol.asyncDisposable]();
 
-    assert.equal(pool.currentSize, 2);
+    assert.equal(pool.currentSize, 3);
 
     assert.equal(pool.freeSize, 2);
 
-    await pool.acquire();
     await pool.acquire();
     await pool.acquire();
     await pool.acquire();

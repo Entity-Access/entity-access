@@ -22,7 +22,7 @@ interface IObjectPool<T> {
 
     /**
      * Max wait in milliseconds before creating
-     * new object, default is 15 seconds with gap of 1 second each
+     * new object, default is 5 seconds
      */
     maxWait?: number;
 }
@@ -126,20 +126,20 @@ export default class ObjectPool<T> {
         const self = this;
         pooledItem[Symbol.asyncDisposable] = async function(this: IPooledObject<T>) {
             delete this[Symbol.asyncDisposable];
-            console.log(`Pooled item ${pooledItem} freed.`);
+            // console.log(`Pooled item ${pooledItem} freed.`);
             if (self.free.length < self.poolSize) {
                 self.free.push(this);
                 for (const iterator of self.awaited) {
                     self.awaited.delete(iterator);
                     iterator.abort();
-                    break;
+                    return;
                 }
-            } else {
-                await self.destroy(this);
-                self.total--;
+                return;
             }
+            await self.destroy(this);
+            self.total--;
         };
-        console.log(`Pooled item ${pooledItem} has disposable`);
+        // console.log(`Pooled item ${pooledItem} has disposable`);
         return item as IPooledObject<T>;
     }
 
