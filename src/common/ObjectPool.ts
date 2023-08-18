@@ -105,18 +105,18 @@ export default class ObjectPool<T> {
     }
 
     public async acquire(): Promise<IPooledObject<T>> {
-        let item = this.free.pop();
-        if(!item) {
+        let existing = this.free.pop();
+        if(!existing) {
             if (this.total >= this.poolSize) {
                 const a = new AbortController();
                 this.awaited.add(a);
                 await sleep(this.maxWait, a.signal);
                 this.awaited.delete(a);
-                item = this.free.pop();
+                existing = this.free.pop();
             }
         }
-        if(item) {
-            return item as IPooledObject<T>;
+        if(existing) {
+            return existing as IPooledObject<T>;
         }
 
         if (this.total >= this.maxSize) {
@@ -124,10 +124,6 @@ export default class ObjectPool<T> {
         }
         this.total++;
 
-        return await this.create();
-    }
-
-    async create() {
            // create new..
         const item = this.factory?.() ?? (await this.asyncFactory());
         this.subscribeForRemoval(item as unknown as any, () => {
@@ -149,11 +145,11 @@ export default class ObjectPool<T> {
                 }
                 return;
             }
-            void this.destroy(pooledItem)?.catch(console.error);
             this.total--;
+            void this.destroy(pooledItem)?.catch(console.error);
         };
         this.logger?.(`Pooled item ${pooledItem} acquired.`);
-        this.logger?.(`Item ${pooledItem} has disposable ${pooledItem[Symbol.asyncDisposable]}`);
+        this.logger?.(`Item ${pooledItem} has disposable ${typeof pooledItem[Symbol.asyncDisposable]}`);
         return item as IPooledObject<T>;
     }
 

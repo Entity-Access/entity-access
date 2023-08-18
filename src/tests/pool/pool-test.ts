@@ -15,7 +15,7 @@ export default async function () {
             },
             subscribeForRemoval: (po, clear) => void 0,
             destroy(item) {
-                return sleep(10);
+                return Promise.resolve();
             },
             maxSize: 5,
             poolSize: 2,
@@ -46,7 +46,7 @@ export default async function () {
         assert.equal(pool.currentSize, 3);
 
         await c4[Symbol.asyncDisposable]();
-        logs.push(`c2 has disposable of type ${c2[Symbol.asyncDisposable]} with ${c2}`);
+        logs.push(`c2 has disposable of type ${typeof c2[Symbol.asyncDisposable]} with ${c2}`);
         await c2[Symbol.asyncDisposable]();
 
         assert.equal(pool.currentSize, 3);

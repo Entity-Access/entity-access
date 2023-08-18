@@ -3,6 +3,10 @@ export default async function sleep(n: number, signal?: AbortSignal, throwOnAbor
         return;
     }
     return new Promise<void>((resolve, reject) => {
+        if (!signal) {
+            setTimeout(resolve, n);
+            return;
+        }
         let resolved = false;
         const old = resolve;
         resolve = () => {
@@ -21,13 +25,13 @@ export default async function sleep(n: number, signal?: AbortSignal, throwOnAbor
             oldReject(r);
         };
         const id = setTimeout(resolve, n);
-        signal?.addEventListener("abort", () => {
+        signal.onabort = () => {
             clearTimeout(id);
             if (throwOnAbort) {
                 reject("cancelled");
                 return;
             }
             resolve();
-        });
+        };
     });
 }
