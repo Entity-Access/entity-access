@@ -106,11 +106,6 @@ export default class EntityType {
         // we will also set fk to the corresponding column
         this.relations.push(relation);
         this.relationMap.set(relation.name, relation);
-        if (getInverseModel) {
-            if (!relation.relatedTypeClass) {
-                relation.relatedTypeClass = relation.relatedTypeClassFactory();
-            }
-        }
 
         // find fk...
         let fkColumn = this.fieldMap.get(relation.foreignKey);
