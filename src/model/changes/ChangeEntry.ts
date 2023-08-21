@@ -81,7 +81,7 @@ export default class ChangeEntry<T = any> implements IChanges {
             let keysSet = true;
             let autoGenerate = false;
             for (const iterator of keys) {
-                autoGenerate ||= iterator.autoGenerate;
+                autoGenerate ||= iterator.generated as unknown as boolean;
                 if(entity[iterator.name] === void 0) {
                     keysSet = false;
                 }
