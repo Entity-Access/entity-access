@@ -188,6 +188,9 @@ export class Product {
     public categories: ProductCategory[];
     public owner: User;
 
+    public updated: string[];
+    public nameUpdated: boolean;
+
 }
 
 

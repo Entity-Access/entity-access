@@ -52,7 +52,7 @@ export default class ChangeEntry<T = any> implements IChanges {
      */
     public isModified(field: keyof T) {
         const column = this.type.getColumn(field as string);
-        return this.modified.has(column);
+        return this.modified?.has(column) ?? false;
     }
 
     /**
@@ -62,7 +62,7 @@ export default class ChangeEntry<T = any> implements IChanges {
      */
     public isUpdated(field: keyof T) {
         const column = this.type.getColumn(field as string);
-        return this.updated.has(column);
+        return this.updated?.has(column) ?? false;
     }
 
     public detect() {
