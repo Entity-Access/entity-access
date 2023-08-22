@@ -34,6 +34,7 @@ export default async function (this: TestConfig) {
         const fe = context.changeSet.getEntry(first);
         await context.saveChanges();
 
+        assert.notStrictEqual(undefined, first.nameUpdated);
         assert.equal(true, first.nameUpdated);
         assert.equal(false, fe.isUpdated("name"));
     } finally {

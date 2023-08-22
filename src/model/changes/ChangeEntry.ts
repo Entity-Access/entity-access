@@ -51,7 +51,7 @@ export default class ChangeEntry<T = any> implements IChanges {
      * @returns true/false
      */
     public isModified(field: keyof T) {
-        const column = this.type.getColumn(field as string);
+        const column = this.type.getField(field as string);
         return this.modified?.has(column) ?? false;
     }
 
@@ -61,7 +61,7 @@ export default class ChangeEntry<T = any> implements IChanges {
      * @returns true/false
      */
     public isUpdated(field: keyof T) {
-        const column = this.type.getColumn(field as string);
+        const column = this.type.getField(field as string);
         return this.updated?.has(column) ?? false;
     }
 
