@@ -169,7 +169,7 @@ export default class EternityContext {
 
     public async queue<T>(
         type: IClassOf<Workflow<T>>,
-        input: Partial<T>,
+        input: T,
         { id, throwIfExists, eta, parentID }: {
             id?: string,
             throwIfExists?: boolean,

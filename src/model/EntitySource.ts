@@ -34,7 +34,7 @@ export class EntitySource<T = any> {
             throw new Error("Entity is already attached to the context");
         }
         entry.status = "inserted";
-        return entry.entity;
+        return entry.entity as T;
     }
 
     /**

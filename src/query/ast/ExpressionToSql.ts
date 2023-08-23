@@ -444,7 +444,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (e.fields.length === 0) {
             return [];
         }
-        const fields = this.visitArray(e.fields).join(",");
+        const fields = this.visitArray(e.fields);
         return prepare ` RETURNING ${fields}`;
     }
 

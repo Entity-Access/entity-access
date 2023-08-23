@@ -14,6 +14,17 @@ export default abstract class Migrations {
         const { model } = context;
         for (const s of model.sources.values()) {
             const type = s[modelSymbol] as EntityType;
+
+            for (const column of type.columns) {
+                if (column.computed && typeof column.computed !== "string") {
+                    // parse..
+                    const source = context.query(type.typeClass) as EntityQuery<any>;
+                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.computed}` as any);
+                    const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
+                    column.computed = textQuery.join("").replace(r, "");
+                }
+            }
+
             await this.migrateTable(context, type);
 
             for (const index of type.indexes) {

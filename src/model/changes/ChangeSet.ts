@@ -19,7 +19,7 @@ export default class ChangeSet {
     /**
      * This will provide new entity for same key
      */
-    private identityMap: Map<string,ChangeEntry> = new Map();
+    private identityMap: Map<string,any> = new Map();
 
     private nextId = 1;
 
@@ -66,7 +66,7 @@ export default class ChangeSet {
         }
     }
 
-    public getEntry(entity, original = void 0): ChangeEntry {
+    public getEntry<T>(entity: T, original = void 0): ChangeEntry<T> {
         let entry = this.entryMap.get(entity);
         if (entry) {
             return entry;

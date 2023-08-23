@@ -6,7 +6,7 @@ import { User } from "./ShoppingContext.js";
 @Table("UserFiles")
 export class UserFile {
 
-    @Column({ dataType: "BigInt", key: true, autoGenerate: true })
+    @Column({ dataType: "BigInt", key: true, generated: "identity" })
     public fileID: number;
 
     @Column({ dataType: "BigInt"})

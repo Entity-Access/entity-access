@@ -20,7 +20,7 @@ export interface IColumn {
      * for non text keys.
      */
     indexOrder?: "descending" | "ascending";
-    autoGenerate?: boolean;
+    generated?: "identity" | "computed";
     dataType?: ISqlType;
     nullable?: boolean;
 
@@ -64,6 +64,10 @@ export interface IColumn {
      * This only identifies itself as relation's foreign key, this will be set automatically.
      */
     fkRelation?: IEntityRelation;
+
+    computed?: any;
+
+    stored?: any;
 }
 
 export interface IEntityRelation {

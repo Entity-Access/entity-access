@@ -5,6 +5,7 @@ import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
 import DateTime from "../../types/DateTime.js";
 import { UserFile } from "./UseFile.js";
+import Sql from "../../sql/Sql.js";
 
 export const statusPublished = "published";
 
@@ -41,7 +42,7 @@ export class ShoppingContext extends EntityContext {
 })
 export class User {
 
-    @Column({ key: true , autoGenerate: true, dataType: "BigInt" })
+    @Column({ key: true , generated: "identity", dataType: "BigInt" })
     public userID: number;
 
     @Column({})
@@ -80,12 +81,24 @@ export class Category {
     @Column({ length: 200 })
     public name: string;
 
+
+    @Column({ computed: (x) => Sql.text.lower(x.name)})
+    public lowerName: string;
+
     @Column({ dataType: "Char", length: 200, nullable: true })
     @RelateTo(Category, {
         property: (c) => c.parent,
         inverseProperty: (c) => c.children
     })
     public parentID: string;
+
+    @Column({
+        dataType: "Char",
+        length: 400,
+        nullable: true,
+        computed: (x) => x.parentID === null ? null : Sql.text.concatImmutable(Sql.cast.asText(x.parentID), '/', Sql.text.lower(x.name))
+    })
+    public path: string;
 
     public productCategories: ProductCategory[];
 
@@ -118,7 +131,7 @@ export class UserProfile {
 @Table("ProfilePhotos")
 export class ProfilePhoto {
 
-    @Column({ key: true, dataType: "BigInt", autoGenerate: true })
+    @Column({ key: true, dataType: "BigInt", generated: "identity" })
     public photoID: number;
 
     @Column ({ dataType: "BigInt"})
@@ -162,7 +175,7 @@ export class UserCategory {
 @Table("Products")
 export class Product {
 
-    @Column({ key: true, autoGenerate: true, dataType: "BigInt" })
+    @Column({ key: true, generated: "identity", dataType: "BigInt" })
     public productID: number;
 
     @Column()
@@ -183,13 +196,16 @@ export class Product {
     public categories: ProductCategory[];
     public owner: User;
 
+    public updated: string[];
+    public nameUpdated: boolean;
+
 }
 
 
 @Table("ProductCategories")
 export class ProductCategory {
 
-    @Column({ key: true, dataType: "BigInt", autoGenerate: true })
+    @Column({ key: true, dataType: "BigInt", generated: "identity" })
     public productCategoryID: number;
 
     @Column({ dataType: "BigInt" })
@@ -214,7 +230,7 @@ export class ProductCategory {
 @Table("ProductPrices")
 export class ProductPrice {
 
-    @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
+    @Column({ key: true, generated: "identity", dataType: "BigInt"})
     public priceID: number;
 
     @Column()
@@ -248,7 +264,7 @@ export class ProductPrice {
 })
 export class Order {
 
-    @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
+    @Column({ key: true, generated: "identity", dataType: "BigInt"})
     public orderID: number;
 
     @Column()
@@ -273,7 +289,7 @@ export class Order {
 @Table("OrderItems")
 export class OrderItem {
 
-    @Column({ key: true, autoGenerate: true, dataType: "BigInt"})
+    @Column({ key: true, generated: "identity", dataType: "BigInt"})
     public orderItemID: number;
 
     @Column()

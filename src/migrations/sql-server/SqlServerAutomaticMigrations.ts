@@ -56,11 +56,21 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         for (const iterator of nonKeyColumns) {
             const columnName = iterator.columnName;
             let def = `IF COL_LENGTH(${ SqlServerLiteral.escapeLiteral(name)}, ${ SqlServerLiteral.escapeLiteral(columnName)}) IS NULL ALTER TABLE ${name} ADD ${columnName} `;
+
+            if (iterator.computed) {
+                def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
+                await driver.executeQuery(def + ";");
+                continue;
+            }
+
             def += this.getColumnDefinition(iterator);
             if (iterator.nullable === true) {
                 def += " NULL ";
             } else {
                 def += " NOT NULL ";
+            }
+            if (iterator.computed) {
+                def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
             }
             if (typeof iterator.default === "string") {
                 def += " DEFAULT " + iterator.default;
@@ -84,8 +94,12 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         for (const iterator of keys) {
             let def = iterator.columnName + " ";
-            if (iterator.autoGenerate) {
-                def += `${this.getColumnDefinition(iterator)} NOT NULL IDENTITY(1,1)`;
+            if (iterator.generated) {
+                switch(iterator.generated) {
+                    case "identity":
+                        def += `${this.getColumnDefinition(iterator)} NOT NULL IDENTITY(1,1)`;
+                        break;
+                }
             } else {
                 def += `${this.getColumnDefinition(iterator)} NOT NULL`;
             }
