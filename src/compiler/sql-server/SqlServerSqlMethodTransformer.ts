@@ -1,13 +1,13 @@
 
-import { prepareAny } from "../../query/ast/IStringTransformer.js";
+import { joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers } from "../ISqlHelpers.js";
 import type QueryCompiler from "../QueryCompiler.js";
 
 export const SqlServerSqlHelper: ISqlHelpers = {
     ... Sql,
-    in(a, array) {
-        return prepareAny`${a} IN ${array}`;
+    in(a, array: any) {
+        return prepareAny `${a} IN (${(x)=> joinMap(",", Array.isArray(array) ? array.map((i) => i(x)).flat() : array(x))  })`;
     },
     coll: {
         sum(a) {

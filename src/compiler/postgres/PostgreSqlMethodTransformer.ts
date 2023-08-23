@@ -1,4 +1,4 @@
-import { prepareAny } from "../../query/ast/IStringTransformer.js";
+import { joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers } from "../ISqlHelpers.js";
@@ -8,8 +8,8 @@ const onlyAlphaNumeric = (x: string) => x.replace(/\W/g, "");
 
 export const PostgreSqlHelper: ISqlHelpers = {
     ... Sql,
-    in(a, array) {
-        return prepareAny`${a} IN ${array}`;
+    in(a, array: any) {
+        return prepareAny `${a} IN (${(x)=> joinMap(",", Array.isArray(array) ? array.map((i) => i(x)).flat() : array(x))  })`;
     },
     coll: {
         sum(a) {
