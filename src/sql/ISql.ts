@@ -21,6 +21,7 @@ export interface ISql {
 
     text: {
         concat(... fragments: string[]): string;
+        concatImmutable(... fragments: string[]): string;
         /**
          * Concat with separator
          * @param separator separator used to join

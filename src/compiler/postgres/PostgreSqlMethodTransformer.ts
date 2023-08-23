@@ -103,6 +103,19 @@ export const PostgreSqlHelper: ISqlHelpers = {
             text.push(")");
             return text as any;
         },
+        concatImmutable(...p) {
+            const text = ["("];
+            let first = true;
+            for (const iterator of p) {
+                if (!first) {
+                    text.push(" || ");
+                }
+                first = false;
+                text.push(iterator);
+            }
+            text.push(")");
+            return text as any;
+        },
         concatWS(...fragments) {
             const text = ["CONCAT_WS("];
             let first = true;

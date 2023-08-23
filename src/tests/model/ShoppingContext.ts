@@ -92,6 +92,14 @@ export class Category {
     })
     public parentID: string;
 
+    @Column({
+        dataType: "Char",
+        length: 400,
+        nullable: true,
+        computed: (x) => x.parentID === null ? null : Sql.text.concatImmutable(Sql.cast.asText(x.parentID), '/', Sql.text.lower(x.name))
+    })
+    public path: string;
+
     public productCategories: ProductCategory[];
 
     public users: UserCategory[];
