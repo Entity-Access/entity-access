@@ -55,7 +55,13 @@ export default class EntityContext {
             }
             return null;
         }
-        return ServiceProvider.create(this, eventsClass);
+        const events = ServiceProvider.create(this, eventsClass);
+        Object.defineProperty(events, "verify", {
+            get:() => {
+                return this.verifyFilters;
+            }
+        });
+        return events;
     }
 
     query<T>(type: IClassOf<T>) {
