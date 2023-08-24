@@ -31,6 +31,8 @@ export interface ISql {
         difference(left: string, right: string): number;
         like(text: string, test: string): boolean;
         iLike(text: string, test: string): boolean;
+        likeAny(text: string, test: string[]): boolean;
+        iLikeAny(text: string, test: string[]): boolean;
         left(text: string, length: number): string;
         right(text: string, length: number): string;
         startsWith(text: string, test: string): boolean;

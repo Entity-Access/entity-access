@@ -13,6 +13,9 @@ export default function () {
 
     // r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
 
+    r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
+    assert.equal("((x.firstName like $1) || (x.firstName like $2))", r.text);
+
 
 }
 

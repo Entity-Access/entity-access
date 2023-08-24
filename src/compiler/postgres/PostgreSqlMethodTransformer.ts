@@ -9,7 +9,7 @@ const onlyAlphaNumeric = (x: string) => x.replace(/\W/g, "");
 export const PostgreSqlHelper: ISqlHelpers = {
     ... Sql,
     in(a, array: any) {
-        return prepareAny `${a} IN (${(x)=> joinMap(",", Array.isArray(array) ? array.map((i) => i(x)).flat() : array(x))  })`;
+        return prepareAny `${a} IN (${(x)=> joinMap(",", x, array)  })`;
     },
     coll: {
         sum(a) {
@@ -139,6 +139,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         iLike(text, test) {
             return prepareAny `(${text} iLike ${test})`;
         },
+        iLikeAny(text, test) {
+            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
+        },
         indexOf(text, test) {
             return prepareAny `(strpos(${text}, ${test}) - 1)`;
         },
@@ -147,6 +150,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         },
         like(text, test) {
             return prepareAny `(${text} LIKE ${test})`;
+        },
+        likeAny(text, test) {
+            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
         },
         lower(text) {
             return prepareAny `LOWER(${text})`;

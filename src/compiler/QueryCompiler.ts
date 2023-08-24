@@ -88,7 +88,7 @@ export default class QueryCompiler {
             const value = iterator(p);
             if (Array.isArray(value)) {
                 for (const av of value) {
-                    if (typeof av === "string") {
+                    if (typeof av !== "function") {
                         text += av;
                         continue;
                     }

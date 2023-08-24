@@ -7,7 +7,7 @@ import type QueryCompiler from "../QueryCompiler.js";
 export const SqlServerSqlHelper: ISqlHelpers = {
     ... Sql,
     in(a, array: any) {
-        return prepareAny `${a} IN (${(x)=> joinMap(",", Array.isArray(array) ? array.map((i) => i(x)).flat() : array(x))  })`;
+        return prepareAny `${a} IN (${(x)=> joinMap(",", x, array)  })`;
     },
     coll: {
         sum(a) {
@@ -138,6 +138,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         iLike(text, test) {
             return prepareAny `(${text} like ${test})`;
         },
+        iLikeAny(text, test) {
+            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
+        },
         indexOf(text, test) {
             return prepareAny `(CHARINDEX(${text}, ${test}) - 1)`;
         },
@@ -146,6 +149,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         },
         like(text, test) {
             return prepareAny `(${text} LIKE ${test})`;
+        },
+        likeAny(text, test) {
+            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
         },
         lower(text) {
             return prepareAny `LOWER(${text})`;
