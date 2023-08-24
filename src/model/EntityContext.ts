@@ -95,29 +95,32 @@ export default class EntityContext {
             return 0;
         }
 
-        if(!this.raiseEvents) {
-            return this.saveChangesWithoutEvents(signal);
-        }
+        return this.connection.runInTransaction(async () => {
+            try {
 
-        try {
-            this[isChanging] = true;
-            const r = await this.saveChangesInternal(signal);
-            const postSaveChanges = this.postSaveChangesQueue;
-            this.postSaveChangesQueue = void 0;
-            this[isChanging] = false;
-            if (postSaveChanges?.length) {
-                postSaveChanges.sort((a, b) => a.order - b.order);
-                for (const { task } of postSaveChanges) {
-                    const p = task();
-                    if (p?.then) {
-                        await p;
+                if(!this.raiseEvents) {
+                    return await this.saveChangesWithoutEvents(signal);
+                }
+
+                this[isChanging] = true;
+                const r = await this.saveChangesInternal(signal);
+                const postSaveChanges = this.postSaveChangesQueue;
+                this.postSaveChangesQueue = void 0;
+                this[isChanging] = false;
+                if (postSaveChanges?.length) {
+                    postSaveChanges.sort((a, b) => a.order - b.order);
+                    for (const { task } of postSaveChanges) {
+                        const p = task();
+                        if (p?.then) {
+                            await p;
+                        }
                     }
                 }
+                return r;
+            } finally {
+                this[isChanging] = false;
             }
-            return r;
-        } finally {
-            this[isChanging] = false;
-        }
+        });
     }
 
     public queuePostSaveTask(task: () => any, order = Number.MAX_SAFE_INTEGER) {
@@ -186,34 +189,32 @@ export default class EntityContext {
     }
 
     protected async saveChangesWithoutEvents(signal: AbortSignal) {
-        return this.connection.runInTransaction(async () => {
-            const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
-            for (const iterator of copy) {
-                switch (iterator.status) {
-                    case "inserted":
-                        const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
-                        const r = await this.executeExpression(insert, signal);
-                        iterator.apply(r);
-                        break;
-                    case "modified":
-                        // this will update the modified map
-                        iterator.detect();
-                        if (iterator.modified.size > 0) {
-                            const update = this.driver.createUpdateExpression(iterator);
-                            await this.executeExpression(update, signal);
-                            iterator.apply(update);
-                        }
-                        break;
-                    case "deleted":
-                        const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
-                        if (deleteQuery) {
-                            await this.executeExpression(deleteQuery, signal);
-                        }
-                        iterator.apply({});
-                        break;
-                }
+        const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
+        for (const iterator of copy) {
+            switch (iterator.status) {
+                case "inserted":
+                    const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
+                    const r = await this.executeExpression(insert, signal);
+                    iterator.apply(r);
+                    break;
+                case "modified":
+                    // this will update the modified map
+                    iterator.detect();
+                    if (iterator.modified.size > 0) {
+                        const update = this.driver.createUpdateExpression(iterator);
+                        await this.executeExpression(update, signal);
+                        iterator.apply(update);
+                    }
+                    break;
+                case "deleted":
+                    const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
+                    if (deleteQuery) {
+                        await this.executeExpression(deleteQuery, signal);
+                    }
+                    iterator.apply({});
+                    break;
             }
-        });
+        }
     }
 
     private async executeExpression(expression: Expression, signal: AbortSignal) {
