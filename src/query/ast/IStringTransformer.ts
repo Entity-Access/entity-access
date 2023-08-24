@@ -20,6 +20,23 @@ export class QueryParameter {
     }
 }
 
+export const joinMap = (sep: string, input, a: any, fx: ((item) => any) = (xi) => [() => xi]) => {
+    const r = [];
+    a = (Array.isArray(a) ? a.map((x) => x(input)) : a(input)).flat(2);
+    let s = "";
+    for (const iterator of a) {
+        if (s) {
+            r.push(s);
+        }
+        s = sep;
+        const items = fx(iterator).flat(2);
+        for (const fi of items) {
+            r.push(fi);
+        }
+    }
+    return r.flat(2);
+};
+
 export const prepareAny = (a: TemplateStringsArray, ... p: any[]): string[] => {
     const r = [];
     for (let index = 0; index < a.length; index++) {

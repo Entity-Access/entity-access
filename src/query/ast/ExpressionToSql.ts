@@ -189,7 +189,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
             if (identifier?.value === "Sql") {
                 const argList = e.arguments?.map((x) => this.visit(x)) ?? [];
-                const transformedCallee = this.compiler.sqlMethodTransformer(this.compiler, chain, argList as any[]);
+                const transformedCallee = this.compiler.sqlMethodTransformer(this.compiler, chain, argList.map((al) => al.flat(2)) as any[]);
                 if (transformedCallee) {
                     return prepare `${transformedCallee}`;
                 }

@@ -21,6 +21,17 @@ export default class RawQuery {
                 continue;
             }
             const value = iterator(p);
+            if (Array.isArray(value)) {
+                for (const av of value) {
+                    if (typeof av !== "function") {
+                        text += av;
+                        continue;
+                    }
+                    values.push(av());
+                    text += "$" + values.length;
+                }
+                continue;
+            }
             values.push(value);
             text += "$" + values.length;
         }
