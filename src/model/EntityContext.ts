@@ -84,11 +84,24 @@ export default class EntityContext {
         return FilteredExpression.markAsFiltered(query);
     }
 
+    public async saveChangesWithoutEvents(signal?: AbortSignal) {
+        const raiseEvents = this.raiseEvents;
+        const verifyFilters = this.verifyFilters;
+        try {
+            this.raiseEvents = false;
+            this.verifyFilters = false;
+            return await this.saveChanges(signal);
+        } finally {
+            this.verifyFilters = verifyFilters;
+            this.raiseEvents = raiseEvents;
+        }
+    }
+
     public async saveChanges(signal?: AbortSignal) {
 
         if (this[isChanging]) {
             if (!this.raiseEvents) {
-                this.queuePostSaveTask(() => this.saveChangesWithoutEvents(signal));
+                this.queuePostSaveTask(() => this.saveChangesInternalWithoutEvents(signal));
                 return 0;
             }
             this.queuePostSaveTask(() => this.saveChanges(signal));
@@ -99,7 +112,7 @@ export default class EntityContext {
             try {
 
                 if(!this.raiseEvents) {
-                    return await this.saveChangesWithoutEvents(signal);
+                    return await this.saveChangesInternalWithoutEvents(signal);
                 }
 
                 this[isChanging] = true;
@@ -128,7 +141,7 @@ export default class EntityContext {
         this.postSaveChangesQueue.push({ task, order });
     }
 
-    async saveChangesInternal(signal?: AbortSignal) {
+    private async saveChangesInternal(signal?: AbortSignal) {
 
         const verificationSession = new VerificationSession(this);
 
@@ -166,7 +179,7 @@ export default class EntityContext {
             await verificationSession.verifyAsync();
         }
 
-        await this.saveChangesWithoutEvents(signal);
+        await this.saveChangesInternalWithoutEvents(signal);
 
         if (pending.length > 0) {
 
@@ -188,7 +201,7 @@ export default class EntityContext {
 
     }
 
-    protected async saveChangesWithoutEvents(signal: AbortSignal) {
+    private async saveChangesInternalWithoutEvents(signal: AbortSignal) {
         const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
         for (const iterator of copy) {
             switch (iterator.status) {
