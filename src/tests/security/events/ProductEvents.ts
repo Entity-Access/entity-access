@@ -40,6 +40,10 @@ export class ProductEvents extends EntityEvents<Product> {
         entity.nameUpdated = entry.isUpdated("name");
     }
 
+    afterInsert(entity: Product, entry: ChangeEntry<Product>): void | Promise<void> {
+        entity.afterInsertInvoked = true;
+    }
+
 }
 
 export class ProductCategoryEvents extends EntityEvents<ProductCategory> {
