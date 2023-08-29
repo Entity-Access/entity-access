@@ -177,14 +177,9 @@ export default class EternityContext {
             parentID?: string
         } = {}) {
         const clock = this.storage.clock;
+        let tries = 1;
         if (id) {
-            const r = await this.storage.getWorkflow(id);
-            if (r) {
-                if (throwIfExists) {
-                    throw new EntityAccessError(`Workflow with ID ${id} already exists`);
-                }
-                return id;
-            }
+            tries = 3;
         } else {
             id = randomUUID();
             while(await this.storage.getWorkflow(id) !== null) {
@@ -196,21 +191,41 @@ export default class EternityContext {
         // this will ensure even empty workflow !!
         const schema = WorkflowRegistry.register(type, void 0);
 
-        const now = clock.utcNow;
-        eta ??= now;
-        await this.storage.save({
-            id,
-            name: schema.name,
-            input: JSON.stringify(input),
-            isWorkflow: true,
-            queued: now,
-            updated: now,
-            parentID,
-            eta
-        });
+        let lastError = null;
+        while(tries--) {
+            try {
 
-        if(eta < clock.utcNow) {
-            this.waiter?.abort();
+                const r = await this.storage.getWorkflow(id);
+                if (r) {
+                    if (throwIfExists) {
+                        throw new EntityAccessError(`Workflow with ID ${id} already exists`);
+                    }
+                    return id;
+                }
+
+                const now = clock.utcNow;
+                eta ??= now;
+                await this.storage.save({
+                    id,
+                    name: schema.name,
+                    input: JSON.stringify(input),
+                    isWorkflow: true,
+                    queued: now,
+                    updated: now,
+                    parentID,
+                    eta
+                });
+
+                if(eta < clock.utcNow) {
+                    this.waiter?.abort();
+                }
+            } catch (error) {
+                lastError = error;
+            }
+        }
+
+        if (lastError) {
+            throw lastError;
         }
 
         return id;
