@@ -98,7 +98,7 @@ export class ServiceProvider implements IDisposable {
                 }
                 return  instance;
             case "Transient":
-                instance = sp.createFromDescriptor(sd);
+                instance = this.createFromDescriptor(sd);
                 instance[serviceProvider] = this;
                 instance[globalServiceProvider] = sp;
                 return instance;
