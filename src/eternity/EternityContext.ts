@@ -34,7 +34,14 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             }
             if (existing.state === "done") {
                 (this as any).currentTime = DateTime.from(existing.updated);
-                return JSON.parse(existing.output);
+                const output = JSON.parse(existing.output);
+                if (name === "waitForExternalEvent") {
+                    if (Array.isArray(output)) {
+                        return { name: output[0], result: output[1]};
+                    }
+                    return { name: void 0, result: void 0};
+                }
+                return output;
             }
         }
 
@@ -72,6 +79,9 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
                 lastResult = "";
                 step.state = "done";
                 ttl = TimeSpan.fromSeconds(0);
+                if (name === "waitForExternalEvent") {
+                    return { name: void 0, result: void 0};
+                }
             }
 
         } else {
@@ -229,6 +239,35 @@ export default class EternityContext {
         }
 
         return id;
+    }
+
+    public async raiseEvent(id: string, {
+        name,
+        result,
+        throwIfNotWaiting = false
+    }: { name: string, result?: string, throwIfNotWaiting?: boolean}) {
+        let w = await this.storage.getWorkflow(id);
+        if(!w?.lastID) {
+            if (throwIfNotWaiting) {
+                throw new Error(`Workflow ${id} is not waiting for any events`);
+            }
+            return;
+        }
+        w = await this.storage.getAny(w.lastID);
+        if (w.state === "failed" || w.state === "done") {
+            return;
+        }
+        w.output = JSON.stringify({ name, result });
+        w.state = "done";
+        w.updated = DateTime.utcNow;
+        // set eta of parent...
+        await this.storage.save(w);
+        const parent = await this.storage.getAny(w.parentID);
+        parent.lockTTL = null;
+        parent.lockToken = null;
+        parent.updated = w.updated;
+        await this.storage.save(parent);
+        this.waiter?.abort();
     }
 
     public async processQueueOnce(signal?: AbortSignal) {
