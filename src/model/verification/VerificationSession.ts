@@ -76,6 +76,13 @@ export default class VerificationSession {
             if (isKeyEmpty(fkValue, relation.fkColumn)) {
                 continue;
             }
+
+            // only if it is modified...
+            if (change.status !== "inserted") {
+                if (!change.isModified(fk.name)) {
+                    continue;
+                }
+            }
             this.queueEntityForeignKey(change, relation, fkValue);
         }
     }
@@ -136,7 +143,7 @@ export default class VerificationSession {
             return;
         }
         this.select.fields =[
-            Expression.as(Expression.templateLiteral(this.field), "error")
+            Expression.as( this.field.length === 1 ? this.field[0] : Expression.templateLiteral(this.field), "error")
         ];
         this.select.sourceParameter = ParameterExpression.create({ name: "x"});
         const source = ValuesStatement.create({

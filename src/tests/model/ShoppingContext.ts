@@ -198,6 +198,7 @@ export class Product {
 
     public updated: string[];
     public nameUpdated: boolean;
+    afterInsertInvoked: boolean;
 
 }
 

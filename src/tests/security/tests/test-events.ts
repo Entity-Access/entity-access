@@ -4,7 +4,7 @@ import { ServiceCollection, ServiceProvider } from "../../../di/di.js";
 import { BaseDriver } from "../../../drivers/base/BaseDriver.js";
 import ContextEvents from "../../../model/events/ContextEvents.js";
 import { TestConfig } from "../../TestConfig.js";
-import { ShoppingContext } from "../../model/ShoppingContext.js";
+import { ShoppingContext, statusPublished } from "../../model/ShoppingContext.js";
 import { createContext } from "../../model/createContext.js";
 import { ShoppingContextEvents } from "../ShoppingContextEvents.js";
 import { UserInfo } from "../events/UserInfo.js";
@@ -37,6 +37,17 @@ export default async function (this: TestConfig) {
         assert.notStrictEqual(undefined, first.nameUpdated);
         assert.equal(true, first.nameUpdated);
         assert.equal(false, fe.isUpdated("name"));
+
+        const status = statusPublished;
+        // create new product...
+        const p = context.products.add({
+            name: "A",
+            status,
+            ownerID: userID
+        });
+        assert.equal(void 0, p.afterInsertInvoked);
+        await context.saveChanges();
+        assert.equal(true, p.afterInsertInvoked);
     } finally {
         scope.dispose();
     }

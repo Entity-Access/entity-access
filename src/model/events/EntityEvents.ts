@@ -44,6 +44,10 @@ export class ForeignKeyFilter<T = any, TE = any> {
 
 export default class EntityEvents<T> {
 
+    public get verify() {
+        return true;
+    }
+
     filter(query: IEntityQuery<T>) {
         return query;
     }
