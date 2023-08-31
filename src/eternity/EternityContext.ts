@@ -10,13 +10,18 @@ import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
 import { IWorkflowSchema, WorkflowRegistry } from "./WorkflowRegistry.js";
 import crypto from "crypto";
 import TimeSpan from "../types/TimeSpan.js";
-import WorkflowClock from "./WorkflowClock.js";
 import sleep from "../common/sleep.js";
 
 async function  hash(text) {
     const sha256 = crypto.createHash("sha256");
     return sha256.update(text).digest("base64");
 }
+
+const align = (d: DateTime) => {
+    let time = d.msSinceEpoch;
+    time = Math.floor(time / 100) * 100;
+    return new DateTime(time);
+};
 
 function bindStep(context: EternityContext, store: WorkflowStorage, name: string, old: (... a: any[]) => any, unique = false) {
     return async function runStep(this: Workflow, ... a: any[]) {
@@ -27,24 +32,22 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
 
         const clock = context.storage.clock;
 
+
         const existing = await context.storage.getAny(id);
         if (existing) {
             if (existing.state === "failed" && existing.error) {
+                context.log(`Invoke failed ${name}(${id}) with ${existing.error}, at ${DateTime.from(existing.updated).msSinceEpoch}`);
                 throw new Error(existing.error);
             }
             if (existing.state === "done") {
+                context.log(`Invoked ${name}(${id}) with ${existing.output}, at ${DateTime.from(existing.updated).msSinceEpoch}`);
                 (this as any).currentTime = DateTime.from(existing.updated);
                 const output = JSON.parse(existing.output);
-                if (name === "waitForExternalEvent") {
-                    if (Array.isArray(output)) {
-                        return { name: output[0], result: output[1]};
-                    }
-                    return { name: void 0, result: void 0};
-                }
                 return output;
             }
         }
 
+        context.log(`Invoke ${name}(${id})`);
         store.lastID = id;
 
         let ttl = TimeSpan.fromSeconds(0);
@@ -61,7 +64,6 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
         };
 
         // execute...
-        const start = clock.utcNow;
         let lastError: Error;
         let lastResult: any;
 
@@ -71,21 +73,20 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
             const maxTS = a[0] as TimeSpan;
             const eta = this.currentTime.add(maxTS);
             step.eta = eta;
-
+            store.eta = eta;
             ttl = maxTS;
 
-            if (eta <= start) {
+            if (eta <= clock.utcNow) {
                 // time is up...
                 lastResult = "";
                 step.state = "done";
-                ttl = TimeSpan.fromSeconds(0);
+                step.updated = align(step.eta);
                 if (name === "waitForExternalEvent") {
-                    return { name: void 0, result: void 0};
+                    lastResult = { name: void 0, result: void 0};
                 }
+                (this as any).currentTime = step.updated;
             }
-
         } else {
-
             try {
 
                 const types = old[injectServiceKeysSymbol] as any[];
@@ -98,8 +99,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
                 lastResult = (await old.apply(this, a)) ?? 0;
                 step.output = JSON.stringify(lastResult);
                 step.state = "done";
-                step.eta = clock.utcNow;
-                (this as any).currentTime = step.eta;
+                step.updated = align(clock.utcNow);
             } catch (error) {
                 if (error instanceof ActivitySuspendedError) {
                     return;
@@ -107,11 +107,9 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
                 lastError = error;
                 step.error = error.stack ?? error.toString();
                 step.state = "failed";
-                step.eta = clock.utcNow;
-                (this as any).currentTime = step.eta;
+                step.updated = align(clock.utcNow);
             }
-            step.queued = start;
-            step.updated = step.updated;
+            (this as any).currentTime = step.updated;
         }
         await context.storage.save(step);
         if (lastError) {
@@ -201,6 +199,8 @@ export default class EternityContext {
         // this will ensure even empty workflow !!
         const schema = WorkflowRegistry.register(type, void 0);
 
+        const now = align(clock.utcNow);
+
         let lastError = null;
         while(tries--) {
             try {
@@ -213,7 +213,6 @@ export default class EternityContext {
                     return id;
                 }
 
-                const now = clock.utcNow;
                 eta ??= now;
                 await this.storage.save({
                     id,
@@ -246,28 +245,32 @@ export default class EternityContext {
         result,
         throwIfNotWaiting = false
     }: { name: string, result?: string, throwIfNotWaiting?: boolean}) {
-        let w = await this.storage.getWorkflow(id);
-        if(!w?.lastID) {
+        const parent = await this.storage.getWorkflow(id);
+        if(!parent?.lastID) {
             if (throwIfNotWaiting) {
                 throw new Error(`Workflow ${id} is not waiting for any events`);
             }
             return;
         }
-        w = await this.storage.getAny(w.lastID);
+        const w = await this.storage.getAny(parent.lastID);
         if (w.state === "failed" || w.state === "done") {
             return;
         }
         w.output = JSON.stringify({ name, result });
         w.state = "done";
-        w.updated = DateTime.utcNow;
+        w.updated = align(this.storage.clock.utcNow);
         // set eta of parent...
         await this.storage.save(w);
-        const parent = await this.storage.getAny(w.parentID);
         parent.lockTTL = null;
         parent.lockToken = null;
+        parent.eta = w.updated;
         parent.updated = w.updated;
         await this.storage.save(parent);
         this.waiter?.abort();
+    }
+
+    public log ( ... a: any[]) {
+        // console.log(... a);
     }
 
     public async processQueueOnce(signal?: AbortSignal) {
@@ -329,10 +332,12 @@ export default class EternityContext {
 
         try {
 
+            this.log(`Run workflow ${workflow.id} -----------------------------------`);
+
             const schema = WorkflowRegistry.getByName(workflow.name);
-            const { eta, id, updated } = workflow;
+            const { eta, id, queued } = workflow;
             const input = JSON.parse(workflow.input);
-            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(updated) }, this);
+            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(queued) }, this);
             for (const iterator of schema.activities) {
                 instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
             }

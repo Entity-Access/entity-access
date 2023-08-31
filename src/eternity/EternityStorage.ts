@@ -189,7 +189,7 @@ export default class EternityStorage {
             }
 
             w.state ||= "queued";
-            w.updated = DateTime.utcNow;
+            w.updated ??= DateTime.utcNow;
             await db.saveChanges();
         });
     }

@@ -28,7 +28,7 @@ class MockClock extends WorkflowClock {
     }
 }
 
-@RegisterScoped
+@RegisterSingleton
 class StateLogger {
     state: string;
 }
@@ -64,6 +64,7 @@ class VerifyWorkflow extends Workflow<string, string> {
         state: string,
         @Inject stateLogger?: StateLogger
     ) {
+        console.log(`${state} logged`);
         stateLogger.state = state;
     }
 
@@ -106,16 +107,13 @@ export default async function (this: TestConfig) {
     await c.raiseEvent(id, { name: "resend"});
     mockClock.add(TimeSpan.fromSeconds(5));
     await c.processQueueOnce();
-    mockClock.add(TimeSpan.fromSeconds(5));
-    await c.processQueueOnce();
-    mockClock.add(TimeSpan.fromSeconds(5));
-    await c.processQueueOnce();
 
     assert.equal("resend", stateLogger.state);
 
     w = await c.get(VerifyWorkflow, id);
     assert.equal("queued", w.state);
 
+    mockClock.add(TimeSpan.fromSeconds(5));
     await c.raiseEvent(id, { name: "verify", result: "a"});
     mockClock.add(TimeSpan.fromSeconds(5));
     await c.processQueueOnce();
@@ -124,4 +122,11 @@ export default async function (this: TestConfig) {
     w = await c.get(VerifyWorkflow, id);
     assert.equal("done", w.state);
 
+    mockClock.add(TimeSpan.fromDays(1));
+    await c.processQueueOnce();
+
+    // make sure workflow is deleted...
+
+    w = await c.get(VerifyWorkflow, id);
+    assert.equal(null, w);
 }
