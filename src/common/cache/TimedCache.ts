@@ -1,13 +1,16 @@
-export default class TimedCache<TKey = any, T = any> {
+import CustomEvent from "../CustomEvent.js";
+
+export default class TimedCache<TKey = any, T = any> extends EventTarget {
 
     private map: Map<TKey,{ value: any, expire: number, ttl: number, dispose?: (item: any) => any }> = new Map();
 
     constructor(private ttl = 15000) {
-        // intentional
+        super();
         setInterval((x) => x.clear(), this.ttl, this);
     }
 
     delete(key: any) {
+        this.dispatchEvent(new CustomEvent("deleted", { detail: key }));
         this.map.delete(key);
     }
 
@@ -15,6 +18,7 @@ export default class TimedCache<TKey = any, T = any> {
         let item = this.map.get(key);
         if (!item) {
             item = { value: factory(key, p1), ttl, expire: Date.now() + ttl };
+            this.dispatchEvent(new CustomEvent("created", { detail: { key, item }}));
             this.map.set(key, item);
         } else {
             item.expire = Date.now() + ttl;
@@ -31,6 +35,7 @@ export default class TimedCache<TKey = any, T = any> {
         let item = this.map.get(key);
         if (!item) {
             item = { value: factory(key), ttl, expire: Date.now() + ttl, dispose };
+            this.dispatchEvent(new CustomEvent("created", { detail: { key, item }}));
             this.map.set(key, item);
             // we need to make sure we do not cache
             // the promise if it fails
