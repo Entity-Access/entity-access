@@ -164,7 +164,7 @@ export class UserCategory {
     })
     public categoryID: string;
 
-    @Column({})
+    @Column({ default: () => Sql.date.now()})
     public lastUpdated: DateTime;
 
     public user: User;

@@ -8,6 +8,7 @@ import "reflect-metadata";
 
 interface IColumnDefinition<T> extends Omit<Omit<IColumn, "type">,"name"> {
     computed?: (x: T) => any;
+    default?: () => any;
     stored?: boolean;
 };
 
@@ -41,6 +42,7 @@ export default function Column<T>(cfg: IColumnDefinition<T> = {} as any): ((targ
             c.generated = "computed";
             c.stored ??= true;
         }
+        c.default = cfg.default;
 
         model.addColumn(c);
     };

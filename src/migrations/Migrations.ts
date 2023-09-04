@@ -23,6 +23,13 @@ export default abstract class Migrations {
                     const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
                     column.computed = textQuery.join("").replace(r, "");
                 }
+                if (column.default && typeof column.default !== "string") {
+                    // parse..
+                    const source = context.query(type.typeClass) as EntityQuery<any>;
+                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.default}` as any);
+                    const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
+                    column.default = textQuery.join("").replace(r, "");
+                }
             }
 
             await this.migrateTable(context, type);
