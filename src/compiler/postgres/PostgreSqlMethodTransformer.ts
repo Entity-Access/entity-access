@@ -136,6 +136,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         endsWith(text, test) {
             return prepareAny `strpos(${text}, ${test}) = length(${text}) - length(${test})`;
         },
+        includes(text, test) {
+            return prepareAny `(strpos(${text}, ${test}) > 0)`;
+        },
         iLike(text, test) {
             return prepareAny `(${text} iLike ${test})`;
         },

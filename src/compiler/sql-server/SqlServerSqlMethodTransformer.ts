@@ -135,6 +135,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         endsWith(text, test) {
             return prepareAny `CHARINDEX(${text}, ${test}) = LEN(${text}) - LEN(${test})`;
         },
+        includes(text, test) {
+            return prepareAny `(CHARINDEX(${text}, ${test}) > 0)`;
+        },
         iLike(text, test) {
             return prepareAny `(${text} like ${test})`;
         },
