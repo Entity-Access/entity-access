@@ -142,7 +142,7 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `(${text} like ${test})`;
         },
         iLikeAny(text, test) {
-            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
+            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
         },
         indexOf(text, test) {
             return prepareAny `(CHARINDEX(${text}, ${test}) - 1)`;
@@ -154,7 +154,7 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `(${text} LIKE ${test})`;
         },
         likeAny(text, test) {
-            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
+            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
         },
         lower(text) {
             return prepareAny `LOWER(${text})`;
