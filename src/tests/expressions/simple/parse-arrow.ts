@@ -20,6 +20,9 @@ export default function () {
 
     assert.equal(`((x.firstName = $1) OR (x.middleName = $2)) AND (x.lastName <> $3)`, r.text);
 
+    r = compiler.execute({ name }, (p) => (x) => x.lastName !== p.name || (x.firstName === p.name || x.middleName === p.name));
+
+    assert.equal(`(x.lastName <> $1) OR ((x.firstName = $2) OR (x.middleName = $3))`, r.text);
 
     const sqlServerCompiler = new QueryCompiler({});
     r = sqlServerCompiler.execute({ name }, (p) => (x) => x.firstName === p.name && x.lastName !== p.name);
