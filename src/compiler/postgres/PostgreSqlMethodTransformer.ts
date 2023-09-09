@@ -136,11 +136,14 @@ export const PostgreSqlHelper: ISqlHelpers = {
         endsWith(text, test) {
             return prepareAny `strpos(${text}, ${test}) = length(${text}) - length(${test})`;
         },
+        includes(text, test) {
+            return prepareAny `(strpos(${text}, ${test}) > 0)`;
+        },
         iLike(text, test) {
             return prepareAny `(${text} iLike ${test})`;
         },
         iLikeAny(text, test) {
-            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
+            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
         },
         indexOf(text, test) {
             return prepareAny `(strpos(${text}, ${test}) - 1)`;
@@ -152,7 +155,7 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return prepareAny `(${text} LIKE ${test})`;
         },
         likeAny(text, test) {
-            return ["(", (x)=> joinMap(" || ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
+            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
         },
         lower(text) {
             return prepareAny `LOWER(${text})`;

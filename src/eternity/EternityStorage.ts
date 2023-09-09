@@ -50,7 +50,7 @@ export class WorkflowStorage {
     @Column({ })
     public updated: DateTime;
 
-    @Column({ dataType: "Int", default: "0"})
+    @Column({ dataType: "Int", default: () => 0})
     public priority: number;
 
     @Column({ nullable: true })

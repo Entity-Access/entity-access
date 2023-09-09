@@ -26,7 +26,7 @@ export default abstract class Migrations {
                 if (column.default && typeof column.default !== "string") {
                     // parse..
                     const source = context.query(type.typeClass) as EntityQuery<any>;
-                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.default}` as any);
+                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.default.toString().replace("()", "(x)")}` as any);
                     const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
                     column.default = textQuery.join("").replace(r, "");
                 }

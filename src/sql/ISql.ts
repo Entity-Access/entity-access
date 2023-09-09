@@ -45,6 +45,7 @@ export interface ISql {
          * @param test string to search
          */
         indexOf(text: string, test: string): number;
+        includes(text: string, test: string): boolean;
         normalize(text: string, kind?: string): string;
         collate(text: string, collation: string): string;
         lower(text: string): string;
