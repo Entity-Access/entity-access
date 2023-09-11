@@ -154,12 +154,14 @@ export default class ChangeEntry<T = any> implements IChanges {
             }
         }
 
+        // we will set the identity key
+        this.changeSet[privateUpdateEntry](this);
+
         for (const iterator of this.pending) {
             iterator();
         }
 
-        // we will set the identity key
-        this.changeSet[privateUpdateEntry](this);
+        this.setupInverseProperties();
 
         this.pending.length = 0;
         this.original = { ... this.entity };
