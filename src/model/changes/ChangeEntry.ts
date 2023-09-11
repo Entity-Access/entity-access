@@ -263,7 +263,12 @@ export default class ChangeEntry<T = any> implements IChanges {
             }
             if (Array.isArray(related)) {
                 for (const r of related) {
-                    r[iterator.relatedName] = this.entity;
+                    const existing = r[iterator.relatedName];
+                    if (existing !== this.entity) {
+                        r[iterator.relatedName] = this.entity;
+                        const rc = this.changeSet.getEntry(r);
+                        rc.detect();
+                    }
                 }
                 continue;
             }
