@@ -165,16 +165,16 @@ export default class EntityContext {
                     pending.push({ status: iterator.status, change: iterator, events });
                     iterator.setupInverseProperties();
                     continue;
-                case "deleted":
-                    await events.beforeDelete(iterator.entity, iterator);
+                case "modified":
+                    await events.beforeUpdate(iterator.entity, iterator);
                     if (this.verifyFilters) {
                         verificationSession.queueVerification(iterator, events);
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
                     iterator.setupInverseProperties();
                     continue;
-                case "modified":
-                    await events.beforeUpdate(iterator.entity, iterator);
+                case "deleted":
+                    await events.beforeDelete(iterator.entity, iterator);
                     if (this.verifyFilters) {
                         verificationSession.queueVerification(iterator, events);
                     }
@@ -196,12 +196,12 @@ export default class EntityContext {
                     case "inserted":
                         await events.afterInsert(entity, change);
                         continue;
-                    case "deleted":
-                        await events.afterDelete(entity, change);
-                        continue;
                     case "modified":
                         await events.afterUpdate(entity, change);
                         change.clearUpdated();
+                        continue;
+                    case "deleted":
+                        await events.afterDelete(entity, change);
                         continue;
                 }
             }
