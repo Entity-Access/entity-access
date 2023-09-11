@@ -163,6 +163,7 @@ export default class EntityContext {
                         verificationSession.queueVerification(iterator, events);
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
+                    iterator.setupInverseProperties();
                     continue;
                 case "deleted":
                     await events.beforeDelete(iterator.entity, iterator);
@@ -170,6 +171,7 @@ export default class EntityContext {
                         verificationSession.queueVerification(iterator, events);
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
+                    iterator.setupInverseProperties();
                     continue;
                 case "modified":
                     await events.beforeUpdate(iterator.entity, iterator);
