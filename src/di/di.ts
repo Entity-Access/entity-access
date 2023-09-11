@@ -262,7 +262,7 @@ export default function Inject(target, key, index?: number): any {
             // get is compatible with AtomWatcher
             // as it will ignore getter and it will
             // not try to set a binding refresher
-            Object.defineProperty(target, key, {
+            Object.defineProperty(this, key, {
                 get: () => result
             });
             return result;
