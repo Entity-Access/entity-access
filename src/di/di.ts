@@ -79,7 +79,7 @@ export class ServiceProvider implements IDisposable {
                     this.map.set(type, instance);
                     instance[serviceProvider] = this;
                     instance[globalServiceProvider] = this[globalServiceProvider];
-                    if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
+                    if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
                         (this.disposables ??= []).push(instance);
                     }
                 }
@@ -92,7 +92,7 @@ export class ServiceProvider implements IDisposable {
                     instance[serviceProvider] = this;
                     instance[globalServiceProvider] = sp;
                     sp.map.set(type, instance);
-                    if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
+                    if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
                         (sp.disposables ??= []).push(instance);
                     }
                 }
@@ -106,10 +106,10 @@ export class ServiceProvider implements IDisposable {
     }
 
     dispose() {
-        this[Symbol.disposable]();
+        this[Symbol.dispose]();
     }
 
-    [Symbol.disposable]() {
+    [Symbol.dispose]() {
         const disposables = this.disposables;
         if (!disposables) {
             return;

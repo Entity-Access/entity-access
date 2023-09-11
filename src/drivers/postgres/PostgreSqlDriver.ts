@@ -63,7 +63,7 @@ class DbReader implements IDbReader {
 
         try {
             if (this.client) {
-                await this.client[Symbol.asyncDisposable]();
+                await this.client[Symbol.asyncDispose]();
             }
         } catch (error) {
             console.error(error.stack ?? error);
@@ -136,7 +136,7 @@ class PostgreSqlConnection extends BaseConnection {
             rollback: () => tx.query("ROLLBACK"),
             dispose: () => {
                 this.transaction = null;
-                return tx[Symbol.asyncDisposable]();
+                return tx[Symbol.asyncDispose]();
             }
         };
     }
@@ -163,7 +163,7 @@ class PostgreSqlConnection extends BaseConnection {
             throw new Error(`Failed executing ${text}\n${error}`);
         } finally {
             if (!this.transaction) {
-                await connection[Symbol.asyncDisposable]();
+                await connection[Symbol.asyncDispose]();
             }
         }
     }
