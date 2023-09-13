@@ -13,8 +13,10 @@ export class QueryExpander {
         const qe = new QueryExpander(context, select, filter);
         const expression = ArrowToExpression.transform(`(_____________________x) => ${p}` as any);
         qe.expandNode(select, select.model, expression.body as ExpressionType);
-        return select;
+        return qe.include;
     }
+
+    private include: SelectStatement[] = [];
 
     constructor(
         private context: EntityContext,
@@ -122,16 +124,16 @@ export class QueryExpander {
 
 
             const joins = (select.joins ??= []);
-            // const joinParameter = Expression.parameter(parent.sourceParameter.name);
+            const joinParameter = Expression.parameter(parent.sourceParameter.name);
             // joinParameter.model = parent.sourceParameter.model;
             joins.push(JoinExpression.create({
                 joinType: "LEFT",
-                source: parent.source as TableSource,
-                as: parent.sourceParameter,
+                source: { ... parent },
+                as: joinParameter,
                 model,
                 where: Expression.equal(
                     Expression.member(
-                        parent.sourceParameter,
+                        joinParameter,
                         Expression.identifier(keyColumn)
                     ),
                     Expression.member(
@@ -141,19 +143,19 @@ export class QueryExpander {
                 )
             }));
 
-            if (parent.where) {
-                select.where = select.where
-                    ? Expression.logicalAnd(select.where, parent.where)
-                    : parent.where;
-            }
+            // if (parent.where) {
+            //     select.where = select.where
+            //         ? Expression.logicalAnd(select.where, parent.where)
+            //         : parent.where;
+            // }
 
-            if (parent.joins?.length) {
-                 joins.push(... parent.joins);
-            }
+            // if (parent.joins?.length) {
+            //      joins.push(... parent.joins);
+            // }
             // Object.setPrototypeOf(select, SelectStatement.prototype);
             // const text = DebugStringVisitor.expressionToString(select);
             // console.log(text);
-            (this.select.include ??= []).push(select);
+            this.include.push(select);
             return [select, relation.relatedEntity];
         }
 
@@ -184,7 +186,7 @@ export class QueryExpander {
             ? Expression.logicalAnd(select.where, existsWhere)
             : existsWhere;
 
-        (this.select.include ??= []).push(select);
+        this.include.push(select);
 
         return [select, relation.relatedEntity];
     }

@@ -1,16 +1,20 @@
 import CustomEvent from "../CustomEvent.js";
+import EventSet from "../EventSet.js";
 
-export default class TimedCache<TKey = any, T = any> extends EventTarget {
+export default class TimedCache<TKey = any, T = any> {
+
+    public deletedEvent = new EventSet<TKey>(this);
+
+    public addedEvent = new EventSet<{ key: TKey, value: T}>(this);
 
     private map: Map<TKey,{ value: any, expire: number, ttl: number, dispose?: (item: any) => any }> = new Map();
 
     constructor(private ttl = 15000) {
-        super();
         setInterval((x) => x.clear(), this.ttl, this);
     }
 
     delete(key: any) {
-        this.dispatchEvent(new CustomEvent("deleted", { detail: key }));
+        this.deletedEvent.dispatch(key);
         this.map.delete(key);
     }
 
@@ -18,7 +22,7 @@ export default class TimedCache<TKey = any, T = any> extends EventTarget {
         let item = this.map.get(key);
         if (!item) {
             item = { value: factory(key, p1), ttl, expire: Date.now() + ttl };
-            this.dispatchEvent(new CustomEvent("created", { detail: { key, item }}));
+            this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
         } else {
             item.expire = Date.now() + ttl;
@@ -35,7 +39,7 @@ export default class TimedCache<TKey = any, T = any> extends EventTarget {
         let item = this.map.get(key);
         if (!item) {
             item = { value: factory(key), ttl, expire: Date.now() + ttl, dispose };
-            this.dispatchEvent(new CustomEvent("created", { detail: { key, item }}));
+            this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
             // we need to make sure we do not cache
             // the promise if it fails
@@ -61,6 +65,7 @@ export default class TimedCache<TKey = any, T = any> extends EventTarget {
                 expired.push(key);
                 // call dispose..
                 this.map.delete(key);
+                this.deletedEvent.dispatch(key);
                 try {
                     const r = value.dispose?.(value.value);
                     if (r?.then) {

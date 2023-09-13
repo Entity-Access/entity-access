@@ -506,7 +506,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if(!e) {
             return [];
         }
-        const table = this.visit(e.source);
+        const table = e.source.type === "SelectStatement" ? prepare `(${this.visit(e.source)})` : this.visit(e.source);
         const where = this.visit(e.where);
         const as = e.as ? prepare ` AS ${ e.as.type === "Identifier"
             ? e.as.value

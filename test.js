@@ -35,10 +35,27 @@ const results = [];
 
 let start = Date.now();
 
+const onlyPostGres = process.argv.some((x) => x === "--test-only-postgres");
+
 export default class TestRunner {
 
     static get drivers() {
         const database = "D" + (start++);
+
+        if (onlyPostGres) {
+            return [
+                new PostgreSqlDriver({
+                    database,
+                    host,
+                    user: "postgres",
+                    password: "abcd123",
+                    port: postGresPort,
+                    // deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
+                })
+            ];
+    
+        }
+
         return [
             new PostgreSqlDriver({
                 database,
