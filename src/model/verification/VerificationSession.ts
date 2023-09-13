@@ -97,7 +97,8 @@ export default class VerificationSession {
             events: relatedEvents,
             type: relatedModel,
             name: relation.name,
-            fkName: relation.fkColumn.name
+            fkName: relation.fkColumn.name,
+            entity: change.entity
         });
         let query = events.onForeignKeyFilter(fk);
         if (query === void 0) {
