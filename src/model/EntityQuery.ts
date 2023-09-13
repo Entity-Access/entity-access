@@ -20,6 +20,7 @@ export default class EntityQuery<T = any>
     public selectStatement: SelectStatement;
     public signal?: AbortSignal;
     public traceQuery: (text: string) => void;
+    public includes: any[];
     constructor (p: Partial<EntityQuery<any>>
     ) {
         // lets clone select...
@@ -73,10 +74,10 @@ export default class EntityQuery<T = any>
     }
 
     include(p: any): any {
-        const selectStatement = QueryExpander.expand(this.context, { ... this.selectStatement }, p, !this.selectStatement[filteredSymbol]);
         return new EntityQuery({
             ... this,
-            selectStatement
+            includes: this.includes ? [ ... this.includes, p] : [p]
+            // selectStatement
         });
     }
 
@@ -89,6 +90,7 @@ export default class EntityQuery<T = any>
     }
 
     async *enumerate(): AsyncGenerator<T, any, unknown> {
+
         const scope = new DisposableScope();
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query: { text: string, values: any[]};
@@ -99,12 +101,12 @@ export default class EntityQuery<T = any>
 
             const relationMapper = new RelationMapper(this.context.changeSet);
 
-            const include = this.selectStatement.include;
+            const include = this.includes;
             if (include?.length > 0) {
                 // since we will be streaming results...
                 // it is important that we load all the
                 // included entities first...
-                const loaders = include.map((x) => this.load(relationMapper, session, x, signal));
+                const loaders = include.map((x) => QueryExpander.expand(this.context, { ... this.selectStatement } , x, false).map((y) => this.load(relationMapper, session, y, signal))).flat(2);
                 await Promise.all(loaders);
             }
 
