@@ -125,10 +125,13 @@ export class QueryExpander {
 
             const joins = (select.joins ??= []);
             const joinParameter = Expression.parameter(parent.sourceParameter.name);
-            // joinParameter.model = parent.sourceParameter.model;
+
+            // This join has to be INNER JOIN as we are only interested
+            // in the results that matches parent query exactly
+
             joins.push(JoinExpression.create({
-                joinType: "LEFT",
-                source: { ... parent },
+                joinType: "INNER",
+                source: { ... parent, fields: [ Expression.member(parent.sourceParameter, keyColumn) ] },
                 as: joinParameter,
                 model,
                 where: Expression.equal(
