@@ -16,40 +16,36 @@ export default async function (this: TestConfig) {
 
     const global = new ServiceProvider();
     global.add(BaseDriver, this.driver);
-    const scope = global.createScope();
 
-    try {
+    using scope = global.createScope();
 
-        const userID = 1;
-        const user = new UserInfo();
-        user.userID = userID;
-        scope.add(Logger, Logger.instance);
-        scope.add(BaseDriver, this.driver);
-        scope.add(UserInfo, user);
-        scope.add(ContextEvents, new ShoppingContextEvents());
-        const context = scope.create(ShoppingContext);
+    const userID = 1;
+    const user = new UserInfo();
+    user.userID = userID;
+    scope.add(Logger, Logger.instance);
+    scope.add(BaseDriver, this.driver);
+    scope.add(UserInfo, user);
+    scope.add(ContextEvents, new ShoppingContextEvents());
+    const context = scope.create(ShoppingContext);
 
-        const first = await context.products.all().first();
-        first.name = "First Product";
-        const fe = context.changeSet.getEntry(first);
-        await context.saveChanges();
+    const first = await context.products.all().first();
+    first.name = "First Product";
+    const fe = context.changeSet.getEntry(first);
+    await context.saveChanges();
 
-        assert.notStrictEqual(undefined, first.nameUpdated);
-        assert.equal(true, first.nameUpdated);
-        assert.equal(false, fe.isUpdated("name"));
+    assert.notStrictEqual(undefined, first.nameUpdated);
+    assert.equal(true, first.nameUpdated);
+    assert.equal(false, fe.isUpdated("name"));
 
-        const status = statusPublished;
-        // create new product...
-        const p = context.products.add({
-            name: "A",
-            status,
-            ownerID: userID
-        });
-        assert.equal(void 0, p.afterInsertInvoked);
-        await context.saveChanges();
-        assert.equal(true, p.afterInsertInvoked);
-    } finally {
-        scope.dispose();
-    }
+    const status = statusPublished;
+    // create new product...
+    const p = context.products.add({
+        name: "A",
+        status,
+        ownerID: userID
+    });
+    assert.equal(void 0, p.afterInsertInvoked);
+    await context.saveChanges();
+    assert.equal(true, p.afterInsertInvoked);
 
 }

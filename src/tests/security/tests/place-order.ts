@@ -20,7 +20,6 @@ export default async function(this: TestConfig) {
         await addNewOrder.call(this, customer, 1);
         assert.fail("No error thrown");
     } catch(error) {
-
     }
 
     await getNewOrders.call(this);
@@ -31,107 +30,99 @@ export default async function(this: TestConfig) {
 async function createInterests(this: TestConfig) {
     const global = new ServiceProvider();
     global.add(BaseDriver, this.driver);
-    const scope = global.createScope();
-    try {
-        const userID = 2;
-        const user = new UserInfo();
-        user.userID = userID;
-        ServiceCollection.register("Singleton", Logger, () => Logger.instance);
-        scope.add(BaseDriver, this.driver);
-        scope.add(UserInfo, user);
-        ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
-        const context = scope.create(ShoppingContext);
-        context.verifyFilters = false;
-        context.raiseEvents = false;
+    using scope = global.createScope();
 
-        const headPhone = await context.products.all().include((x) => x.categories).firstOrFail();
-        const category = headPhone.categories[0];
+    const userID = 2;
+    const user = new UserInfo();
+    user.userID = userID;
+    ServiceCollection.register("Singleton", Logger, () => Logger.instance);
+    scope.add(BaseDriver, this.driver);
+    scope.add(UserInfo, user);
+    ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
+    const context = scope.create(ShoppingContext);
+    context.verifyFilters = false;
+    context.raiseEvents = false;
 
-        context.userCategories.add({
-            userID,
-            categoryID: category.categoryID,
-            lastUpdated: DateTime.utcNow
-        });
+    const headPhone = await context.products.all().include((x) => x.categories).firstOrFail();
+    const category = headPhone.categories[0];
 
-        await context.saveChanges();
+    context.userCategories.add({
+        userID,
+        categoryID: category.categoryID,
+        lastUpdated: DateTime.utcNow
+    });
 
-        const userCategories = await context.userCategories.where({ userID }, (p) => (x) => x.userID === p.userID).count();
+    await context.saveChanges();
 
-        assert.equal(1, userCategories);
+    const userCategories = await context.userCategories.where({ userID }, (p) => (x) => x.userID === p.userID).count();
 
-    } finally {
-        scope.dispose();
-    }
+    assert.equal(1, userCategories);
+
 }
 
 async function getNewOrders(this: TestConfig) {
     const global = new ServiceProvider();
     global.add(BaseDriver, this.driver);
-    const scope = global.createScope();
-    try {
-        const user = new UserInfo();
-        user.userID = 2;
-        ServiceCollection.register("Singleton", Logger, () => Logger.instance);
-        scope.add(BaseDriver, this.driver);
-        scope.add(UserInfo, user);
-        ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
-        const context = scope.create(ShoppingContext);
-        context.verifyFilters = true;
 
-        const order = await context.orders.all().first();
+    using scope = global.createScope();
 
-        order.orderDate = new Date();
-        await context.saveChanges();
+    const user = new UserInfo();
+    user.userID = 2;
+    ServiceCollection.register("Singleton", Logger, () => Logger.instance);
+    scope.add(BaseDriver, this.driver);
+    scope.add(UserInfo, user);
+    ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
+    const context = scope.create(ShoppingContext);
+    context.verifyFilters = true;
 
-    } finally {
-        scope.dispose();
-    }
+    const order = await context.orders.all().first();
+
+    order.orderDate = new Date();
+    await context.saveChanges();
+
 }
 
 async function addNewOrder(this: TestConfig, customer: User, userID?) {
     const global = new ServiceProvider();
     global.add(BaseDriver, this.driver);
-    const scope = global.createScope();
-    try {
-        const user = new UserInfo();
-        user.userID = userID ?? customer.userID;
-        ServiceCollection.register("Singleton", Logger, () => Logger.instance);
-        scope.add(BaseDriver, this.driver);
-        scope.add(UserInfo, user);
-        ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
-        const context = scope.create(ShoppingContext);
-        context.verifyFilters = true;
 
-        // get first headphone...
-        const headPhone = await context.products.all().firstOrFail();
-        const headPhonePrice = await context.productPrices.where({ id: headPhone.productID }, (p) => (x) => x.productID === p.id).firstOrFail();
+    using scope = global.createScope();
 
-        context.orders.add({
-            customer,
-            orderDate: new Date(),
-            orderItems: [
-                context.orderItems.add({
-                    product: headPhone,
-                    productPrice: headPhonePrice,
-                    amount: headPhonePrice.amount,
-                })
-            ]
-        });
+    const user = new UserInfo();
+    user.userID = userID ?? customer.userID;
+    ServiceCollection.register("Singleton", Logger, () => Logger.instance);
+    scope.add(BaseDriver, this.driver);
+    scope.add(UserInfo, user);
+    ServiceCollection.register("Singleton", ContextEvents, () => new ShoppingContextEvents());
+    const context = scope.create(ShoppingContext);
+    context.verifyFilters = true;
 
-        await context.saveChanges();
+    // get first headphone...
+    const headPhone = await context.products.all().firstOrFail();
+    const headPhonePrice = await context.productPrices.where({ id: headPhone.productID }, (p) => (x) => x.productID === p.id).firstOrFail();
 
-        // lets filter the orders
+    context.orders.add({
+        customer,
+        orderDate: new Date(),
+        orderItems: [
+            context.orderItems.add({
+                product: headPhone,
+                productPrice: headPhonePrice,
+                amount: headPhonePrice.amount,
+            })
+        ]
+    });
 
-        const f = context.orders.filtered();
-        const myOrders = await f.count();
-        assert.equal(1, myOrders);
+    await context.saveChanges();
 
-        const all = await context.orders.all().count();
-        assert.notEqual(all, myOrders);
+    // lets filter the orders
 
-    } finally {
-        scope.dispose();
-    }
+    const f = context.orders.filtered();
+    const myOrders = await f.count();
+    assert.equal(1, myOrders);
+
+    const all = await context.orders.all().count();
+    assert.notEqual(all, myOrders);
 }
 
 async function createUser(config: TestConfig) {

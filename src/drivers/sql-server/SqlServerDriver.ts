@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
-import { BaseConnection, BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import sql from "mssql";
 import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
@@ -234,7 +234,7 @@ class SqlReader implements IDbReader {
     dispose(): Promise<any> {
         return Promise.resolve();
     }
-    [disposableSymbol]?(): void {
+    [Symbol.dispose](): void {
         this.dispose()?.catch((error) => console.error(error));
     }
 

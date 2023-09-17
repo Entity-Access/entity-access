@@ -5,10 +5,8 @@ import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
 import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
-export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
-
 interface IDisposable {
-    [disposableSymbol]?(): void;
+    [Symbol.dispose]?(): void;
 }
 
 export interface IRecord {
