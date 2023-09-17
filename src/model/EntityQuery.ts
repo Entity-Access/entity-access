@@ -1,6 +1,6 @@
 import EntityAccessError from "../common/EntityAccessError.js";
 import Logger from "../common/Logger.js";
-import { DisposableScope } from "../common/usingAsync.js";
+import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
@@ -91,7 +91,7 @@ export default class EntityQuery<T = any>
 
     async *enumerate(): AsyncGenerator<T, any, unknown> {
 
-        const scope = new DisposableScope();
+        await using scope = new AsyncDisposableScope();
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query: { text: string, values: any[]};
         try {
@@ -131,8 +131,6 @@ export default class EntityQuery<T = any>
         } catch(error) {
             session.error(`Failed executing ${query?.text}\n${error.stack ?? error}`);
             throw error;
-        } finally {
-            await scope.dispose();
         }
     }
 
@@ -221,7 +219,7 @@ export default class EntityQuery<T = any>
 
         const nq = new EntityQuery({ ... this, selectStatement: select });
 
-        const scope = new DisposableScope();
+        await using scope = new AsyncDisposableScope();
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query;
         try {
@@ -237,8 +235,6 @@ export default class EntityQuery<T = any>
         } catch (error) {
             session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
             throw error;
-        } finally {
-            await scope.dispose();
         }
 
     }
@@ -262,7 +258,7 @@ export default class EntityQuery<T = any>
 
         const nq = new EntityQuery({ ... this, selectStatement: select });
 
-        const scope = new DisposableScope();
+        await using scope = new AsyncDisposableScope();
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query;
         try {
@@ -278,8 +274,6 @@ export default class EntityQuery<T = any>
         } catch (error) {
             session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
             throw error;
-        } finally {
-            await scope.dispose();
         }
 
     }
