@@ -124,7 +124,7 @@ export abstract class BaseDriver {
         const values = [] as Constant[];
         for (const iterator of type.columns) {
             const literal = Identifier.create({ value: iterator.columnName });
-            if (iterator.autoGenerate) {
+            if (iterator.generated) {
                 returnFields.push(literal);
                 continue;
             }

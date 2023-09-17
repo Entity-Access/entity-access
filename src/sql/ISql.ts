@@ -21,6 +21,7 @@ export interface ISql {
 
     text: {
         concat(... fragments: string[]): string;
+        concatImmutable(... fragments: string[]): string;
         /**
          * Concat with separator
          * @param separator separator used to join
@@ -30,6 +31,8 @@ export interface ISql {
         difference(left: string, right: string): number;
         like(text: string, test: string): boolean;
         iLike(text: string, test: string): boolean;
+        likeAny(text: string, test: string[]): boolean;
+        iLikeAny(text: string, test: string[]): boolean;
         left(text: string, length: number): string;
         right(text: string, length: number): string;
         startsWith(text: string, test: string): boolean;
@@ -42,6 +45,7 @@ export interface ISql {
          * @param test string to search
          */
         indexOf(text: string, test: string): number;
+        includes(text: string, test: string): boolean;
         normalize(text: string, kind?: string): string;
         collate(text: string, collation: string): string;
         lower(text: string): string;

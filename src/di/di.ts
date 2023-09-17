@@ -79,7 +79,7 @@ export class ServiceProvider implements IDisposable {
                     this.map.set(type, instance);
                     instance[serviceProvider] = this;
                     instance[globalServiceProvider] = this[globalServiceProvider];
-                    if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
+                    if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
                         (this.disposables ??= []).push(instance);
                     }
                 }
@@ -92,24 +92,24 @@ export class ServiceProvider implements IDisposable {
                     instance[serviceProvider] = this;
                     instance[globalServiceProvider] = sp;
                     sp.map.set(type, instance);
-                    if (instance[Symbol.disposable] || instance[Symbol.asyncDisposable]) {
+                    if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
                         (sp.disposables ??= []).push(instance);
                     }
                 }
                 return  instance;
             case "Transient":
-                instance = sp.createFromDescriptor(sd);
+                instance = this.createFromDescriptor(sd);
                 instance[serviceProvider] = this;
-                instance[globalServiceProvider] = sp;
+                instance[globalServiceProvider] = this[globalServiceProvider];
                 return instance;
         }
     }
 
     dispose() {
-        this[Symbol.disposable]();
+        this[Symbol.dispose]();
     }
 
-    [Symbol.disposable]() {
+    [Symbol.dispose]() {
         const disposables = this.disposables;
         if (!disposables) {
             return;
@@ -262,7 +262,7 @@ export default function Inject(target, key, index?: number): any {
             // get is compatible with AtomWatcher
             // as it will ignore getter and it will
             // not try to set a binding refresher
-            Object.defineProperty(target, key, {
+            Object.defineProperty(this, key, {
                 get: () => result
             });
             return result;

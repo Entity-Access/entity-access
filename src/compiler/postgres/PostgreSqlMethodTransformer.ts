@@ -1,4 +1,4 @@
-import { prepareAny } from "../../query/ast/IStringTransformer.js";
+import { joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers } from "../ISqlHelpers.js";
@@ -8,8 +8,8 @@ const onlyAlphaNumeric = (x: string) => x.replace(/\W/g, "");
 
 export const PostgreSqlHelper: ISqlHelpers = {
     ... Sql,
-    in(a, array) {
-        return prepareAny`${a} IN ${array}`;
+    in(a, array: any) {
+        return prepareAny `${a} IN (${(x)=> joinMap(",", x, array)  })`;
     },
     coll: {
         sum(a) {
@@ -103,6 +103,19 @@ export const PostgreSqlHelper: ISqlHelpers = {
             text.push(")");
             return text as any;
         },
+        concatImmutable(...p) {
+            const text = ["("];
+            let first = true;
+            for (const iterator of p) {
+                if (!first) {
+                    text.push(" || ");
+                }
+                first = false;
+                text.push(iterator);
+            }
+            text.push(")");
+            return text as any;
+        },
         concatWS(...fragments) {
             const text = ["CONCAT_WS("];
             let first = true;
@@ -123,8 +136,14 @@ export const PostgreSqlHelper: ISqlHelpers = {
         endsWith(text, test) {
             return prepareAny `strpos(${text}, ${test}) = length(${text}) - length(${test})`;
         },
+        includes(text, test) {
+            return prepareAny `(strpos(${text}, ${test}) > 0)`;
+        },
         iLike(text, test) {
             return prepareAny `(${text} iLike ${test})`;
+        },
+        iLikeAny(text, test) {
+            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
         },
         indexOf(text, test) {
             return prepareAny `(strpos(${text}, ${test}) - 1)`;
@@ -134,6 +153,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         },
         like(text, test) {
             return prepareAny `(${text} LIKE ${test})`;
+        },
+        likeAny(text, test) {
+            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
         },
         lower(text) {
             return prepareAny `LOWER(${text})`;

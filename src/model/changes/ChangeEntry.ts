@@ -51,8 +51,8 @@ export default class ChangeEntry<T = any> implements IChanges {
      * @returns true/false
      */
     public isModified(field: keyof T) {
-        const column = this.type.getColumn(field as string);
-        return this.modified.has(column);
+        const column = this.type.getField(field as string);
+        return this.modified?.has(column) ?? false;
     }
 
     /**
@@ -61,8 +61,8 @@ export default class ChangeEntry<T = any> implements IChanges {
      * @returns true/false
      */
     public isUpdated(field: keyof T) {
-        const column = this.type.getColumn(field as string);
-        return this.updated.has(column);
+        const column = this.type.getField(field as string);
+        return this.updated?.has(column) ?? false;
     }
 
     public detect() {
@@ -81,7 +81,7 @@ export default class ChangeEntry<T = any> implements IChanges {
             let keysSet = true;
             let autoGenerate = false;
             for (const iterator of keys) {
-                autoGenerate ||= iterator.autoGenerate;
+                autoGenerate ||= iterator.generated as unknown as boolean;
                 if(entity[iterator.name] === void 0) {
                     keysSet = false;
                 }
@@ -154,12 +154,14 @@ export default class ChangeEntry<T = any> implements IChanges {
             }
         }
 
+        // we will set the identity key
+        this.changeSet[privateUpdateEntry](this);
+
         for (const iterator of this.pending) {
             iterator();
         }
 
-        // we will set the identity key
-        this.changeSet[privateUpdateEntry](this);
+        this.setupInverseProperties();
 
         this.pending.length = 0;
         this.original = { ... this.entity };
@@ -261,7 +263,10 @@ export default class ChangeEntry<T = any> implements IChanges {
             }
             if (Array.isArray(related)) {
                 for (const r of related) {
-                    r[iterator.relatedName] = this.entity;
+                    const existing = r[iterator.relatedName];
+                    if (existing !== this.entity) {
+                        r[iterator.relatedName] = this.entity;
+                    }
                 }
                 continue;
             }

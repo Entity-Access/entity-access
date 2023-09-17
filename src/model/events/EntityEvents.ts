@@ -10,9 +10,11 @@ const done = Promise.resolve() as Promise<void>;
 
 export class ForeignKeyFilter<T = any, TE = any> {
 
-    public type: EntityType;
-    public name: string;
-    public fkName: string;
+    public readonly type: EntityType;
+    public readonly name: string;
+    public readonly fkName: string;
+
+    public readonly entity: TE;
 
     private events: EntityEvents<TE>;
     private context: EntityContext;
@@ -43,6 +45,10 @@ export class ForeignKeyFilter<T = any, TE = any> {
 }
 
 export default class EntityEvents<T> {
+
+    public get verify() {
+        return true;
+    }
 
     filter(query: IEntityQuery<T>) {
         return query;

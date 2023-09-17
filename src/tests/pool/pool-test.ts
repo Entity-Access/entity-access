@@ -30,7 +30,7 @@ export default async function () {
 
         assert.notStrictEqual(c1, c2);
 
-        await c1[Symbol.asyncDisposable]();
+        await c1[Symbol.asyncDispose]();
 
         assert.equal(pool.freeSize, 1);
 
@@ -45,8 +45,8 @@ export default async function () {
 
         assert.strictEqual(pool.currentSize, 3);
 
-        await c4[Symbol.asyncDisposable]();
-        await c2[Symbol.asyncDisposable]();
+        await c4[Symbol.asyncDispose]();
+        await c2[Symbol.asyncDispose]();
 
         assert.equal(pool.currentSize, 3);
 
@@ -68,7 +68,7 @@ export default async function () {
 
         // free last after few milliseconds
         setTimeout(() => {
-            last[Symbol.asyncDisposable]().catch(console.error);
+            last[Symbol.asyncDispose]().catch(console.error);
         }, 10);
 
         // this should not fail

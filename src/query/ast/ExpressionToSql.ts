@@ -189,7 +189,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
             if (identifier?.value === "Sql") {
                 const argList = e.arguments?.map((x) => this.visit(x)) ?? [];
-                const transformedCallee = this.compiler.sqlMethodTransformer(this.compiler, chain, argList as any[]);
+                const transformedCallee = this.compiler.sqlMethodTransformer(this.compiler, chain, argList.map((al) => al.flat(2)) as any[]);
                 if (transformedCallee) {
                     return prepare `${transformedCallee}`;
                 }
@@ -384,8 +384,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitBinaryExpression(e: BinaryExpression): ITextQuery {
 
+        let { operator } = e;
+
+        if (operator === "||") {
+            operator = "OR";
+        }
+
+        if (operator === "&&") {
+            operator = "AND";
+        }
+
         // if it has OR .. make all joins LEFT join.
-        if (e.operator === "||" || e.operator === "OR") {
+        if (operator === "||" || operator === "OR") {
             if (this.selectStack.length > 0) {
                 const last = this.selectStack[this.selectStack.length-1];
                 last.preferLeftJoins = true;
@@ -405,22 +415,22 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             : this.visit(e.right);
 
         if ((e.right as ExpressionType).type === "NullExpression") {
-            if (e.operator === "===" || e.operator === "==" || e.operator === "=") {
+            if (operator === "===" || operator === "==" || operator === "=") {
                 return prepare `${left} IS NULL`;
             }
-            if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {
+            if (operator === "!==" || operator === "!=" || operator === "<>") {
                 return prepare `${left} IS NOT NULL`;
             }
         }
         if ((e.left as ExpressionType).type === "NullExpression") {
-            if (e.operator === "===" || e.operator === "==" || e.operator === "=") {
+            if (operator === "===" || operator === "==" || operator === "=") {
                 return prepare `${right} IS NULL`;
             }
-            if (e.operator === "!==" || e.operator === "!=" || e.operator === "<>") {
+            if (operator === "!==" || operator === "!=" || operator === "<>") {
                 return prepare `${right} IS NOT NULL`;
             }
         }
-        return prepare `${left} ${e.operator} ${right}`;
+        return prepare `${left} ${operator} ${right}`;
     }
 
     visitConditionalExpression(e: ConditionalExpression): ITextQuery {
@@ -444,7 +454,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (e.fields.length === 0) {
             return [];
         }
-        const fields = this.visitArray(e.fields).join(",");
+        const fields = this.visitArray(e.fields);
         return prepare ` RETURNING ${fields}`;
     }
 
@@ -496,7 +506,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if(!e) {
             return [];
         }
-        const table = this.visit(e.source);
+        const table = e.source.type === "SelectStatement" ? prepare `(${this.visit(e.source)})` : this.visit(e.source);
         const where = this.visit(e.where);
         const as = e.as ? prepare ` AS ${ e.as.type === "Identifier"
             ? e.as.value

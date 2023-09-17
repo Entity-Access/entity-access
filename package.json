@@ -1,11 +1,12 @@
 {
   "name": "@entity-access/entity-access",
-  "version": "1.0.122",
+  "version": "1.0.157",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test-plain": "node --enable-source-maps ./test.js no-db",
     "test": "node --enable-source-maps ./test.js",
+    "test-postgres": "node --enable-source-maps ./test.js --test-only-postgres",
     "postversion": "git push --follow-tags"
   },
   "type": "module",

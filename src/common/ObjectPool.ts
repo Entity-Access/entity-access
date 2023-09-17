@@ -31,7 +31,7 @@ interface IObjectPool<T> {
 }
 
 export type IPooledObject<T> = T & {
-    [Symbol.asyncDisposable](): Promise<any>;
+    [Symbol.asyncDispose](): Promise<any>;
 };
 
 /**
@@ -135,8 +135,8 @@ export default class ObjectPool<T> {
 
     private setupItem(item: T) {
         const pooledItem = item as IPooledObject<T>;
-        pooledItem[Symbol.asyncDisposable] = async () => {
-            delete this[Symbol.asyncDisposable];
+        pooledItem[Symbol.asyncDispose] = async () => {
+            delete this[Symbol.asyncDispose];
             if (this.free.length < this.poolSize) {
                 this.logger?.(`Pooled item ${pooledItem} freed.`);
                 this.free.push(pooledItem);
@@ -152,7 +152,7 @@ export default class ObjectPool<T> {
             void this.destroy(pooledItem)?.catch(console.error);
         };
         this.logger?.(`Pooled item ${pooledItem} acquired.`);
-        this.logger?.(`Item ${pooledItem} has disposable ${typeof pooledItem[Symbol.asyncDisposable]}`);
+        this.logger?.(`Item ${pooledItem} has disposable ${typeof pooledItem[Symbol.asyncDispose]}`);
         return item as IPooledObject<T>;
     }
 }

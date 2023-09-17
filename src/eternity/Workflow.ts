@@ -65,9 +65,12 @@ export default abstract class Workflow<TIn = any, TOut = any> {
         return Promise.resolve("");
     }
 
-    protected waitForExternalEvent(ts: TimeSpan, ... names: string[]) {
+    protected waitForExternalEvent<T = any, TA extends string[] = string[]>(ts: TimeSpan, ... names: TA) {
         // do nothing...
-        return Promise.resolve("");
+        return Promise.resolve<{
+            name: TA[number] | null | undefined,
+            result: T
+        }>({} as any);
     }
 
     protected async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn): Promise<TChildOut> {

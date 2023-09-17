@@ -1,4 +1,6 @@
+import CustomEvent from "../../common/CustomEvent.js";
 import EntityAccessError from "../../common/EntityAccessError.js";
+import EventSet from "../../common/EventSet.js";
 import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 import EntityContext from "../EntityContext.js";
 import IdentityService, { identityMapSymbol } from "../identity/IdentityService.js";
@@ -7,6 +9,8 @@ import ChangeEntry from "./ChangeEntry.js";
 export const privateUpdateEntry = Symbol("updateEntry");
 
 export default class ChangeSet {
+
+    public addedEvent = new EventSet<ChangeEntry>(this);
 
     get [identityMapSymbol]() {
         return this.identityMap;
@@ -19,35 +23,36 @@ export default class ChangeSet {
     /**
      * This will provide new entity for same key
      */
-    private identityMap: Map<string,ChangeEntry> = new Map();
+    private identityMap: Map<string,any> = new Map();
 
     private nextId = 1;
 
     constructor(private context: EntityContext) {
-
     }
 
     *getChanges(max = 5) {
 
-        const set = new Set<ChangeEntry>();
-
-        let total = 0;
-
-        do {
+        const pending = [] as ChangeEntry[];
+        const d = this.addedEvent.listen((ce) => pending.push(ce.detail));
+        try {
             this.detectChanges();
-            if (total === this.entries.length) {
-                break;
-            }
-            for (const iterator of this.entries) {
-                if (set.has(iterator)) {
-                    continue;
-                }
-                set.add(iterator);
-                total++;
-                yield iterator;
-            }
-        } while (max-- > 0);
 
+            yield * [].concat(this.entries);
+
+            while(pending.length) {
+                const copy = [].concat(pending) as ChangeEntry[];
+                for (const iterator of copy) {
+                    iterator.setupInverseProperties();
+                    iterator.detect();
+                }
+                pending.length = 0;
+                yield *copy;
+            }
+
+
+        } finally {
+            d[Symbol.dispose]();
+        }
     }
 
     [privateUpdateEntry](entry: ChangeEntry) {
@@ -66,7 +71,7 @@ export default class ChangeSet {
         }
     }
 
-    public getEntry(entity, original = void 0): ChangeEntry {
+    public getEntry<T>(entity: T, original = void 0): ChangeEntry<T> {
         let entry = this.entryMap.get(entity);
         if (entry) {
             return entry;
@@ -98,6 +103,7 @@ export default class ChangeSet {
         }, this);
         this.entries.push(entry);
         this.entryMap.set(entity, entry);
+        this.addedEvent.dispatch(entry);
         return entry;
     }
 

@@ -14,6 +14,24 @@ export default abstract class Migrations {
         const { model } = context;
         for (const s of model.sources.values()) {
             const type = s[modelSymbol] as EntityType;
+
+            for (const column of type.columns) {
+                if (column.computed && typeof column.computed !== "string") {
+                    // parse..
+                    const source = context.query(type.typeClass) as EntityQuery<any>;
+                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.computed}` as any);
+                    const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
+                    column.computed = textQuery.join("").replace(r, "");
+                }
+                if (column.default && typeof column.default !== "string") {
+                    // parse..
+                    const source = context.query(type.typeClass) as EntityQuery<any>;
+                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.default.toString().replace("()", "(x)")}` as any);
+                    const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
+                    column.default = textQuery.join("").replace(r, "");
+                }
+            }
+
             await this.migrateTable(context, type);
 
             for (const index of type.indexes) {
@@ -28,11 +46,19 @@ export default abstract class Migrations {
 
         index = { ... index };
 
+        for (const column of index.columns) {
+            const c = type.getProperty(column.name);
+            if (c.field) {
+                column.name = c.field.columnName;
+            }
+        }
+
         if (index.filter && typeof index.filter !== "string") {
             // parse..
             const source = context.query(type.typeClass) as EntityQuery<any>;
             const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${index.filter}` as any);
-            index.filter = textQuery.join("").split( source.selectStatement.sourceParameter.name + ".").join("");
+            const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
+            index.filter = textQuery.join("").replace(r, "");
         }
 
         this.migrateIndex(context, index, type);

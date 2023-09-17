@@ -6,9 +6,15 @@ import SchemaRegistry from "./SchemaRegistry.js";
 
 import "reflect-metadata";
 
+interface IColumnDefinition<T> extends Omit<Omit<IColumn, "type">,"name"> {
+    computed?: (x: T) => any;
+    default?: () => any;
+    stored?: boolean;
+};
+
 ;
-export default function Column(cfg: Omit<Omit<IColumn, "name">, "type"> = {}): any {
-    return (target, key) => {
+export default function Column<T>(cfg: IColumnDefinition<T> = {} as any): ((target: T, key: string) => any) {
+    return (target:T, key) => {
         const cn = target.constructor ?? target;
         const model = SchemaRegistry.model(cn);
         const c = model[addOrCreateColumnSymbol](key);
@@ -30,7 +36,13 @@ export default function Column(cfg: Omit<Omit<IColumn, "name">, "type"> = {}): a
         if (c.dataType === void 0) {
             c.dataType = typeFrom(c, c.type);
         }
-
+        c.stored = cfg.stored;
+        c.computed = cfg.computed;
+        if (c.computed) {
+            c.generated = "computed";
+            c.stored ??= true;
+        }
+        c.default = cfg.default;
 
         model.addColumn(c);
     };

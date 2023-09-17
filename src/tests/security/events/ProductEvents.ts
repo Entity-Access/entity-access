@@ -1,6 +1,7 @@
 import EntityAccessError from "../../../common/EntityAccessError.js";
 import Inject from "../../../di/di.js";
 import { IEntityQuery } from "../../../model/IFilterWithParameter.js";
+import ChangeEntry from "../../../model/changes/ChangeEntry.js";
 import EntityEvents from "../../../model/events/EntityEvents.js";
 import { Product, ProductCategory, ProductPrice } from "../../model/ShoppingContext.js";
 import { UserInfo } from "./UserInfo.js";
@@ -32,6 +33,15 @@ export class ProductEvents extends EntityEvents<Product> {
 
         // customer can modify its own products
         return query.where({ userID }, (p) => (x) => x.ownerID === p.userID);
+    }
+
+    afterUpdate(entity: Product, entry: ChangeEntry<Product>): void | Promise<void> {
+        entity.updated = Array.from(entry.updated.keys()).map((x) => x.name);
+        entity.nameUpdated = entry.isUpdated("name");
+    }
+
+    afterInsert(entity: Product, entry: ChangeEntry<Product>): void | Promise<void> {
+        entity.afterInsertInvoked = true;
     }
 
 }
