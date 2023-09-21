@@ -85,7 +85,7 @@ const q = db.customers
         (p) =>
             // following expression
             // be converted to SQL
-            (x) => x.orders.some(
+            (customer) => customer.orders.some(
                 // joins/exists will be set
                 // based on relations declared
                 (order) => order.orderID === p.orderID );
