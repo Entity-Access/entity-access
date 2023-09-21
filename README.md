@@ -346,8 +346,8 @@ declare module "@entity-access/entity-access/dist/sql/ISql.js" {
 }
 
 Sql.myFunctions = {
-    calculateAmount(total: number, units: number, taxId: string): Date {
-        // in reality parseDate will return Date,
+    calculateAmount(total: number, units: number, taxId: string): number {
+        // in reality this function will return number,
         // but expression to sql compiler expects an array of
         // strings and functions. Function represents parameters
         // being sent to SQL. Parameters cannot be accessed here.
