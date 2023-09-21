@@ -98,7 +98,7 @@ Above expression will result in following filter expression
     EXISTS (
         SELECT 1
         FROM Orders as o1
-        WHERE x.customerID = o1.orderID
+        WHERE c.customerID = o1.orderID
             AND o1.orderID = $1
     )
     LIMIT 1;
@@ -119,6 +119,16 @@ const q = db.orders.where({ userName },
 );
 
 // note that the join will be performed automatically
+```
+
+Following query will be generated for the query.
+```sql
+    SELECT o.orderID, o.orderDate, o.customerID, ...
+    FROM orders as o
+        INNER JOIN customers c
+            ON c.customerID = o.customerID
+    WHERE
+        c.userName like $1
 ```
 
 ### Typed Configurations
@@ -154,12 +164,25 @@ class Product {
     productID: number;
 
     // Create a column with default expression
+    // the expression will be converted to equivalent SQL
+    // for the target provider `NOW()` for postgresql and
+    // `GETUTCDATE()` for sql server.
     @Column({ default: () => Sql.date.now()})
     dateUpdated: DateTime;
 
     // create a column with empty string as default
     @Column({ default: () => ""})
     productCode: string;
+
+    // You can specifiy computed expression
+    // that will be converted to equivalent SQL
+    // for target provider.
+    @Column({
+        /* Certain providers might need length such as postgresql*/
+        length: 200,
+        computed: (p) => Sql.text.concatImmutable(Sql.cast.asText(p.productID), p.productCode)
+    })
+    readonly slug: string;
 
     orderItems: OrderItem[];
 }
@@ -170,7 +193,7 @@ class OrderItem {
     @Column({ key: true, generated: "identity"})
     orderItemID: number;
 
-    @Column()
+    @Column({})
     /**
      * Following configuration declares Foreign Key Relation.
      * That will give compilation error if configured incorrectly.
@@ -184,10 +207,16 @@ class OrderItem {
     })
     productID: number;
 
-    @Column()
+    @Column({})
+    @RelateTo(Order, {
+        property: (orderItem) => orderItem.order,
+        inverseProperty: (order) => order.orderItems
+    })
     orderID: number;
 
     product: Product;
+
+    order: Order;
 
 }
 
