@@ -1,5 +1,7 @@
 import { IDisposable } from "./IDisposable.js";
 
+import "./IDisposable.js";
+
 export type IDisposableObject = IDisposable & { end?(): any; close?():any };
 
 export type IDisposableObjectType = IDisposableObject | IDisposableObject[];
