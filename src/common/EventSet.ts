@@ -29,6 +29,9 @@ export default class EventSet<TArg, Target = any> {
             this.listeners.delete(listener);
         };
         this.listeners.add(listener);
+        return {
+            [Symbol.dispose]: () => this.listeners.delete(listener)
+        };
     }
 
     remove(listener: (x: IEventSetArgs<Target, TArg>) => any) {
