@@ -17,8 +17,11 @@ import RawQuery from "../compiler/RawQuery.js";
     filter: (x) => x.groupName !== null
 })
 @Index({
-    name: "IX_Workflows_ETA",
-    columns: [{ name: (x) => x.eta, descending: false }],
+    name: "IX_Workflows_WorkerGroup_ETA",
+    columns: [
+        { name: (x) => x.eta, descending: false },
+        { name: (x) => x.workerGroup, descending: false }
+    ],
     filter: (x) => x.isWorkflow === true
 })
 export class WorkflowItem {
@@ -49,6 +52,12 @@ export class WorkflowItem {
 
     @Column({ })
     public updated: DateTime;
+
+    @Column({
+        dataType: "Char", length: 50,
+        default: () => `default`
+    })
+    public workerGroup: string;
 
     @Column({ dataType: "Int", default: () => 0})
     public priority: number;
@@ -189,12 +198,13 @@ export default class WorkflowStorage {
             }
 
             w.state ||= "queued";
+            w.workerGroup ||= "default";
             w.updated ??= DateTime.utcNow;
             await db.saveChanges();
         });
     }
 
-    async dequeue(signal?: AbortSignal) {
+    async dequeue(workerGroup: string, signal?: AbortSignal) {
         const db = new WorkflowContext(this.driver);
         const now = this.clock.utcNow;
 
@@ -240,10 +250,11 @@ export default class WorkflowStorage {
         const q = this.lockQuery;
 
         const items = await db.workflows
-            .where({now}, (p) => (x) => x.eta <= p.now
+            .where({now, workerGroup}, (p) => (x) => x.eta <= p.now
                 && (x.lockedTTL === null || x.lockedTTL <= p.now)
                 && x.lockToken === null
-                && x.isWorkflow === true)
+                && x.isWorkflow === true
+                && x.workerGroup === p.workerGroup)
             .orderBy({}, (p) => (x) => x.eta)
             .thenBy({}, (p) => (x) => x.priority)
             .limit(20)

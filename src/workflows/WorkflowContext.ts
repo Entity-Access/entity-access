@@ -11,6 +11,7 @@ import { IWorkflowSchema, WorkflowRegistry } from "./WorkflowRegistry.js";
 import crypto from "crypto";
 import TimeSpan from "../types/TimeSpan.js";
 import sleep from "../common/sleep.js";
+import Waiter from "./Waiter.js";
 
 async function  hash(text) {
     const sha256 = crypto.createHash("sha256");
@@ -130,8 +131,6 @@ export interface IWorkflowResult<T> {
 
 export default class WorkflowContext {
 
-    private waiter: AbortController;
-
     private registry: Map<string, IWorkflowSchema> = new Map();
 
     constructor(
@@ -145,11 +144,11 @@ export default class WorkflowContext {
         this.registry.set(type.name, WorkflowRegistry.register(type, void 0));
     }
 
-    public async start(signal?: AbortSignal) {
+    public async start({ workerGroup = "default", signal = void 0 as AbortSignal }) {
         console.log(`Started executing workflow jobs`);
         while(!signal?.aborted) {
             try {
-                const total = await this.processQueueOnce(signal);
+                const total = await this.processQueueOnce({ workerGroup, signal });
                 if (total > 0) {
                     // do not wait till we have zero messages to process
                     continue;
@@ -157,8 +156,8 @@ export default class WorkflowContext {
             } catch (error) {
                 console.error(error);
             }
-            const ws = (this.waiter = new AbortController()).signal;
-            await sleep(15000, ws);
+            using ws = Waiter.create();
+            await sleep(15000, ws.signal);
         }
     }
 
@@ -226,7 +225,7 @@ export default class WorkflowContext {
                 });
 
                 if(eta < clock.utcNow) {
-                    this.waiter?.abort();
+                    Waiter.releaseAll();
                 }
             } catch (error) {
                 lastError = error;
@@ -266,15 +265,15 @@ export default class WorkflowContext {
         parent.eta = w.updated;
         parent.updated = w.updated;
         await this.storage.save(parent);
-        this.waiter?.abort();
+        Waiter.releaseAll();
     }
 
     public log ( ... a: any[]) {
         // console.log(... a);
     }
 
-    public async processQueueOnce(signal?: AbortSignal) {
-        const pending = await this.storage.dequeue(signal);
+    public async processQueueOnce({ workerGroup = "default", signal = void 0 as AbortSignal } = {}) {
+        const pending = await this.storage.dequeue(workerGroup, signal);
         // run...
         for (const iterator of pending) {
             try {
