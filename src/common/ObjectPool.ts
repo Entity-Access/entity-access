@@ -115,7 +115,7 @@ export default class ObjectPool<T> {
             }
         }
         if(existing) {
-            return existing as IPooledObject<T>;
+            return this.setupItem(existing);
         }
 
         if (this.total >= this.maxSize) {
@@ -137,7 +137,7 @@ export default class ObjectPool<T> {
     private setupItem(item: T) {
         const pooledItem = item as IPooledObject<T>;
         pooledItem[Symbol.asyncDispose] = async () => {
-            delete this[Symbol.asyncDispose];
+            delete pooledItem[Symbol.asyncDispose];
             if (this.free.length < this.poolSize) {
                 this.logger?.(`Pooled item ${pooledItem} freed.`);
                 this.free.push(pooledItem);
