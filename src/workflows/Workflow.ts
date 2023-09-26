@@ -3,7 +3,7 @@ import Inject from "../di/di.js";
 import DateTime from "../types/DateTime.js";
 import TimeSpan from "../types/TimeSpan.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
-import EternityContext from "./EternityContext.js";
+import WorkflowContext from "./WorkflowContext.js";
 import { WorkflowRegistry } from "./WorkflowRegistry.js";
 
 
@@ -50,7 +50,7 @@ export default abstract class Workflow<TIn = any, TOut = any> {
             eta: DateTime,
             currentTime: DateTime
         },
-        protected context: EternityContext
+        protected context: WorkflowContext
     ) {
         this.input = input;
         this.id = id;

@@ -21,7 +21,7 @@ import RawQuery from "../compiler/RawQuery.js";
     columns: [{ name: (x) => x.eta, descending: false }],
     filter: (x) => x.isWorkflow === true
 })
-export class WorkflowStorage {
+export class WorkflowItem {
 
     @Column({ dataType: "Char", length: 400, key: true })
     public id: string;
@@ -78,7 +78,7 @@ export class WorkflowStorage {
 @RegisterScoped
 class WorkflowContext extends EntityContext {
 
-    public workflows = this.model.register(WorkflowStorage);
+    public workflows = this.model.register(WorkflowItem);
 
     verifyFilters: boolean = false;
 
@@ -87,7 +87,7 @@ class WorkflowContext extends EntityContext {
 }
 
 @RegisterSingleton
-export default class EternityStorage {
+export default class WorkflowStorage {
 
     private lockQuery: RawQuery;
 
@@ -172,7 +172,7 @@ export default class EternityStorage {
         return true;
     }
 
-    async save(state: Partial<WorkflowStorage>) {
+    async save(state: Partial<WorkflowItem>) {
         const db = new WorkflowContext(this.driver);
         const connection = db.connection;
         await connection.runInTransaction(async () => {
@@ -200,7 +200,7 @@ export default class EternityStorage {
 
         if(!this.lockQuery) {
 
-            const type = db.model.getEntityType(WorkflowStorage);
+            const type = db.model.getEntityType(WorkflowItem);
 
             const px = Expression.parameter("x");
             const lockTokenField = type.getProperty("lockToken").field.columnName;
@@ -249,7 +249,7 @@ export default class EternityStorage {
             .limit(20)
             .withSignal(signal)
             .toArray();
-        const list: WorkflowStorage[] = [];
+        const list: WorkflowItem[] = [];
         const uuid = randomUUID();
         for (const iterator of items) {
             // try to acquire lock...

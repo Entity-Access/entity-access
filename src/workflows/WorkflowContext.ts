@@ -4,7 +4,7 @@ import EntityAccessError from "../common/EntityAccessError.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import Inject, { RegisterSingleton, ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
 import DateTime from "../types/DateTime.js";
-import EternityStorage, { WorkflowStorage } from "./EternityStorage.js";
+import WorkflowStorage, { WorkflowItem } from "./WorkflowStorage.js";
 import type Workflow from "./Workflow.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
 import { IWorkflowSchema, WorkflowRegistry } from "./WorkflowRegistry.js";
@@ -23,7 +23,7 @@ const align = (d: DateTime) => {
     return new DateTime(time);
 };
 
-function bindStep(context: EternityContext, store: WorkflowStorage, name: string, old: (... a: any[]) => any, unique = false) {
+function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, old: (... a: any[]) => any, unique = false) {
     return async function runStep(this: Workflow, ... a: any[]) {
         const input = JSON.stringify(a);
         const ts = unique ? "0" : Math.floor(this.currentTime.msSinceEpoch);
@@ -52,7 +52,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
 
         let ttl = TimeSpan.fromSeconds(0);
 
-        const step: Partial<WorkflowStorage> = {
+        const step: Partial<WorkflowItem> = {
             id,
             parentID: this.id,
             eta: this.eta,
@@ -128,7 +128,7 @@ export interface IWorkflowResult<T> {
     error: string;
 }
 
-export default class EternityContext {
+export default class WorkflowContext {
 
     private waiter: AbortController;
 
@@ -136,7 +136,7 @@ export default class EternityContext {
 
     constructor(
         @Inject
-        public storage: EternityStorage
+        public storage: WorkflowStorage
     ) {
 
     }
@@ -316,7 +316,7 @@ export default class EternityContext {
         throw new ActivitySuspendedError();
     }
 
-    private async run(workflow: WorkflowStorage) {
+    private async run(workflow: WorkflowItem) {
 
         const clock = this.storage.clock;
 
