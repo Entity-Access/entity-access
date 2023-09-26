@@ -1,4 +1,8 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
+
+// Making sure that Symbol.dispose is not undefined
+import "../../common/IDisposable.js";
+
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";

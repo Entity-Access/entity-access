@@ -1,4 +1,6 @@
+// Making sure that Symbol.dispose is not undefined
 import { IDisposable, disposeDisposable } from "../common/IDisposable.js";
+
 import { IAbstractClassOf, IClassOf } from "../decorators/IClassOf.js";
 
 import "reflect-metadata";

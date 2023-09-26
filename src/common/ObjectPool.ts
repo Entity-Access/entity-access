@@ -3,6 +3,8 @@
 import EntityAccessError from "./EntityAccessError.js";
 import TimedCache from "./cache/TimedCache.js";
 import sleep from "./sleep.js";
+
+// Making sure that Symbol.dispose is not undefined
 import "./IDisposable.js";
 
 interface IObjectPool<T> {

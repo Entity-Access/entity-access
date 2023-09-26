@@ -1,4 +1,6 @@
 import CustomEvent from "./CustomEvent.js";
+// Making sure that Symbol.dispose is not undefined
+import "./IDisposable.js";
 
 export interface IEventSetArgs<T,TArg> {
     target: T;

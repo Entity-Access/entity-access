@@ -1,5 +1,6 @@
 import { IDisposable } from "./IDisposable.js";
 
+// Making sure that Symbol.dispose is not undefined
 import "./IDisposable.js";
 
 export type IDisposableObject = IDisposable & { end?(): any; close?():any };
