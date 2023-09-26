@@ -129,6 +129,19 @@ export interface IWorkflowResult<T> {
     error: string;
 }
 
+export interface IWorkflowQueueParameter {
+    id?: string;
+    throwIfExists?: boolean;
+    eta?: DateTime;
+    parentID?: string;
+    taskGroup?: string;
+}
+
+export interface IWorkflowStartParams {
+    taskGroup?: string;
+    signal?: AbortSignal;
+}
+
 export default class WorkflowContext {
 
     private registry: Map<string, IWorkflowSchema> = new Map();
@@ -144,11 +157,11 @@ export default class WorkflowContext {
         this.registry.set(type.name, WorkflowRegistry.register(type, void 0));
     }
 
-    public async start({ workerGroup = "default", signal = void 0 as AbortSignal }) {
+    public async start({ taskGroup = "default", signal = void 0 as AbortSignal }: IWorkflowStartParams = {}) {
         console.log(`Started executing workflow jobs`);
         while(!signal?.aborted) {
             try {
-                const total = await this.processQueueOnce({ workerGroup, signal });
+                const total = await this.processQueueOnce({ taskGroup, signal });
                 if (total > 0) {
                     // do not wait till we have zero messages to process
                     continue;
@@ -177,12 +190,13 @@ export default class WorkflowContext {
     public async queue<T>(
         type: IClassOf<Workflow<T>>,
         input: T,
-        { id, throwIfExists, eta, parentID }: {
-            id?: string,
-            throwIfExists?: boolean,
-            eta?: DateTime,
-            parentID?: string
-        } = {}) {
+        {
+            id,
+            throwIfExists,
+            eta,
+            parentID,
+            taskGroup = "default"
+        }: IWorkflowQueueParameter = {}) {
         const clock = this.storage.clock;
         let tries = 1;
         if (id) {
@@ -215,6 +229,7 @@ export default class WorkflowContext {
                 eta ??= now;
                 await this.storage.save({
                     id,
+                    taskGroup,
                     name: schema.name,
                     input: JSON.stringify(input),
                     isWorkflow: true,
@@ -272,8 +287,8 @@ export default class WorkflowContext {
         // console.log(... a);
     }
 
-    public async processQueueOnce({ workerGroup = "default", signal = void 0 as AbortSignal } = {}) {
-        const pending = await this.storage.dequeue(workerGroup, signal);
+    public async processQueueOnce({ taskGroup = "default", signal = void 0 as AbortSignal } = {}) {
+        const pending = await this.storage.dequeue(taskGroup, signal);
         // run...
         for (const iterator of pending) {
             try {
