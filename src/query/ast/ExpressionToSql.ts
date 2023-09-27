@@ -545,17 +545,36 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             VALUES (${prepareJoin(insertValues)})
             LIMIT COALESCE((SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")}),2)-1
             ON CONFLICT(${prepareJoin(compareKeys)})
-            DO NOTHING
-            ${returnValues}`;
-    }
+            DO NOTHING`;
+        }
 
-        return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+        const r = prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
             VALUES (${prepareJoin(insertValues)})
-            LIMIT COALESCE((SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")}),2)-1
             ON CONFLICT(${prepareJoin(compareKeys)})
             DO UPDATE SET
                 ${prepareJoin(updateSet)}
             ${returnValues}`;
+
+        return r;
+
+        // return prepare `
+        // WITH U1 AS(
+        //         UPDATE ${table} SET
+        //             ${prepareJoin(updateSet)}
+        //         WHERE ${prepareJoin(compare, " AND ")}
+        //     ),
+        //     I1 AS(
+        //         INSERT INTO ${table} (${prepareJoin(insertColumns)})
+        //         VALUES (${prepareJoin(insertValues)})
+        //         LIMIT COALESCE((SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")}),2)-1
+        //         ON CONFLICT(${prepareJoin(compareKeys)})
+        //         DO UPDATE SET
+        //             ${prepareJoin(updateSet)}
+        //         ${returnValues}
+        //     )
+        // SELECT * from U1
+        // UNION
+        // SELECT * from I1`;
     }
 
     visitNewObjectExpression(e: NewObjectExpression): ITextQuery {
