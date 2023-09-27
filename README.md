@@ -1,3 +1,4 @@
+[![Action Status](https://github.com/Entity-Access/entity-access/workflows/Build/badge.svg)](https://github.com/Entity-Access/entity-access/actions) [![npm version](https://badge.fury.io/js/%40entity-access%2Fentity-access.svg)](https://badge.fury.io/js/%40entity-access%2Fentity-access) 
 # Entity Access
 
 Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime such as Node, YantraJS.
@@ -7,22 +8,27 @@ Inspired from Entity Framework Core, Entity Access is ORM for JavaScript runtime
 1. Released - Postgres Driver
 2. Released - Sql Server Driver
 3. Released - Include Feature
+4. Planned - MySql Driver
+5. Planned - Oracle Driver (Need help, we do not have Oracle Expertise)
 
 ## Features
-1. Unit of Work and Repository Pattern
-2. Arrow function based query features with automatic joins.
+1. Arrow function based query features with automatic joins.
+2. Unit of Work and Repository Pattern
 3. Automatic Migrations for missing schema - this is done for fast development and deployment.
 4. Sql functions such as LIKE, You can add your own custom functions easily.
 5. Postgres Driver
 6. Sql Server Driver
 7. Automatic parameterization to safeguard sql injection attacks.
 8. Context Filters - This is a new concept where you can setup filters that will be used against saving/retrieving data.
+9. Sum and Count query methods.
+10. Composite Primary Key Support.
 
 ## Upcoming Features
 1. Projection - Split query mode only, single level only.
 2. Update column before save
 3. GroupBy
 4. Custom Migration Steps
+5. MySql support
 
 ### Unit of Work
 
@@ -73,17 +79,14 @@ const db = new ShoppingContext();
 
 // find customer from orderID
 const q = db.customers
-    // first we will send parameters
+    // set parameters
     .where({ orderID },
-        // second we will write an arrow
-        // accepting parameters
+        // access parameters
         (p) =>
-            // this is the arrow which will
+            // following expression
             // be converted to SQL
-            // you can write very limited set of
-            // expressions in this arrow function
-            (x) => x.orders.some(
-                // This will results in exists or join
+            (customer) => customer.orders.some(
+                // joins/exists will be set
                 // based on relations declared
                 (order) => order.orderID === p.orderID );
 const customer = await q.first();
@@ -95,7 +98,7 @@ Above expression will result in following filter expression
     EXISTS (
         SELECT 1
         FROM Orders as o1
-        WHERE x.customerID = o1.orderID
+        WHERE c.customerID = o1.orderID
             AND o1.orderID = $1
     )
     LIMIT 1;
@@ -116,6 +119,16 @@ const q = db.orders.where({ userName },
 );
 
 // note that the join will be performed automatically
+```
+
+Following query will be generated for the query.
+```sql
+    SELECT o.orderID, o.orderDate, o.customerID, ...
+    FROM orders as o
+        INNER JOIN customers c
+            ON c.customerID = o.customerID
+    WHERE
+        c.userName like $1
 ```
 
 ### Typed Configurations
@@ -151,12 +164,25 @@ class Product {
     productID: number;
 
     // Create a column with default expression
+    // the expression will be converted to equivalent SQL
+    // for the target provider `NOW()` for postgresql and
+    // `GETUTCDATE()` for sql server.
     @Column({ default: () => Sql.date.now()})
     dateUpdated: DateTime;
 
     // create a column with empty string as default
     @Column({ default: () => ""})
     productCode: string;
+
+    // You can specifiy computed expression
+    // that will be converted to equivalent SQL
+    // for target provider.
+    @Column({
+        /* Certain providers might need length such as postgresql*/
+        length: 200,
+        computed: (p) => Sql.text.concatImmutable(Sql.cast.asText(p.productID), p.productCode)
+    })
+    readonly slug: string;
 
     orderItems: OrderItem[];
 }
@@ -167,7 +193,7 @@ class OrderItem {
     @Column({ key: true, generated: "identity"})
     orderItemID: number;
 
-    @Column()
+    @Column({})
     /**
      * Following configuration declares Foreign Key Relation.
      * That will give compilation error if configured incorrectly.
@@ -181,14 +207,30 @@ class OrderItem {
     })
     productID: number;
 
-    @Column()
+    @Column({})
+    @RelateTo(Order, {
+        property: (orderItem) => orderItem.order,
+        inverseProperty: (order) => order.orderItems
+    })
     orderID: number;
 
     product: Product;
 
+    order: Order;
+
 }
 
 // You can use `RelateToOne` for one to one mapping.
+
+// To prevent circular dependency issues, you can also use different
+// arguments as shown below...
+
+    @RelateTo({
+        type: () => Product
+        property: (orderItem) => orderItem.product,
+        inverseProperty: (product) => product.orderItems
+    })
+    productID: number;
 ```
 
 ## Query Examples
@@ -333,8 +375,8 @@ declare module "@entity-access/entity-access/dist/sql/ISql.js" {
 }
 
 Sql.myFunctions = {
-    calculateAmount(total: number, units: number, taxId: string): Date {
-        // in reality parseDate will return Date,
+    calculateAmount(total: number, units: number, taxId: string): number {
+        // in reality this function will return number,
         // but expression to sql compiler expects an array of
         // strings and functions. Function represents parameters
         // being sent to SQL. Parameters cannot be accessed here.
@@ -360,7 +402,124 @@ Sql.myFunctions = {
 
 // now you can use this as shown below...
 
-context.customers.all()
-    .where({date}, (p) => (x) => x.birthDate < Sql.myFunctions.parseDate(p.date) );
+context.orders.all()
+    .where({amount}, (p) => (x) =>
+        Sql.mySchema.calculateAmount(x.total, x.units, x.taxId) < p.amount );
 
+```
+
+## Context Filters and Events
+
+Let's assume that you wan to setup filters in such a way that customer can only 
+access his own orders.
+
+In order to setup context filters and events, we need to use inbuilt dependency injection, to provide, access to current user and events.
+
+```typescript
+export class ProductEvents extends EntityEvents<Product> {
+
+    @Inject
+    user: User;
+
+    @Inject
+    notificationService: NotificationService;
+
+    filter(query: IEntityQuery<Product>) {
+        const { userID } = this.user ?? {};
+        if (userID) {
+
+            // user can only see products that
+            // user has purchased or products are
+            // active.
+
+            return query.where({ userID }, (p) =>
+                p.isActive
+                || x.orderItems.some((oi) =>
+                    oi.order.customerID === p.userID
+                )
+            );
+        }
+
+        // anonymous users can see only active products        
+        return query.where({ userID }, (p) => p.isActive);
+    }
+
+    /*
+    When you are using eager loading, you can avoid adding
+    extra filters for each relation if the parent is already
+    filtered. For example, if you are trying to list products
+    inside orders, since order is already filtered, you can 
+    return query as it is.
+    */
+    includeFilter(query: IEntityQuery<Product>, type, member) {
+        if(type === OrderItem) {
+            return query;
+        }
+        // for every other include
+        // use normal filter.
+        return this.filter(query);
+    }
+
+    /*
+    this will be called just before
+    save changes, before the actual editing occurs,
+    we will automatically determine if the product
+    can be edited or not by the current use.
+    */
+
+    /*
+    This will also work correctly when there are multiple
+    entities in the single transaction.
+    */
+    
+    modifyFilter(query: IEntityQuery<Product>) {
+        const { userID } = this.user ?? {};
+        if (userID) {
+
+            // user can only see products that
+            // user has purchased or products are
+            // active.
+
+            return query.where({ userID }, (p) =>
+                p.isActive
+                || x.orderItems.some((oi) =>
+                    oi.order.customerID === p.userID
+                )
+            );
+        }
+        throw new EntityAccessError(`Cannot edit the product`);
+    }
+
+    // after above filter has passed the entity
+    // following methods will be raised for every entity
+    beforeInsert(entity: Product, entry: ChangeEntry<Product>) {
+
+    }
+
+    // each of these methods, beforeInsert, afteInsert, beforeUpdate
+    // afterUpdate, beforeDelete and afterDelete are asynchronous and
+    // you can await on async methods.
+    async afterInsert(entity: Product, entry: ChangeEntry<Product>) {
+        await this.notificationService.notify(entity);
+    }
+
+}
+
+
+// register all events in context events..
+export class AppContextEvents extends ContextEvents{
+
+    constructor() {
+        this.register(Product, ProductEvents);
+    }
+}
+const allEvents = new AppContextEvents();
+
+// create context with context events.
+
+const db = new ShoppingContext(allEvents);
+
+
+// this will return the query with filter
+const products = db.filteredQuery<Product>(Product);
 ```
