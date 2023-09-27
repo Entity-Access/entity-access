@@ -148,6 +148,15 @@ export default class EntityType {
         relatedType.relations.push(inverseRelation);
         inverseRelation.relatedRelation = relation;
         relation.relatedRelation = inverseRelation;
+
+        let { foreignKeyConstraint } = relation;
+        if(foreignKeyConstraint) {
+            foreignKeyConstraint = { ... foreignKeyConstraint};
+            relation.foreignKeyConstraint = foreignKeyConstraint;
+            foreignKeyConstraint.name ||= `FK_${this.name}_${fkColumn.name}_${this.typeClass.name}_${relatedType.keys[0].name}`;
+            foreignKeyConstraint.column = fkColumn;
+            foreignKeyConstraint.refColumns = relatedType.keys;
+        }
         return relation;
     }
 

@@ -1,20 +1,19 @@
+import type EntityType from "../entity-query/EntityType.js";
+import { IColumn } from "./IColumn.js";
+
+
 export interface IForeignKeyConstraint {
-    schema?: string;
-    table?: string;
 
     name?: string;
+
+    type?: EntityType;
 
     validate?: boolean;
     index?: boolean;
 
-    cascade?: "delete" | "restrict" | "null" | "default";
+    cascade?: "delete" | "restrict" | "set-null" | "set-default";
 
-    columns?: {
-        ownColumn?: string;
-        refTable?: {
-            schema?: string;
-            name?: string;
-            column?: string;
-        };
-    }[]
+    column?: IColumn;
+
+    refColumns?: IColumn[];
 }

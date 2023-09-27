@@ -38,7 +38,7 @@ export default abstract class Migrations {
                 await this.migrateIndexInternal(context, index, type);
             }
 
-            for (const { isInverseRelation , foreignKeyConstraint } of type.relations) {
+            for (const { isInverseRelation , foreignKeyConstraint, relatedTypeClass } of type.relations) {
                 if (isInverseRelation) {
                     continue;
                 }
@@ -46,8 +46,15 @@ export default abstract class Migrations {
                     continue;
                 }
 
-                foreignKeyConstraint.name ||= type.name;
-                foreignKeyConstraint.schema ||= type.schema;
+                const relatedEntity = model.register(relatedTypeClass)[modelSymbol] as EntityType;
+
+                foreignKeyConstraint.type = type;
+                foreignKeyConstraint.column = type.getProperty(foreignKeyConstraint.column.name).field;
+                const refColumns = foreignKeyConstraint.refColumns;
+                foreignKeyConstraint.refColumns = [];
+                for (const iterator of refColumns) {
+                    foreignKeyConstraint.refColumns.push(relatedEntity.getProperty(iterator.name).field);
+                }
 
                 await this.migrateForeignKey(context, foreignKeyConstraint);
             }
