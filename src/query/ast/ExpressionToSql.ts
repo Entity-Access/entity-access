@@ -3,7 +3,7 @@ import EntityType, { IEntityProperty } from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { FilteredExpression, filteredSymbol } from "../../model/events/FilteredExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, MergeStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
@@ -481,6 +481,16 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitUpdateStatement(e: UpdateStatement): ITextQuery {
 
+        const table = this.visit(e.table);
+
+        const where = this.visit(e.where);
+
+        const set = this.visitArray(e.set);
+
+        return prepare `UPDATE ${table} SET ${set} WHERE ${where}`;
+    }
+
+    visitMergeStatement(e: MergeStatement): ITextQuery {
         const table = this.visit(e.table);
 
         const where = this.visit(e.where);
