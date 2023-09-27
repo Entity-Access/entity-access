@@ -4,6 +4,7 @@ import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js"
 import EntityQuery from "./EntityQuery.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
 import { Expression } from "../query/ast/Expressions.js";
+import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 
 export class EntitySource<T = any> {
 
@@ -29,7 +30,7 @@ export class EntitySource<T = any> {
 
     }
 
-    public async saveDirect(item: Partial<T>, mode: "update" | "upsert" | "insert", keys?: Partial<T>) {
+    public async saveDirect(item: Partial<T>, mode: DirectSaveType, keys?: Partial<T>) {
         const { driver } = this.context;
         const expression = driver.createUpsertExpression(this.model, item, mode, keys);
         const { text, values } = driver.compiler.compileExpression(null, expression);

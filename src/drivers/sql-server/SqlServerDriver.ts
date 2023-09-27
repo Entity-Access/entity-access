@@ -74,10 +74,14 @@ export class SqlServerConnection extends BaseConnection {
 
         try {
             const r = await rq.query(command.text);
-            let rows = r.recordset ?? [r.output];
+            const rows = r.recordset ?? [r.output];
             if (rows.length === 0) {
                 // do something..
-                rows = r.recordsets[1];
+                const { recordsets } = r as any;
+                for (let index = 0; index < recordsets.length; index++) {
+                    const element = r.recordsets[index];
+                    rows.push(...element);
+                }
             }
             return { rows, updated: r.rowsAffected [0]};
         } catch (error) {

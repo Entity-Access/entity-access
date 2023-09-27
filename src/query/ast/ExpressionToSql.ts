@@ -531,6 +531,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 return prepare `WITH x AS(
                     INSERT INTO ${table} (${prepareJoin(insertColumns)})
                         VALUES (${prepareJoin(insertValues)})
+                        LIMIT COALESCE((SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")}),2)-1
                         ON CONFLICT(${prepareJoin(compareKeys)})
                         DO NOTHING
                     ${returnValues}
@@ -542,13 +543,15 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
             return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
             VALUES (${prepareJoin(insertValues)})
+            LIMIT COALESCE((SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")}),2)-1
             ON CONFLICT(${prepareJoin(compareKeys)})
             DO NOTHING
             ${returnValues}`;
-        }
+    }
 
         return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
             VALUES (${prepareJoin(insertValues)})
+            LIMIT COALESCE((SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")}),2)-1
             ON CONFLICT(${prepareJoin(compareKeys)})
             DO UPDATE SET
                 ${prepareJoin(updateSet)}

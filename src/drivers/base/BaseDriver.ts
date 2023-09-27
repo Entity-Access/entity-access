@@ -137,6 +137,24 @@ export abstract class BaseConnection {
     }
 }
 
+export type DirectSaveType =
+/**
+ * Inserts given item and returns generated columns
+ */
+    "insert" |
+/**
+ * Updates given item and returns generated columns
+ */
+    "update" |
+/**
+ * Inserts if not exists or update and returns generated columns for given keys
+ */
+    "upsert"|
+/**
+ * Inserts if not exists or selects generated columns for given keys
+ */
+"insert-select";
+
 export abstract class BaseDriver {
     abstract get compiler(): QueryCompiler;
 
@@ -151,7 +169,7 @@ export abstract class BaseDriver {
     createUpsertExpression(
         type: EntityType,
         entity: any,
-        mode: "update" | "upsert" | "insert",
+        mode: "update" | "upsert" | "insert" | "insert-select",
         entityKeys?: any): Expression {
         const table = type.fullyQualifiedName as TableLiteral;
 
@@ -222,6 +240,10 @@ export abstract class BaseDriver {
                 set: update,
                 where
             });
+        }
+
+        if (mode === "insert-select") {
+            update.length = 0;
         }
 
         return UpsertStatement.create({
