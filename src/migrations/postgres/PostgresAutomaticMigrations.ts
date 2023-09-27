@@ -1,4 +1,5 @@
 import { IColumn } from "../../decorators/IColumn.js";
+import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EntityType from "../../entity-query/EntityType.js";
@@ -127,6 +128,10 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             query += ` WHERE (${index.filter})`;
         }
         await driver.executeQuery(query);
+    }
+
+    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
+        
     }
 
 

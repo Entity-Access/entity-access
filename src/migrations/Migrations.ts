@@ -1,7 +1,7 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
-import { IIndex } from "../decorators/IIndex.js";
-import SchemaRegistry from "../decorators/SchemaRegistry.js";
+import type { IForeignKeyConstraint } from "../decorators/IForeignKeyConstraint.js";
+import type { IIndex } from "../decorators/IIndex.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type EntityContext from "../model/EntityContext.js";
 import type EntityQuery from "../model/EntityQuery.js";
@@ -37,6 +37,20 @@ export default abstract class Migrations {
             for (const index of type.indexes) {
                 await this.migrateIndexInternal(context, index, type);
             }
+
+            for (const { isInverseRelation , foreignKeyConstraint } of type.relations) {
+                if (isInverseRelation) {
+                    continue;
+                }
+                if (!foreignKeyConstraint) {
+                    continue;
+                }
+
+                foreignKeyConstraint.name ||= type.name;
+                foreignKeyConstraint.schema ||= type.schema;
+
+                await this.migrateForeignKey(context, foreignKeyConstraint);
+            }
         }
 
     }
@@ -68,6 +82,8 @@ export default abstract class Migrations {
     abstract migrateIndex(context: EntityContext, index: IIndex, type: EntityType);
 
     abstract migrateTable(context: EntityContext, type: EntityType): Promise<any>;
+
+    abstract migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint);
 
 
 }

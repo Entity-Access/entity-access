@@ -1,5 +1,6 @@
 import EntityType from "../entity-query/EntityType.js";
 import { IClassOf } from "./IClassOf.js";
+import { IForeignKeyConstraint } from "./IForeignKeyConstraint.js";
 import { ISqlType } from "./ISqlType.js";
 
 
@@ -105,6 +106,8 @@ export interface IEntityRelation {
     relatedRelation?: IEntityRelation;
 
     dotNotCreateIndex?: boolean;
+
+    foreignKeyConstraint?: IForeignKeyConstraint;
 
 }
 

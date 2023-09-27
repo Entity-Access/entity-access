@@ -1,4 +1,5 @@
 import { IColumn } from "../../decorators/IColumn.js";
+import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
@@ -136,5 +137,8 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         await driver.executeQuery(query);
     }
 
+    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
+        
+    }
 
 }
