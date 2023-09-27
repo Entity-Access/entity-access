@@ -1,11 +1,15 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
-import { Expression } from "../query/ast/Expressions.js";
 import EntityQuery from "./EntityQuery.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
+import { Expression } from "../query/ast/Expressions.js";
 
 export class EntitySource<T = any> {
+
+    public statements = {
+
+    };
 
     get [modelSymbol]() {
         return this.model;
@@ -17,11 +21,19 @@ export class EntitySource<T = any> {
 
     private filter: Expression;
 
+
     constructor(
         private readonly model: EntityType,
         private readonly context: EntityContext
     ) {
 
+    }
+
+    public async saveDirect(item: Partial<T>, mode: "update" | "upsert" | "insert") {
+        const { driver } = this.context;
+        const expression = driver.createUpsertExpression(this.model, item, mode);
+        const { text, values } = driver.compiler.compileExpression(null, expression);
+        await this.context.connection.executeQuery({ text, values });
     }
 
     public add(item: Partial<T>): T {

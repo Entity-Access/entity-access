@@ -10,6 +10,8 @@ import DateTime from "../types/DateTime.js";
 import WorkflowClock from "./WorkflowClock.js";
 import RawQuery from "../compiler/RawQuery.js";
 
+const loadedFromDb = Symbol("loadedFromDB");
+
 @Table("Workflows")
 @Index({
     name: "IX_Workflows_Group",
@@ -126,6 +128,7 @@ export default class WorkflowStorage {
                 error: r.error,
                 lastID: r.lastID,
                 taskGroup: r.taskGroup,
+                [loadedFromDb]: true,
             };
         }
         return null;
@@ -148,7 +151,7 @@ export default class WorkflowStorage {
                 output: r.output,
                 error: r.error,
                 lastID: r.lastID,
-                taskGroup: r.taskGroup
+                [loadedFromDb]: true
             };
         }
         return null;
@@ -187,22 +190,30 @@ export default class WorkflowStorage {
         const db = new WorkflowContext(this.driver);
         const connection = db.connection;
         await connection.runInTransaction(async () => {
-            let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
-            if (!w) {
-                w = db.workflows.add(state);
-                w.taskGroup ||= "default";
-            }
+            // let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
+            // if (!w) {
+            //     w = db.workflows.add(state);
+            //     w.taskGroup ||= "default";
+            // }
 
-            for (const key in state) {
-                if (Object.prototype.hasOwnProperty.call(state, key)) {
-                    const element = state[key];
-                    w[key] = element;
-                }
-            }
+            // for (const key in state) {
+            //     if (Object.prototype.hasOwnProperty.call(state, key)) {
+            //         const element = state[key];
+            //         w[key] = element;
+            //     }
+            // }
 
-            w.state ||= "queued";
-            w.updated ??= DateTime.utcNow;
-            await db.saveChanges();
+            // w.state ||= "queued";
+            // w.updated ??= DateTime.utcNow;
+            state.state ||= "queued";
+            state.updated ??= DateTime.utcNow;
+            state.taskGroup ||= "default";
+            // await db.saveChanges();
+            if(state[loadedFromDb]) {
+                await db.workflows.saveDirect(state, "update");
+            } else {
+                await db.workflows.saveDirect(state, "upsert");
+            }
         });
     }
 

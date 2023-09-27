@@ -7,7 +7,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;
@@ -147,6 +147,75 @@ export abstract class BaseDriver {
 
     /** Must dispose ObjectPools */
     abstract dispose();
+
+    createUpsertExpression(type: EntityType, entity: any, mode: "update" | "upsert" | "insert"): Expression {
+        const table = type.fullyQualifiedName as TableLiteral;
+
+        if (mode === "insert") {
+            const fields = [];
+            const values = [];
+            for (const iterator of type.columns) {
+                const value = entity[iterator.name];
+                if (value === void 0) {
+                    continue;
+                }
+                fields.push(Expression.identifier(iterator.columnName));
+                values.push(Expression.constant(value));
+            }
+            return InsertStatement.create({
+                table,
+                values: ValuesStatement.create({
+                    fields,
+                    values: [values]
+                })
+            });
+        }
+
+
+        const insert = [] as BinaryExpression[];
+        const update = [] as BinaryExpression[];
+        const keys = [] as BinaryExpression[];
+        for (const iterator of type.columns) {
+            const value = entity[iterator.name];
+            const assign = Expression.assign(
+                Expression.identifier(iterator.columnName),
+                Expression.constant(value)
+            );
+            if (iterator.key) {
+                keys.push(assign);
+                insert.push(assign);
+                continue;
+            }
+            if (value === undefined) {
+                continue;
+            }
+            insert.push(assign);
+            if (value === undefined) {
+                continue;
+            }
+            update.push(assign);
+        }
+
+
+        if (mode === "update") {
+            let where = null;
+            for (const iterator of keys) {
+                where = where ? Expression.logicalAnd(where, iterator) : iterator;
+            }
+            return UpdateStatement.create({
+                table,
+                set: update,
+                where
+            });
+        }
+
+        return UpsertStatement.create({
+            table,
+            insert,
+            update,
+            keys
+        });
+    }
 
     createInsertExpression(type: EntityType, entity: any): InsertStatement {
         const returnFields = [] as Identifier[];
