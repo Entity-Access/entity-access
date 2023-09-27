@@ -398,6 +398,7 @@ export class UpsertStatement extends Expression {
     insert: BinaryExpression[];
     update: BinaryExpression[];
     keys: BinaryExpression[];
+    returnUpdated: ReturnUpdated;
 }
 
 export class UnionAllStatement extends Expression {

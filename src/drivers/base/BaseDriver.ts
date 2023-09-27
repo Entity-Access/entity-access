@@ -148,15 +148,23 @@ export abstract class BaseDriver {
     /** Must dispose ObjectPools */
     abstract dispose();
 
-    createUpsertExpression(type: EntityType, entity: any, mode: "update" | "upsert" | "insert"): Expression {
+    createUpsertExpression(
+        type: EntityType,
+        entity: any,
+        mode: "update" | "upsert" | "insert",
+        entityKeys?: any): Expression {
         const table = type.fullyQualifiedName as TableLiteral;
 
+        const returnFields = [] as Identifier[];
         if (mode === "insert") {
             const fields = [];
             const values = [];
             for (const iterator of type.columns) {
                 const value = entity[iterator.name];
                 if (value === void 0) {
+                    if (iterator.generated) {
+                        returnFields.push(Expression.identifier(iterator.columnName));
+                    }
                     continue;
                 }
                 fields.push(Expression.identifier(iterator.columnName));
@@ -164,6 +172,10 @@ export abstract class BaseDriver {
             }
             return InsertStatement.create({
                 table,
+                returnValues: returnFields.length ? ReturnUpdated.create({
+                    changes: "INSERTED",
+                    fields: returnFields
+                }) : void 0,
                 values: ValuesStatement.create({
                     fields,
                     values: [values]
@@ -181,12 +193,15 @@ export abstract class BaseDriver {
                 Expression.identifier(iterator.columnName),
                 Expression.constant(value)
             );
-            if (iterator.key) {
+            if (entityKeys ? iterator.name in entityKeys : iterator.key) {
                 keys.push(assign);
                 insert.push(assign);
                 continue;
             }
             if (value === undefined) {
+                if (iterator.generated) {
+                    returnFields.push(Expression.identifier(iterator.columnName));
+                }
                 continue;
             }
             insert.push(assign);
@@ -213,7 +228,11 @@ export abstract class BaseDriver {
             table,
             insert,
             update,
-            keys
+            keys,
+            returnUpdated: returnFields.length ? ReturnUpdated.create({
+                changes: "INSERTED",
+                fields: returnFields
+            }) : void 0
         });
     }
 

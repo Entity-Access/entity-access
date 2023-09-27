@@ -498,6 +498,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const updateSet = [];
 
         const compare = [];
+        const compareKeys = [];
 
         for (const { left, right } of e.insert) {
             const c = this.visit(left);
@@ -514,15 +515,44 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         for (const { left, right } of e.keys) {
             const c = this.visit(left);
-            compare.push(c);
+            const v = this.visit(right);
+            compare.push(prepare `${c}=${v}`);
+            compareKeys.push(c);
         }
 
+        const returnValues = e.returnUpdated ? this.visit(e.returnUpdated) : [];
+
+        if (!updateSet.length) {
+
+            if (e.returnUpdated) {
+
+                const keys = e.returnUpdated.fields.map((x) => this.visit(x));
+
+                return prepare `WITH x AS(
+                    INSERT INTO ${table} (${prepareJoin(insertColumns)})
+                        VALUES (${prepareJoin(insertValues)})
+                        ON CONFLICT(${prepareJoin(compareKeys)})
+                        DO NOTHING
+                    ${returnValues}
+                )
+                SELECT * FROM x
+                UNION
+                    SELECT ${prepareJoin(keys)} FROM ${table} WHERE ${prepareJoin(compare, " AND ")}`;
+            }
+
+            return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+            VALUES (${prepareJoin(insertValues)})
+            ON CONFLICT(${prepareJoin(compareKeys)})
+            DO NOTHING
+            ${returnValues}`;
+        }
 
         return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
             VALUES (${prepareJoin(insertValues)})
-            ON CONFLICT(${prepareJoin(compare)})
+            ON CONFLICT(${prepareJoin(compareKeys)})
             DO UPDATE SET
-                ${prepareJoin(updateSet)} `;
+                ${prepareJoin(updateSet)}
+            ${returnValues}`;
     }
 
     visitNewObjectExpression(e: NewObjectExpression): ITextQuery {

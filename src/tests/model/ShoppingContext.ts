@@ -32,6 +32,8 @@ export class ShoppingContext extends EntityContext {
     public profilePhotos = this.model.register(ProfilePhoto);
 
     public userFiles = this.model.register(UserFile);
+
+    public emailAddresses = this.model.register(EmailAddress);
 }
 
 @Table("Users")
@@ -70,6 +72,22 @@ export class User {
     public files: UserFile[];
 
     public photo: UserFile;
+}
+
+@Table("EmailAddresses")
+@Index({
+    name: "IX_Unique_EmailAddress",
+    columns: [{ name: (x) => x.address , descending: false }],
+    unique: true
+})
+export class EmailAddress {
+
+    @Column({ key: true, generated: "identity"})
+    public id: number;
+
+    @Column({ dataType: "Char", length: 200 })
+    public address: string;
+
 }
 
 @Table("Categories")

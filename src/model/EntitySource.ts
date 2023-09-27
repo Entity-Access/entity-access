@@ -29,11 +29,22 @@ export class EntitySource<T = any> {
 
     }
 
-    public async saveDirect(item: Partial<T>, mode: "update" | "upsert" | "insert") {
+    public async saveDirect(item: Partial<T>, mode: "update" | "upsert" | "insert", keys?: Partial<T>) {
         const { driver } = this.context;
-        const expression = driver.createUpsertExpression(this.model, item, mode);
+        const expression = driver.createUpsertExpression(this.model, item, mode, keys);
         const { text, values } = driver.compiler.compileExpression(null, expression);
-        await this.context.connection.executeQuery({ text, values });
+        const r = await this.context.connection.executeQuery({ text, values });
+        if(r.rows?.length) {
+            const first = r.rows[0];
+            for (const key in first) {
+                if (Object.prototype.hasOwnProperty.call(first, key)) {
+                    const element = first[key];
+                    const name = this.model.getColumn(key).name;
+                    item[name] = element;
+                }
+            }
+        }
+        return item;
     }
 
     public add(item: Partial<T>): T {
