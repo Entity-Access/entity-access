@@ -1,11 +1,9 @@
-import EntityAccessError from "../../common/EntityAccessError.js";
-import { DisposableScope } from "../../common/usingAsync.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType, { IEntityProperty } from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { FilteredExpression, filteredSymbol } from "../../model/events/FilteredExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
@@ -459,7 +457,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitInsertStatement(e: InsertStatement): ITextQuery {
-        const returnValues = this.visit(e.returnValues);
+        const returnValues = e.returnValues ? this.visit(e.returnValues) : [];
         if (e.values instanceof ValuesStatement) {
 
             const rows = [];
@@ -490,6 +488,41 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const set = this.visitArray(e.set);
 
         return prepare `UPDATE ${table} SET ${set} WHERE ${where}`;
+    }
+
+    visitUpsertStatement(e: UpsertStatement): ITextQuery {
+        const table = this.visit(e.table);
+
+        const insertColumns = [];
+        const insertValues = [];
+        const updateSet = [];
+
+        const compare = [];
+
+        for (const { left, right } of e.insert) {
+            const c = this.visit(left);
+            const v = this.visit(right);
+            insertColumns.push(c);
+            insertValues.push(v);
+        }
+
+        for (const { left, right } of e.update) {
+            const c = this.visit(left);
+            const v = this.visit(right);
+            updateSet.push(prepare `${c} = ${v}`);
+        }
+
+        for (const { left, right } of e.keys) {
+            const c = this.visit(left);
+            compare.push(c);
+        }
+
+
+        return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+            VALUES (${prepareJoin(insertValues)})
+            ON CONFLICT(${prepareJoin(compare)})
+            DO UPDATE SET
+                ${prepareJoin(updateSet)} `;
     }
 
     visitNewObjectExpression(e: NewObjectExpression): ITextQuery {

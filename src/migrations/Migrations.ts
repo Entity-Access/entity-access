@@ -1,7 +1,7 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
-import { IIndex } from "../decorators/IIndex.js";
-import SchemaRegistry from "../decorators/SchemaRegistry.js";
+import type { IForeignKeyConstraint } from "../decorators/IForeignKeyConstraint.js";
+import type { IIndex } from "../decorators/IIndex.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type EntityContext from "../model/EntityContext.js";
 import type EntityQuery from "../model/EntityQuery.js";
@@ -37,6 +37,27 @@ export default abstract class Migrations {
             for (const index of type.indexes) {
                 await this.migrateIndexInternal(context, index, type);
             }
+
+            for (const { isInverseRelation , foreignKeyConstraint, relatedTypeClass } of type.relations) {
+                if (isInverseRelation) {
+                    continue;
+                }
+                if (!foreignKeyConstraint) {
+                    continue;
+                }
+
+                const relatedEntity = model.register(relatedTypeClass)[modelSymbol] as EntityType;
+
+                foreignKeyConstraint.type = type;
+                foreignKeyConstraint.column = type.getProperty(foreignKeyConstraint.column.name).field;
+                const refColumns = foreignKeyConstraint.refColumns;
+                foreignKeyConstraint.refColumns = [];
+                for (const iterator of refColumns) {
+                    foreignKeyConstraint.refColumns.push(relatedEntity.getProperty(iterator.name).field);
+                }
+
+                await this.migrateForeignKey(context, foreignKeyConstraint);
+            }
         }
 
     }
@@ -68,6 +89,8 @@ export default abstract class Migrations {
     abstract migrateIndex(context: EntityContext, index: IIndex, type: EntityType);
 
     abstract migrateTable(context: EntityContext, type: EntityType): Promise<any>;
+
+    abstract migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint);
 
 
 }

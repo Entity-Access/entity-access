@@ -1,5 +1,5 @@
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -71,9 +71,14 @@ export default abstract class Visitor<T = any> {
                 return this.visitNotExists(e);
             case "UnionAllStatement":
                 return this.visitUnionAllStatement(e);
+            case "UpsertStatement":
+                return this.visitUpsertStatement(e);
         }
         const c: never = e;
         throw new Error(`${e1.type} Not implemented`);
+    }
+    visitUpsertStatement(e: UpsertStatement): T {
+        throw new Error("Method not implemented.");
     }
     visitUnionAllStatement(e: UnionAllStatement): T {
         throw new NotSupportedError("Union All");

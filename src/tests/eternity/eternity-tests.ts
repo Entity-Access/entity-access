@@ -1,12 +1,12 @@
 import assert from "assert";
 import Inject, { Register, RegisterSingleton, ServiceProvider } from "../../di/di.js";
-import EternityContext from "../../eternity/EternityContext.js";
-import Workflow, { Activity } from "../../eternity/Workflow.js";
-import WorkflowClock from "../../eternity/WorkflowClock.js";
+import WorkflowContext from "../../workflows/WorkflowContext.js";
+import Workflow, { Activity } from "../../workflows/Workflow.js";
+import WorkflowClock from "../../workflows/WorkflowClock.js";
 import DateTime from "../../types/DateTime.js";
 import { TestConfig } from "../TestConfig.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
-import EternityStorage from "../../eternity/EternityStorage.js";
+import WorkflowStorage from "../../workflows/WorkflowStorage.js";
 import TimeSpan from "../../types/TimeSpan.js";
 import sleep from "../../common/sleep.js";
 
@@ -64,12 +64,12 @@ export default async function (this: TestConfig) {
     const scope = new ServiceProvider();
     scope.add(WorkflowClock, mockClock);
     scope.add(BaseDriver, this.driver);
-    const storage = new EternityStorage(this.driver, mockClock);
+    const storage = new WorkflowStorage(this.driver, mockClock);
     scope.add(Mailer, mailer);
-    scope.add(EternityStorage, storage);
+    scope.add(WorkflowStorage, storage);
 
-    const c = new EternityContext(storage);
-    scope.add(EternityContext, c);
+    const c = new WorkflowContext(storage);
+    scope.add(WorkflowContext, c);
 
     // this is an important step
     c.register(SendWorkflow);

@@ -158,15 +158,11 @@ export default class VerificationSession {
         const compiler = this.context.driver.compiler;
         const query = compiler.compileExpression(null, this.select);
         const logger = ServiceProvider.resolve(this.context, Logger);
-        const session = logger.newSession();
-        try {
-            const { rows: [ { error }]} = await this.context.connection.executeQuery(query);
-            if (error) {
-                session.error(`Failed executing ${query.text}\n[${query.values.join(",")}]\n${error?.stack ?? error}`);
-                EntityAccessError.throw(error);
-            }
-        } finally {
-            session.dispose();
+        using session = logger.newSession();
+        const { rows: [ { error }]} = await this.context.connection.executeQuery(query);
+        if (error) {
+            session.error(`Failed executing ${query.text}\n[${query.values.join(",")}]\n${error?.stack ?? error}`);
+            EntityAccessError.throw(error);
         }
     }
 

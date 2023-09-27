@@ -1,12 +1,4 @@
 /* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/naming-convention */
-declare global {
-    interface SymbolConstructor {
-        readonly dispose?: unique symbol;
-        readonly asyncDispose?: unique symbol;
-    }
-}
-
 // @ts-expect-error readonly
 Symbol.dispose ??= Symbol("@@disposable");
 // @ts-expect-error readonly

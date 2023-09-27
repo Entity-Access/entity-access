@@ -1,6 +1,6 @@
 import ExpressionToSql from "../../query/ast/ExpressionToSql.js";
-import { BooleanLiteral, InsertStatement, NumberLiteral, OrderByExpression, ReturnUpdated, SelectStatement, ValuesStatement } from "../../query/ast/Expressions.js";
-import { ITextQuery, prepare } from "../../query/ast/IStringTransformer.js";
+import { BooleanLiteral, InsertStatement, NumberLiteral, OrderByExpression, ReturnUpdated, SelectStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { ITextQuery, prepare, prepareJoin } from "../../query/ast/IStringTransformer.js";
 
 export default class ExpressionToSqlServer extends ExpressionToSql {
 
@@ -23,7 +23,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
     }
 
     visitInsertStatement(e: InsertStatement): ITextQuery {
-        const returnValues = this.visit(e.returnValues);
+        const returnValues = e.returnValues ? this.visit(e.returnValues) : [];
         if (e.values instanceof ValuesStatement) {
 
             const rows = [];
@@ -44,6 +44,48 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         return prepare `INSERT INTO ${this.visit(e.table)} ${returnValues} ${this.visit(e.values)}`;
 
     }
+
+    visitUpsertStatement(e: UpsertStatement): ITextQuery {
+        const table = this.visit(e.table);
+
+        const insertColumns = [];
+        const insertValues = [];
+        const updateSet = [];
+
+        const compare = [];
+
+        for (const { left, right } of e.insert) {
+            const c = this.visit(left);
+            const v = this.visit(right);
+            insertColumns.push(c);
+            insertValues.push(v);
+        }
+
+        for (const { left, right } of e.update) {
+            const c = this.visit(left);
+            const v = this.visit(right);
+            updateSet.push(prepare `${c} = ${v}`);
+        }
+
+        for (const { left, right } of e.keys) {
+            const c = this.visit(left);
+            const v = this.visit(right);
+            compare.push(prepare `${c} = ${v}`);
+        }
+
+
+        return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+            SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
+            WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")});
+            IF @@ROWCOUNT=0
+            BEGIN
+                UPDATE ${table}
+                SET
+                    ${prepareJoin(updateSet)}
+                WHERE ${prepareJoin(compare, " AND ")}
+            END;`;
+    }
+
 
     visitSelectStatement(e: SelectStatement): ITextQuery {
 

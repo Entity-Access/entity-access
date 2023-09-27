@@ -1,15 +1,13 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
+
+// Making sure that Symbol.dispose is not undefined
+import "../../common/IDisposable.js";
+
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "../../query/ast/Expressions.js";
-
-export const disposableSymbol: unique symbol = (Symbol as any).dispose ??= Symbol("disposable");
-
-interface IDisposable {
-    [disposableSymbol]?(): void;
-}
+import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;
@@ -24,9 +22,10 @@ export interface IDbConnectionString {
     poolSize?: number;
 }
 
-export interface IDbReader extends IDisposable {
+export interface IDbReader {
     next(min?: number, signal?: AbortSignal): AsyncGenerator<IRecord, any, any>;
     dispose(): Promise<any>;
+    [Symbol.asyncDispose](): Promise<void>;
 }
 
 export const toQuery = (text: IQuery): { text: string, values?: any[]} => typeof text === "string"
@@ -51,7 +50,38 @@ export interface IQueryResult {
 export interface IBaseTransaction {
     commit(): Promise<any>;
     rollback(): Promise<any>;
-    dispose(): Promise<any>;
+    dispose(): Promise<void>;
+}
+
+export class EntityTransaction {
+
+    committedOrRolledBack = false;
+
+    constructor(private tx: IBaseTransaction) {}
+
+    commit() {
+        this.committedOrRolledBack = true;
+        return this.tx.commit();
+    }
+
+    rollback() {
+        this.committedOrRolledBack = true;
+        return this.tx.rollback();
+    }
+
+    async dispose() {
+        if(!this.committedOrRolledBack) {
+            await this.tx.commit();
+        }
+        await this.tx.dispose();
+    }
+
+    async [Symbol.asyncDispose]() {
+        if(!this.committedOrRolledBack) {
+            await this.tx.commit();
+        }
+        await this.tx.dispose();
+    }
 }
 
 export abstract class BaseConnection {
@@ -60,7 +90,7 @@ export abstract class BaseConnection {
 
     protected connectionString: IDbConnectionString;
 
-    private currentTransaction: IBaseTransaction;
+    private currentTransaction: EntityTransaction;
 
 
     constructor(public driver: BaseDriver) {
@@ -81,7 +111,7 @@ export abstract class BaseConnection {
 
     public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
 
-    public abstract createTransaction(): Promise<IBaseTransaction>;
+    public abstract createTransaction(): Promise<EntityTransaction>;
 
     public async runInTransaction<T = any>(fx?: () => Promise<T>) {
         if(this.currentTransaction) {
@@ -90,7 +120,7 @@ export abstract class BaseConnection {
             return await fx();
         }
         let failed = true;
-        let tx: IBaseTransaction;
+        let tx: EntityTransaction;
         try {
             tx = this.currentTransaction = await this.createTransaction();
             const result = await fx();
@@ -101,7 +131,7 @@ export abstract class BaseConnection {
             if (failed) {
                 await tx?.rollback();
             }
-            await tx?.dispose();
+            await tx?.[Symbol.asyncDispose]();
             this.currentTransaction = null;
         }
     }
@@ -117,6 +147,75 @@ export abstract class BaseDriver {
 
     /** Must dispose ObjectPools */
     abstract dispose();
+
+    createUpsertExpression(type: EntityType, entity: any, mode: "update" | "upsert" | "insert"): Expression {
+        const table = type.fullyQualifiedName as TableLiteral;
+
+        if (mode === "insert") {
+            const fields = [];
+            const values = [];
+            for (const iterator of type.columns) {
+                const value = entity[iterator.name];
+                if (value === void 0) {
+                    continue;
+                }
+                fields.push(Expression.identifier(iterator.columnName));
+                values.push(Expression.constant(value));
+            }
+            return InsertStatement.create({
+                table,
+                values: ValuesStatement.create({
+                    fields,
+                    values: [values]
+                })
+            });
+        }
+
+
+        const insert = [] as BinaryExpression[];
+        const update = [] as BinaryExpression[];
+        const keys = [] as BinaryExpression[];
+        for (const iterator of type.columns) {
+            const value = entity[iterator.name];
+            const assign = Expression.assign(
+                Expression.identifier(iterator.columnName),
+                Expression.constant(value)
+            );
+            if (iterator.key) {
+                keys.push(assign);
+                insert.push(assign);
+                continue;
+            }
+            if (value === undefined) {
+                continue;
+            }
+            insert.push(assign);
+            if (value === undefined) {
+                continue;
+            }
+            update.push(assign);
+        }
+
+
+        if (mode === "update") {
+            let where = null;
+            for (const iterator of keys) {
+                where = where ? Expression.logicalAnd(where, iterator) : iterator;
+            }
+            return UpdateStatement.create({
+                table,
+                set: update,
+                where
+            });
+        }
+
+        return UpsertStatement.create({
+            table,
+            insert,
+            update,
+            keys
+        });
+    }
 
     createInsertExpression(type: EntityType, entity: any): InsertStatement {
         const returnFields = [] as Identifier[];

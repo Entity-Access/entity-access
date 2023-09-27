@@ -392,6 +392,14 @@ export class UpdateStatement extends Expression {
 
 }
 
+export class UpsertStatement extends Expression {
+    readonly type = "UpsertStatement";
+    table: TableLiteral | Identifier;
+    insert: BinaryExpression[];
+    update: BinaryExpression[];
+    keys: BinaryExpression[];
+}
+
 export class UnionAllStatement extends Expression {
     readonly type = "UnionAllStatement";
     queries: Expression[];
@@ -399,7 +407,7 @@ export class UnionAllStatement extends Expression {
 
 export class DeleteStatement extends Expression {
     readonly type = "DeleteStatement";
-    table: TableLiteral | Identifier
+    table: TableLiteral | Identifier;
     where: Expression;
 }
 
@@ -414,6 +422,7 @@ export type ExpressionType =
     InsertStatement|
     UpdateStatement|
     DeleteStatement|
+    UpsertStatement|
     ReturnUpdated|
     OrderByExpression|
     JoinExpression|

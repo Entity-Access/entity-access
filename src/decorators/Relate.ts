@@ -1,12 +1,15 @@
 import type { IClassOf } from "./IClassOf.js";
+import { IForeignKeyConstraint } from "./IForeignKeyConstraint.js";
 import SchemaRegistry from "./SchemaRegistry.js";
 import NameParser from "./parser/NameParser.js";
+
 
 export interface IRelatedType<T, TRelated> {
     property: (item: T) => TRelated;
     inverseProperty: (item: TRelated) => T[];
     inverseKey?: (item: TRelated) => any;
     dotNotCreateIndex?: boolean;
+    foreignKeyConstraint?: IForeignKeyConstraint;
 }
 
 export interface IRelatedTypeOne<T, TRelated> {
@@ -14,6 +17,7 @@ export interface IRelatedTypeOne<T, TRelated> {
     inverseProperty: (item: TRelated) => T;
     inverseKey?: (item: TRelated) => any;
     dotNotCreateIndex?: boolean;
+    foreignKeyConstraint?: IForeignKeyConstraint;
 }
 
 export interface IRelatedTypeWithType<T, TRelated> {
@@ -22,6 +26,7 @@ export interface IRelatedTypeWithType<T, TRelated> {
     inverseProperty: (item: TRelated) => T[];
     inverseKey?: (item: TRelated) => any;
     dotNotCreateIndex?: boolean;
+    foreignKeyConstraint?: IForeignKeyConstraint;
 }
 
 export interface IRelatedTypeOneWithType<T, TRelated> {
@@ -30,6 +35,7 @@ export interface IRelatedTypeOneWithType<T, TRelated> {
     inverseProperty: (item: TRelated) => T;
     inverseKey?: (item: TRelated) => any;
     dotNotCreateIndex?: boolean;
+    foreignKeyConstraint?: IForeignKeyConstraint;
 }
 export function RelateTo<T, TRelated>(p: IRelatedTypeWithType<T, TRelated>): (target: T, key: string) => any;
 export function RelateTo<T, TRelated>(c: IClassOf<TRelated>, p: IRelatedType<T, TRelated>): (target: T, key: string) => any;
@@ -43,7 +49,7 @@ export function RelateTo(c, p?): any {
         }
     }
 
-    const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex } = p;
+    const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex, foreignKeyConstraint } = p;
 
     return (target: any, foreignKey: string): any => {
 
@@ -60,6 +66,7 @@ export function RelateTo(c, p?): any {
             relatedTypeClassFactory: p.type,
             relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
+            foreignKeyConstraint,
             dotNotCreateIndex
         });
 

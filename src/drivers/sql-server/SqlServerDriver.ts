@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
-import { BaseConnection, BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, disposableSymbol, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, EntityTransaction, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import sql from "mssql";
 import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
@@ -105,40 +105,17 @@ export class SqlServerConnection extends BaseConnection {
         return value;
     }
 
-    public async createTransaction(): Promise<IBaseTransaction> {
+    public async createTransaction(): Promise<EntityTransaction> {
         this.transaction = new sql.Transaction(await this.newConnection());
         let rolledBack = false;
         this.transaction.on("rollback", (aborted) => rolledBack = aborted);
         await this.transaction.begin();
-        return {
+        return new EntityTransaction({
             commit: () => this.transaction.commit(),
             rollback: async () => !rolledBack && await this.transaction.rollback(),
             dispose: () => this.transaction = void 0
-        };
+        });
     }
-
-    // public async runInTransaction<T = any>(fx?: () => Promise<T>): Promise<T> {
-    //     this.transaction = new sql.Transaction(await this.newConnection());
-    //     let rolledBack = false;
-    //     try {
-    //         this.transaction.on("rollback", (aborted) => rolledBack = aborted);
-    //         await this.transaction.begin();
-    //         const r = await fx();
-    //         await this.transaction.commit();
-    //         return r;
-    //     } catch (error) {
-    //         if (!rolledBack) {
-    //             try {
-    //                 await this.transaction.rollback();
-    //             } catch {
-    //                 // rolledBack isn't true sometimes...
-    //             }
-    //         }
-    //         throw new Error(error.stack ?? error);
-    //     } finally {
-    //         this.transaction = void 0;
-    //     }
-    // }
 
     public automaticMigrations(): Migrations {
         return new SqlServerAutomaticMigrations(this.sqlQueryCompiler);
@@ -151,6 +128,7 @@ export class SqlServerConnection extends BaseConnection {
         } else {
             request = (await this.newConnection()).request();
         }
+        // request.verbose = true;
         if (signal) {
             if (signal.aborted) {
                 request.cancel();
@@ -232,10 +210,13 @@ class SqlReader implements IDbReader {
         }  while(true);
     }
     dispose(): Promise<any> {
+        // if (!this.ended) {
+        //     this.rq.cancel();
+        // }
         return Promise.resolve();
     }
-    [disposableSymbol]?(): void {
-        this.dispose()?.catch((error) => console.error(error.stack ?? error));
+    [Symbol.asyncDispose]() {
+        return this.dispose()?.catch((error) => console.error(error));
     }
 
 }

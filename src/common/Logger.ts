@@ -26,7 +26,7 @@ export default class Logger implements IDisposable {
         return new SessionLogger(this);
     }
 
-    dispose() {
+    [Symbol.dispose]() {
         // do nothing...
     }
 }
@@ -47,7 +47,7 @@ export class ConsoleLogger extends Logger {
         return new SessionLogger(this);
     }
 
-    dispose() {
+    [Symbol.dispose]() {
         // do nothing...
     }
 }
@@ -69,7 +69,7 @@ class SessionLogger extends Logger {
         return this;
     }
 
-    dispose(): void {
+    [Symbol.dispose](): void {
         for (const { log, error } of this.items) {
             if (log) {
                 this.parent.log(log);

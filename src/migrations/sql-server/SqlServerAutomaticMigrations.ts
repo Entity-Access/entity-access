@@ -1,4 +1,5 @@
 import { IColumn } from "../../decorators/IColumn.js";
+import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
@@ -136,5 +137,51 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         await driver.executeQuery(query);
     }
 
+    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
+        const { type } = constraint;
+        const name = type.schema
+        ? type.schema + "." + type.name
+        : type.name;
+
+        let text = `SELECT COUNT(*) 
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+        WHERE TABLE_NAME='${type.name}' 
+        AND CONSTRAINT_NAME='${constraint.name}' 
+        AND CONSTRAINT_TYPE='FOREIGN KEY'`;
+
+        if(type.schema) {
+            text += ` and schema_name = ${type.schema}`;
+        }
+
+        const driver = context.connection;
+
+        const r = await driver.executeQuery(text);
+        if (r.rows?.length) {
+            return;
+        }
+
+        text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
+            foreign key (${constraint.column.columnName})
+            references ${constraint.refColumns[0].entityType.name}(
+                ${constraint.refColumns.map((x) => x.columnName).join(",")}
+            ) `;
+
+        switch(constraint.cascade) {
+            case "delete":
+                text += " ON DELETE CASCADE";
+                break;
+            case "set-null":
+                text += " ON DELETE SET NULL";
+                break;
+            case "set-default":
+                text += " ON DELETE SET DEFAULT";
+                break;
+            case "restrict":
+                text += " ON DELETE RESTRICT";
+                break;
+        }
+
+        await driver.executeQuery(text);
+    }
 
 }

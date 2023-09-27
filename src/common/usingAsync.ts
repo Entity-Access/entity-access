@@ -1,5 +1,8 @@
 import { IDisposable } from "./IDisposable.js";
 
+// Making sure that Symbol.dispose is not undefined
+import "./IDisposable.js";
+
 export type IDisposableObject = IDisposable & { end?(): any; close?():any };
 
 export type IDisposableObjectType = IDisposableObject | IDisposableObject[];
@@ -39,7 +42,7 @@ export default async function usingAsync<T>(fx: (registry: IDisposableObject[]) 
     }
 }
 
-export class DisposableScope {
+export class AsyncDisposableScope {
 
     private disposables: IDisposableObject[] = [];
 
@@ -48,6 +51,10 @@ export class DisposableScope {
     }
 
     async dispose() {
+        await disposeAll(this.disposables);
+    }
+
+    async [Symbol.asyncDispose]() {
         await disposeAll(this.disposables);
     }
 

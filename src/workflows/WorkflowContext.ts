@@ -4,13 +4,14 @@ import EntityAccessError from "../common/EntityAccessError.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import Inject, { RegisterSingleton, ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
 import DateTime from "../types/DateTime.js";
-import EternityStorage, { WorkflowStorage } from "./EternityStorage.js";
+import WorkflowStorage, { WorkflowItem } from "./WorkflowStorage.js";
 import type Workflow from "./Workflow.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
 import { IWorkflowSchema, WorkflowRegistry } from "./WorkflowRegistry.js";
 import crypto from "crypto";
 import TimeSpan from "../types/TimeSpan.js";
 import sleep from "../common/sleep.js";
+import Waiter from "./Waiter.js";
 
 async function  hash(text) {
     const sha256 = crypto.createHash("sha256");
@@ -23,7 +24,7 @@ const align = (d: DateTime) => {
     return new DateTime(time);
 };
 
-function bindStep(context: EternityContext, store: WorkflowStorage, name: string, old: (... a: any[]) => any, unique = false) {
+function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, old: (... a: any[]) => any, unique = false) {
     return async function runStep(this: Workflow, ... a: any[]) {
         const input = JSON.stringify(a);
         const ts = unique ? "0" : Math.floor(this.currentTime.msSinceEpoch);
@@ -52,7 +53,7 @@ function bindStep(context: EternityContext, store: WorkflowStorage, name: string
 
         let ttl = TimeSpan.fromSeconds(0);
 
-        const step: Partial<WorkflowStorage> = {
+        const step: Partial<WorkflowItem> = {
             id,
             parentID: this.id,
             eta: this.eta,
@@ -128,15 +129,26 @@ export interface IWorkflowResult<T> {
     error: string;
 }
 
-export default class EternityContext {
+export interface IWorkflowQueueParameter {
+    id?: string;
+    throwIfExists?: boolean;
+    eta?: DateTime;
+    parentID?: string;
+    taskGroup?: string;
+}
 
-    private waiter: AbortController;
+export interface IWorkflowStartParams {
+    taskGroup?: string;
+    signal?: AbortSignal;
+}
+
+export default class WorkflowContext {
 
     private registry: Map<string, IWorkflowSchema> = new Map();
 
     constructor(
         @Inject
-        public storage: EternityStorage
+        public storage: WorkflowStorage
     ) {
 
     }
@@ -145,11 +157,11 @@ export default class EternityContext {
         this.registry.set(type.name, WorkflowRegistry.register(type, void 0));
     }
 
-    public async start(signal?: AbortSignal) {
+    public async start({ taskGroup = "default", signal = void 0 as AbortSignal }: IWorkflowStartParams = {}) {
         console.log(`Started executing workflow jobs`);
         while(!signal?.aborted) {
             try {
-                const total = await this.processQueueOnce(signal);
+                const total = await this.processQueueOnce({ taskGroup, signal });
                 if (total > 0) {
                     // do not wait till we have zero messages to process
                     continue;
@@ -157,8 +169,8 @@ export default class EternityContext {
             } catch (error) {
                 console.error(error);
             }
-            const ws = (this.waiter = new AbortController()).signal;
-            await sleep(15000, ws);
+            using ws = Waiter.create();
+            await sleep(15000, ws.signal);
         }
     }
 
@@ -178,12 +190,13 @@ export default class EternityContext {
     public async queue<T>(
         type: IClassOf<Workflow<T>>,
         input: T,
-        { id, throwIfExists, eta, parentID }: {
-            id?: string,
-            throwIfExists?: boolean,
-            eta?: DateTime,
-            parentID?: string
-        } = {}) {
+        {
+            id,
+            throwIfExists,
+            eta,
+            parentID,
+            taskGroup = "default"
+        }: IWorkflowQueueParameter = {}) {
         const clock = this.storage.clock;
         let tries = 1;
         if (id) {
@@ -216,6 +229,7 @@ export default class EternityContext {
                 eta ??= now;
                 await this.storage.save({
                     id,
+                    taskGroup,
                     name: schema.name,
                     input: JSON.stringify(input),
                     isWorkflow: true,
@@ -226,7 +240,7 @@ export default class EternityContext {
                 });
 
                 if(eta < clock.utcNow) {
-                    this.waiter?.abort();
+                    Waiter.releaseAll();
                 }
             } catch (error) {
                 lastError = error;
@@ -266,15 +280,15 @@ export default class EternityContext {
         parent.eta = w.updated;
         parent.updated = w.updated;
         await this.storage.save(parent);
-        this.waiter?.abort();
+        Waiter.releaseAll();
     }
 
     public log ( ... a: any[]) {
         // console.log(... a);
     }
 
-    public async processQueueOnce(signal?: AbortSignal) {
-        const pending = await this.storage.dequeue(signal);
+    public async processQueueOnce({ taskGroup = "default", signal = void 0 as AbortSignal } = {}) {
+        const pending = await this.storage.dequeue(taskGroup, signal);
         // run...
         for (const iterator of pending) {
             try {
@@ -316,7 +330,7 @@ export default class EternityContext {
         throw new ActivitySuspendedError();
     }
 
-    private async run(workflow: WorkflowStorage) {
+    private async run(workflow: WorkflowItem) {
 
         const clock = this.storage.clock;
 
@@ -328,68 +342,63 @@ export default class EternityContext {
             return;
         }
 
-        const scope = ServiceProvider.from(this).createScope();
+        using scope = ServiceProvider.from(this).createScope();
 
-        try {
+        this.log(`Run workflow ${workflow.id} -----------------------------------`);
 
-            this.log(`Run workflow ${workflow.id} -----------------------------------`);
-
-            const schema = WorkflowRegistry.getByName(workflow.name);
-            const { eta, id, queued } = workflow;
-            const input = JSON.parse(workflow.input);
-            const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(queued) }, this);
-            for (const iterator of schema.activities) {
-                instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
-            }
-            for (const iterator of schema.uniqueActivities) {
-                instance[iterator] = bindStep(this, workflow, iterator, instance[iterator], true);
-            }
-            scope.add( schema.type, instance);
-            try {
-                const result = await instance.run();
-                workflow.output = JSON.stringify(result ?? 0);
-                workflow.state = "done";
-                workflow.eta = clock.utcNow.add(instance.preserveTime);
-            } catch (error) {
-                if (error instanceof ActivitySuspendedError) {
-                    // this will update last id...
-                    workflow.eta = clock.utcNow.add(error.ttl);
-                    workflow.lockedTTL = null;
-                    workflow.lockToken = null;
-                    await this.storage.save(workflow);
-                    return;
-                }
-                workflow.error = JSON.stringify(error.stack ?? error);
-                console.error(error);
-                workflow.state = "failed";
-                workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
-            }
-
-            // in case of child workflow...
-            // eta will be set to one year...
-            if (workflow.parentID) {
-                workflow.eta = clock.utcNow.addYears(1);
-                // since we have finished.. we should
-                // make parent's eta approach now sooner..
-            }
-
-            workflow.lockedTTL = null;
-            workflow.lockToken = null;
-            await this.storage.save(workflow);
-
-            if (workflow.parentID) {
-                const parent = await this.storage.getWorkflow(workflow.parentID);
-                if (parent) {
-                    parent.lockTTL = null;
-                    parent.lockToken = null;
-                    parent.eta = clock.utcNow;
-                    await this.storage.save(parent);
-                }
-            }
-            // workflow finished successfully...
-
-        } finally {
-            scope.dispose();
+        const schema = WorkflowRegistry.getByName(workflow.name);
+        const { eta, id, queued } = workflow;
+        const input = JSON.parse(workflow.input);
+        const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(queued) }, this);
+        for (const iterator of schema.activities) {
+            instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
         }
+        for (const iterator of schema.uniqueActivities) {
+            instance[iterator] = bindStep(this, workflow, iterator, instance[iterator], true);
+        }
+        scope.add( schema.type, instance);
+        try {
+            const result = await instance.run();
+            workflow.output = JSON.stringify(result ?? 0);
+            workflow.state = "done";
+            workflow.eta = clock.utcNow.add(instance.preserveTime);
+        } catch (error) {
+            if (error instanceof ActivitySuspendedError) {
+                // this will update last id...
+                workflow.eta = clock.utcNow.add(error.ttl);
+                workflow.lockedTTL = null;
+                workflow.lockToken = null;
+                await this.storage.save(workflow);
+                return;
+            }
+            workflow.error = JSON.stringify(error.stack ?? error);
+            console.error(error);
+            workflow.state = "failed";
+            workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
+        }
+
+        // in case of child workflow...
+        // eta will be set to one year...
+        if (workflow.parentID) {
+            workflow.eta = clock.utcNow.addYears(1);
+            // since we have finished.. we should
+            // make parent's eta approach now sooner..
+        }
+
+        workflow.lockedTTL = null;
+        workflow.lockToken = null;
+        await this.storage.save(workflow);
+
+        if (workflow.parentID) {
+            const parent = await this.storage.getWorkflow(workflow.parentID);
+            if (parent) {
+                parent.lockTTL = null;
+                parent.lockToken = null;
+                parent.eta = clock.utcNow;
+                await this.storage.save(parent);
+            }
+        }
+        // workflow finished successfully...
+
     }
 }

@@ -1,4 +1,5 @@
 import { IColumn } from "../../decorators/IColumn.js";
+import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EntityType from "../../entity-query/EntityType.js";
@@ -127,6 +128,55 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             query += ` WHERE (${index.filter})`;
         }
         await driver.executeQuery(query);
+    }
+
+    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
+        const { type } = constraint;
+        const name = type.schema
+        ? type.schema + "." + type.name
+        : type.name;
+
+        let text = `select constraint_name 
+        from information_schema.constraint_column_usage 
+        where table_name = $1 and constraint_name = $2 `;
+
+        const values = [type.name, constraint.name];
+
+        if(type.schema) {
+            text += " and schema_name = $3";
+            values.push(type.schema);
+        }
+
+        const driver = context.connection;
+
+        const r = await driver.executeQuery({ text, values });
+        if (r.rows?.length) {
+            return;
+        }
+
+        text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
+            foreign key (${constraint.column.columnName})
+            references ${constraint.refColumns[0].entityType.name}(
+                ${constraint.refColumns.map((x) => x.columnName).join(",")}
+            ) `;
+
+        switch(constraint.cascade) {
+            case "delete":
+                text += " ON DELETE CASCADE";
+                break;
+            case "set-null":
+                text += " ON DELETE SET NULL";
+                break;
+            case "set-default":
+                text += " ON DELETE SET DEFAULT";
+                break;
+            case "restrict":
+                text += " ON DELETE RESTRICT";
+                break;
+        }
+
+        await driver.executeQuery(text);
+
     }
 
 

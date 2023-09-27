@@ -54,6 +54,12 @@ export default function () {
 
     assert.equal(`(x.code = ($1 ::double)) AND (x.key = ($2 ::text))`, r.text);
 
+
+    r = compiler.execute({}, (p) => (x) => `a`);
+    assert.equal(`'a'`, r.text);
+
+    r = compiler.execute({}, (p) => (x) => `${x.firstName} ${x.lastName}`);
+    assert.equal(`CONCAT(x.firstName,' ',x.lastName)`, r.text);
 }
 
 type KeyCode = { name: string, code: number, key: string };

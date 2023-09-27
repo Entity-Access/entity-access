@@ -297,7 +297,10 @@ export class OrderItem {
     @RelateTo({
         type: () => Order,
         property: (orderItem) => orderItem.order,
-        inverseProperty: (order) => order.orderItems
+        inverseProperty: (order) => order.orderItems,
+        foreignKeyConstraint: {
+            cascade: "delete"
+        }
     })
     public orderID: number;
 

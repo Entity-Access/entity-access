@@ -1,17 +1,19 @@
 {
     "compilerOptions": {
-        "target": "ESNext",
+        "target": "ES2021",
         "module":"NodeNext",
         "incremental": true,
         "sourceMap": true,
         "declaration": true,
         "declarationMap": true,
+        "importHelpers": true,
         "outDir": "dist",
         "skipDefaultLibCheck": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "lib": [
-            "ES2018"
+            "ES2018",
+            "ESNext.Disposable"
         ]
     },
     "include": [

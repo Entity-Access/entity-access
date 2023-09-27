@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-base-to-string */
 /* eslint-disable no-console */
 import EntityAccessError from "./EntityAccessError.js";
 import TimedCache from "./cache/TimedCache.js";
 import sleep from "./sleep.js";
+
+// Making sure that Symbol.dispose is not undefined
 import "./IDisposable.js";
 
 interface IObjectPool<T> {
@@ -114,7 +117,7 @@ export default class ObjectPool<T> {
             }
         }
         if(existing) {
-            return existing as IPooledObject<T>;
+            return this.setupItem(existing);
         }
 
         if (this.total >= this.maxSize) {
@@ -136,7 +139,7 @@ export default class ObjectPool<T> {
     private setupItem(item: T) {
         const pooledItem = item as IPooledObject<T>;
         pooledItem[Symbol.asyncDispose] = async () => {
-            delete this[Symbol.asyncDispose];
+            delete pooledItem[Symbol.asyncDispose];
             if (this.free.length < this.poolSize) {
                 this.logger?.(`Pooled item ${pooledItem} freed.`);
                 this.free.push(pooledItem);

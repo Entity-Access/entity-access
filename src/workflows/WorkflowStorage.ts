@@ -10,6 +10,8 @@ import DateTime from "../types/DateTime.js";
 import WorkflowClock from "./WorkflowClock.js";
 import RawQuery from "../compiler/RawQuery.js";
 
+const loadedFromDb = Symbol("loadedFromDB");
+
 @Table("Workflows")
 @Index({
     name: "IX_Workflows_Group",
@@ -17,11 +19,14 @@ import RawQuery from "../compiler/RawQuery.js";
     filter: (x) => x.groupName !== null
 })
 @Index({
-    name: "IX_Workflows_ETA",
-    columns: [{ name: (x) => x.eta, descending: false }],
+    name: "IX_Workflows_taskGroup_ETA",
+    columns: [
+        { name: (x) => x.eta, descending: false },
+        { name: (x) => x.taskGroup, descending: false }
+    ],
     filter: (x) => x.isWorkflow === true
 })
-export class WorkflowStorage {
+export class WorkflowItem {
 
     @Column({ dataType: "Char", length: 400, key: true })
     public id: string;
@@ -49,6 +54,12 @@ export class WorkflowStorage {
 
     @Column({ })
     public updated: DateTime;
+
+    @Column({
+        dataType: "Char", length: 50,
+        default: () => `default`
+    })
+    public taskGroup: string;
 
     @Column({ dataType: "Int", default: () => 0})
     public priority: number;
@@ -78,7 +89,7 @@ export class WorkflowStorage {
 @RegisterScoped
 class WorkflowContext extends EntityContext {
 
-    public workflows = this.model.register(WorkflowStorage);
+    public workflows = this.model.register(WorkflowItem);
 
     verifyFilters: boolean = false;
 
@@ -87,7 +98,7 @@ class WorkflowContext extends EntityContext {
 }
 
 @RegisterSingleton
-export default class EternityStorage {
+export default class WorkflowStorage {
 
     private lockQuery: RawQuery;
 
@@ -115,7 +126,9 @@ export default class EternityStorage {
                 state: r.state,
                 output: r.output,
                 error: r.error,
-                lastID: r.lastID
+                lastID: r.lastID,
+                taskGroup: r.taskGroup,
+                [loadedFromDb]: true,
             };
         }
         return null;
@@ -137,7 +150,8 @@ export default class EternityStorage {
                 state: r.state,
                 output: r.output,
                 error: r.error,
-                lastID: r.lastID
+                lastID: r.lastID,
+                [loadedFromDb]: true
             };
         }
         return null;
@@ -172,35 +186,44 @@ export default class EternityStorage {
         return true;
     }
 
-    async save(state: Partial<WorkflowStorage>) {
+    async save(state: Partial<WorkflowItem>) {
         const db = new WorkflowContext(this.driver);
         const connection = db.connection;
         await connection.runInTransaction(async () => {
-            let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
-            if (!w) {
-                w = db.workflows.add(state);
-            }
+            // let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
+            // if (!w) {
+            //     w = db.workflows.add(state);
+            //     w.taskGroup ||= "default";
+            // }
 
-            for (const key in state) {
-                if (Object.prototype.hasOwnProperty.call(state, key)) {
-                    const element = state[key];
-                    w[key] = element;
-                }
-            }
+            // for (const key in state) {
+            //     if (Object.prototype.hasOwnProperty.call(state, key)) {
+            //         const element = state[key];
+            //         w[key] = element;
+            //     }
+            // }
 
-            w.state ||= "queued";
-            w.updated ??= DateTime.utcNow;
-            await db.saveChanges();
+            // w.state ||= "queued";
+            // w.updated ??= DateTime.utcNow;
+            state.state ||= "queued";
+            state.updated ??= DateTime.utcNow;
+            state.taskGroup ||= "default";
+            // await db.saveChanges();
+            if(state[loadedFromDb]) {
+                await db.workflows.saveDirect(state, "update");
+            } else {
+                await db.workflows.saveDirect(state, "upsert");
+            }
         });
     }
 
-    async dequeue(signal?: AbortSignal) {
+    async dequeue(taskGroup: string, signal?: AbortSignal) {
         const db = new WorkflowContext(this.driver);
         const now = this.clock.utcNow;
 
         if(!this.lockQuery) {
 
-            const type = db.model.getEntityType(WorkflowStorage);
+            const type = db.model.getEntityType(WorkflowItem);
 
             const px = Expression.parameter("x");
             const lockTokenField = type.getProperty("lockToken").field.columnName;
@@ -240,16 +263,17 @@ export default class EternityStorage {
         const q = this.lockQuery;
 
         const items = await db.workflows
-            .where({now}, (p) => (x) => x.eta <= p.now
+            .where({now, taskGroup}, (p) => (x) => x.eta <= p.now
                 && (x.lockedTTL === null || x.lockedTTL <= p.now)
                 && x.lockToken === null
-                && x.isWorkflow === true)
+                && x.isWorkflow === true
+                && x.taskGroup === p.taskGroup)
             .orderBy({}, (p) => (x) => x.eta)
             .thenBy({}, (p) => (x) => x.priority)
             .limit(20)
             .withSignal(signal)
             .toArray();
-        const list: WorkflowStorage[] = [];
+        const list: WorkflowItem[] = [];
         const uuid = randomUUID();
         for (const iterator of items) {
             // try to acquire lock...

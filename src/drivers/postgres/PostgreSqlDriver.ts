@@ -3,7 +3,7 @@ import ObjectPool, { IPooledObject } from "../../common/ObjectPool.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
-import { BaseConnection, BaseDriver, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, EntityTransaction, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
 export interface IPgSqlConnectionString extends IDbConnectionString {
@@ -69,6 +69,10 @@ class DbReader implements IDbReader {
             console.error(error.stack ?? error);
         }
     }
+
+    [Symbol.asyncDispose]() {
+        return this.dispose();
+    }
 }
 
 export default class PostgreSqlDriver extends BaseDriver {
@@ -128,17 +132,17 @@ class PostgreSqlConnection extends BaseConnection {
         super(driver);
     }
 
-    public async createTransaction(): Promise<IBaseTransaction> {
+    public async createTransaction(): Promise<EntityTransaction> {
         const tx = await this.getConnection();
         await tx.query("BEGIN");
-        return {
+        return new EntityTransaction({
             commit: () => tx.query("COMMIT"),
             rollback: () => tx.query("ROLLBACK"),
             dispose: () => {
                 this.transaction = null;
                 return tx[Symbol.asyncDispose]();
             }
-        };
+        });
     }
 
     public automaticMigrations(): Migrations {
