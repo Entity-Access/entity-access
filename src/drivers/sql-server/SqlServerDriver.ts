@@ -74,7 +74,12 @@ export class SqlServerConnection extends BaseConnection {
 
         try {
             const r = await rq.query(command.text);
-            return { rows: r.recordset ?? [r.output], updated: r.rowsAffected [0]};
+            let rows = r.recordset ?? [r.output];
+            if (rows.length === 0) {
+                // do something..
+                rows = r.recordsets[1];
+            }
+            return { rows, updated: r.rowsAffected [0]};
         } catch (error) {
             error = `Failed executing ${command.text}\r\n${error.stack ?? error}`;
             console.error(error);

@@ -84,15 +84,17 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
                 const fields = e.returnUpdated.fields.map((x) => this.visit(x));
 
-                return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
-                ${returnValues}
-                SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
-                WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")});
-                IF @@ROWCOUNT=0
-                BEGIN
-                    SELECT ${prepareJoin(fields)} FROM ${table}
-                    WHERE ${prepareJoin(compare, " AND ")}
-                END;`;
+                return prepare `
+                    INSERT INTO ${table} (${prepareJoin(insertColumns)})
+                        ${returnValues}
+                    SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
+                        WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")});
+                    IF @@ROWCOUNT=0
+                    BEGIN
+                        SELECT ${prepareJoin(fields)} FROM ${table}
+                        WHERE ${prepareJoin(compare, " AND ")}
+                    END
+                `;
             }
             return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
             SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
@@ -114,6 +116,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
                 SET
                     ${prepareJoin(updateSet)}
                 WHERE ${prepareJoin(compare, " AND ")}
+                ${returnValues}
             END;`;
     }
 

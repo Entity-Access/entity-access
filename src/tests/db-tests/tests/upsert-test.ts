@@ -10,8 +10,9 @@ export default async function(this: TestConfig) {
 
     const context = await createContext(this.driver);
 
-    const e = await context.emailAddresses.saveDirect({ address: "e@e.com"}, "upsert", { address: "e@e.com"});
+    let e = await context.emailAddresses.saveDirect({ address: "e@e.com"}, "upsert", { address: "e@e.com"});
     assert.strictEqual("1", e.id);
-
+    e = await context.emailAddresses.saveDirect({ address: "e@e.com"}, "upsert", { address: "e@e.com"});
+    assert.strictEqual("1", e.id);
     await context.saveChanges();
 }
