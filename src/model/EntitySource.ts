@@ -60,9 +60,7 @@ export class EntitySource<T = any> {
 
         if (!select) {
             for (const iterator of this.model.columns) {
-                if(iterator.generated || iterator.key) {
-                    returnFields.push(Expression.identifier(iterator.columnName));
-                }
+                returnFields.push(Expression.identifier(iterator.columnName));
             }
         } else {
             for (const key in select) {
@@ -94,7 +92,7 @@ export class EntitySource<T = any> {
                     if (Object.prototype.hasOwnProperty.call(fr, key)) {
                         const element = fr[key];
                         const name = this.model.getColumn(key).name;
-                        changes[name] = element;
+                        changes[name] ??= element;
                     }
                 }
 

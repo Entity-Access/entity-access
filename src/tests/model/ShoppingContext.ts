@@ -88,6 +88,9 @@ export class EmailAddress {
     @Column({ dataType: "Char", length: 200 })
     public address: string;
 
+    @Column({ dataType: "Char", length: 200, nullable: true })
+    public name: string;
+
 }
 
 @Table("Categories")
