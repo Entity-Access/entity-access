@@ -35,7 +35,7 @@ export class EntitySource<T = any> {
         mode,
         changes,
         select
-    }: { keys?: Partial<T>, changes: Partial<T>, select?: Partial<T>, mode: DirectSaveType }) {
+    }: { keys?: Partial<T>, changes: Partial<T>, select?: Partial<T>, mode: DirectSaveType }, retry = 1) {
 
         const { driver } = this.context;
 
@@ -84,25 +84,34 @@ export class EntitySource<T = any> {
                 }
                 mode = "update";
             }
+        } else {
+            retry--;
         }
 
         const expression = driver.createUpsertExpression(this.model, changes, mode, keys, returnFields);
         if (!expression) {
             return changes;
         }
-        const { text, values } = driver.compiler.compileExpression(null, expression);
-        const r = await this.context.connection.executeQuery({ text, values });
-        if(r.rows?.length) {
-            const first = r.rows[0];
-            for (const key in first) {
-                if (Object.prototype.hasOwnProperty.call(first, key)) {
-                    const element = first[key];
-                    const name = this.model.getColumn(key).name;
-                    changes[name] = element;
+        try {
+            const { text, values } = driver.compiler.compileExpression(null, expression);
+            const r = await this.context.connection.executeQuery({ text, values });
+            if(r.rows?.length) {
+                const first = r.rows[0];
+                for (const key in first) {
+                    if (Object.prototype.hasOwnProperty.call(first, key)) {
+                        const element = first[key];
+                        const name = this.model.getColumn(key).name;
+                        changes[name] = element;
+                    }
                 }
             }
+            return changes;
+        } catch (error) {
+            if (retry) {
+                return await this.saveDirect({ keys, mode, changes, select}, retry -1);
+            }
+            throw error;
         }
-        return changes;
     }
 
     public add(item: Partial<T>): T {

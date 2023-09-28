@@ -520,63 +520,83 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             compareKeys.push(c);
         }
 
-        const returnValues = e.returnUpdated ? this.visit(e.returnUpdated) : [];
-
-        if (!updateSet.length) {
-
-            if (e.returnUpdated) {
-
-                const keys = e.returnUpdated.fields.map((x) => this.visit(x));
-
-                return prepare `WITH x AS(
-                    INSERT INTO ${table} (${prepareJoin(insertColumns)})
-                        VALUES (${prepareJoin(insertValues)})
-                        ON CONFLICT
-                        DO NOTHING
-                    ${returnValues}
-                )
-                SELECT * FROM x
-                UNION
-                    SELECT ${prepareJoin(keys)} FROM ${table} WHERE ${prepareJoin(compare, " AND ")}`;
-            }
-
-            return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+        const returnValues = e.returnUpdated ? this.visit(e.returnUpdated) : [" RETURNING * "];
+        /**
+         * Postgres does not have any way to do UPSERT without knowing constraint name.
+         * Unless we specify the constraints manually, which is overkill. It is better to
+         * execute query directly instead of using ORM.
+         *
+         * We can use type cast in future to fix the issue. As of now it is put on hold.
+         */
+        return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
             VALUES (${prepareJoin(insertValues)})
-            ON CONFLICT
-            DO NOTHING`;
-        }
+            ${returnValues}`;
 
-        // const r = prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+                // // const r = prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+        // //     VALUES (${prepareJoin(insertValues)})
+        // //     ON CONFLICT(${prepareJoin(compareKeys)})
+        // //     DO UPDATE SET
+        // //         ${prepareJoin(updateSet)}
+        // //     ${returnValues}`;
+
+        // // return r;
+
+
+        // if (!updateSet.length) {
+
+        //     if (e.returnUpdated) {
+
+        //         const keys = e.returnUpdated.fields.map((x) => this.visit(x));
+
+        //         return prepare `WITH x AS(
+        //             INSERT INTO ${table} (${prepareJoin(insertColumns)})
+        //                 VALUES (${prepareJoin(insertValues)})
+        //                 ON CONFLICT
+        //                 DO NOTHING
+        //             ${returnValues}
+        //         )
+        //         SELECT * FROM x
+        //         UNION
+        //             SELECT ${prepareJoin(keys)} FROM ${table} WHERE ${prepareJoin(compare, " AND ")}`;
+        //     }
+
+        //     return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
         //     VALUES (${prepareJoin(insertValues)})
-        //     ON CONFLICT(${prepareJoin(compareKeys)})
-        //     DO UPDATE SET
-        //         ${prepareJoin(updateSet)}
-        //     ${returnValues}`;
+        //     ON CONFLICT
+        //     DO NOTHING`;
+        // }
 
-        // return r;
+        // // const r = prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
+        // //     VALUES (${prepareJoin(insertValues)})
+        // //     ON CONFLICT(${prepareJoin(compareKeys)})
+        // //     DO UPDATE SET
+        // //         ${prepareJoin(updateSet)}
+        // //     ${returnValues}`;
 
-        if (returnValues.length === 0) {
-            returnValues.push([" RETURNING * "]);
-        }
+        // // return r;
 
-        return prepare `
-        WITH U1 AS(
-                UPDATE ${table} SET
-                    ${prepareJoin(updateSet)}
-                WHERE ${prepareJoin(compare, " AND ")}
-                ${returnValues}
-            ),
-            I1 AS(
-                INSERT INTO ${table} (${prepareJoin(insertColumns)})
-                VALUES (${prepareJoin(insertValues)})
-                ON CONFLICT
-                DO UPDATE SET
-                    ${prepareJoin(updateSet)}
-                ${returnValues}
-            )
-        SELECT * from U1
-        UNION
-        SELECT * from I1`;
+        // if (returnValues.length === 0) {
+        //     returnValues.push([" RETURNING * "]);
+        // }
+
+        // return prepare `
+        // WITH U1 AS(
+        //         UPDATE ${table} SET
+        //             ${prepareJoin(updateSet)}
+        //         WHERE ${prepareJoin(compare, " AND ")}
+        //         ${returnValues}
+        //     ),
+        //     I1 AS(
+        //         INSERT INTO ${table} (${prepareJoin(insertColumns)})
+        //         VALUES (${prepareJoin(insertValues)})
+        //         ON CONFLICT
+        //         DO UPDATE SET
+        //             ${prepareJoin(updateSet)}
+        //         ${returnValues}
+        //     )
+        // SELECT * from U1
+        // UNION
+        // SELECT * from I1`;
     }
 
     visitNewObjectExpression(e: NewObjectExpression): ITextQuery {
