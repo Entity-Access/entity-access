@@ -12,6 +12,7 @@ export default abstract class Migrations {
 
     public async migrate(context: EntityContext) {
         const { model } = context;
+        const postMigration = [] as (() => Promise<void>)[];
         for (const s of model.sources.values()) {
             const type = s[modelSymbol] as EntityType;
 
@@ -56,8 +57,12 @@ export default abstract class Migrations {
                     foreignKeyConstraint.refColumns.push(relatedEntity.getProperty(iterator.name).field);
                 }
 
-                await this.migrateForeignKey(context, foreignKeyConstraint);
+                postMigration.push(() => this.migrateForeignKey(context, foreignKeyConstraint));
             }
+        }
+
+        for (const iterator of postMigration) {
+            await iterator();
         }
 
     }
