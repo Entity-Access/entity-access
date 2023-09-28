@@ -58,6 +58,9 @@ export class EntitySource<T = any> {
 
         const returnFields = [] as Identifier[];
 
+        const returnEntity = {} as any;
+        Object.setPrototypeOf(returnEntity, this.model.typeClass.prototype);
+
         if (!select) {
             for (const iterator of this.model.columns) {
                 returnFields.push(Expression.identifier(iterator.columnName));
@@ -65,6 +68,7 @@ export class EntitySource<T = any> {
         } else {
             for (const key in select) {
                 if (Object.prototype.hasOwnProperty.call(select, key)) {
+                    returnEntity[key] = select[key];
                     const field = this.model.getField(key);
                     if (field) {
                         returnFields.push(Expression.identifier(field.columnName));
@@ -74,6 +78,7 @@ export class EntitySource<T = any> {
         }
 
         // delete undefined keys..
+
 
         if (mode === "selectOrInsert" || mode === "upsert") {
             // check if it exits..
@@ -92,12 +97,11 @@ export class EntitySource<T = any> {
                     if (Object.prototype.hasOwnProperty.call(fr, key)) {
                         const element = fr[key];
                         const name = this.model.getColumn(key).name;
-                        changes[name] ??= element;
+                        returnEntity[name] = element;
                     }
                 }
-
                 if (mode !== "upsert") {
-                    return changes;
+                    return returnEntity;
                 }
                 mode = "update";
             }
@@ -118,11 +122,11 @@ export class EntitySource<T = any> {
                     if (Object.prototype.hasOwnProperty.call(first, key)) {
                         const element = first[key];
                         const name = this.model.getColumn(key).name;
-                        changes[name] = element;
+                        returnEntity[name] ??= element;
                     }
                 }
             }
-            return changes;
+            return returnEntity;
         } catch (error) {
             if (retry) {
                 return await this.saveDirect({ keys, mode, changes, select}, retry -1);
