@@ -246,10 +246,11 @@ export abstract class BaseDriver {
                 insert.push(assign);
                 continue;
             }
+            if (iterator.generated) {
+                returnFields.push(Expression.identifier(iterator.columnName));
+                continue;
+            }
             if (value === undefined) {
-                if (iterator.generated) {
-                    returnFields.push(Expression.identifier(iterator.columnName));
-                }
                 continue;
             }
             insert.push(assign);
@@ -261,6 +262,9 @@ export abstract class BaseDriver {
 
 
         if (mode === "update") {
+            if (update.length === 0) {
+                return null;
+            }
             let where = null;
             for (const iterator of keys) {
                 where = where ? Expression.logicalAnd(where, iterator) : iterator;

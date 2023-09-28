@@ -555,11 +555,16 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         // return r;
 
+        if (returnValues.length === 0) {
+            returnValues.push([" RETURNING * "]);
+        }
+
         return prepare `
         WITH U1 AS(
                 UPDATE ${table} SET
                     ${prepareJoin(updateSet)}
                 WHERE ${prepareJoin(compare, " AND ")}
+                ${returnValues}
             ),
             I1 AS(
                 INSERT INTO ${table} (${prepareJoin(insertColumns)})
