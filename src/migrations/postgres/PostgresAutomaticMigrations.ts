@@ -138,7 +138,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
         let text = `select constraint_name 
         from information_schema.constraint_column_usage 
-        where table_name = $1 and constraint_name = $2 `;
+        where table_name = $1 and lower(constraint_name) = lower($2)`;
 
         const values = [type.name, constraint.name];
 
