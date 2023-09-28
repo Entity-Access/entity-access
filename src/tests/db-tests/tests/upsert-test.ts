@@ -18,6 +18,25 @@ export default async function(this: TestConfig) {
     e = await context.emailAddresses.saveDirect({ mode: "upsert", changes, keys});
     assert.strictEqual("1", e.id);
 
+    e = await context.emailAddresses.saveDirect({
+        mode: "upsert",
+        changes: { ... changes, name: "a" },
+        keys: {
+            id: e.id
+        }
+    });
+    assert.strictEqual("1", e.id);
+
+    e = await context.emailAddresses.saveDirect({
+        mode: "selectOrInsert",
+        changes: { ... changes },
+        keys: {
+            id: e.id
+        }
+    });
+    assert.strictEqual("1", e.id);
+    assert.strictEqual("a", e.name);
+
     changes = { address: "a@e.com"};
     keys = { ... changes };
     e = await context.emailAddresses.saveDirect({ mode: "selectOrInsert", changes, keys});

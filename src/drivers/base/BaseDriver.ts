@@ -192,7 +192,7 @@ export abstract class BaseDriver {
         type: EntityType,
         entity: any,
         mode: DirectSaveType,
-        test?: any,
+        test: any,
         returnFields?: Identifier[]): Expression {
         const table = type.fullyQualifiedName as TableLiteral;
 
@@ -224,27 +224,36 @@ export abstract class BaseDriver {
         const insert = [] as BinaryExpression[];
         const update = [] as BinaryExpression[];
         const keys = [] as BinaryExpression[];
+
         for (const iterator of type.columns) {
-            if (iterator.generated) {
+            const value = entity[iterator.name];
+            if (value === void 0 || iterator.generated) {
                 continue;
             }
-            const value = entity[iterator.name];
             const assign = Expression.assign(
                 Expression.identifier(iterator.columnName),
                 Expression.constant(value)
             );
-            if (test ? iterator.name in test : iterator.key) {
-                keys.push(assign);
+            if (iterator.key) {
                 insert.push(assign);
-                continue;
-            }
-            if (value === undefined) {
+                if (!test) {
+                    keys.push(assign);
+                }
                 continue;
             }
             insert.push(assign);
             update.push(assign);
         }
 
+        if(test) {
+            for (const key in test) {
+                if (Object.prototype.hasOwnProperty.call(test, key)) {
+                    const element = test[key];
+                    const { columnName } = type.getField(key);
+                    keys.push(Expression.equal(Expression.identifier(columnName), Expression.constant(element)));
+                }
+            }
+        }
 
         if (mode === "update") {
             if (update.length === 0) {
