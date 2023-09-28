@@ -58,7 +58,7 @@ export class EntitySource<T = any> {
             }
         }
 
-        if (mode === "insert-select" || mode === "upsert") {
+        if (mode === "selectOrInsert" || mode === "upsert") {
             // check if it exits..
             if (!test) {
                 test = {};

@@ -20,10 +20,10 @@ export default async function(this: TestConfig) {
 
     changes = { address: "a@e.com"};
     test = { ... changes };
-    e = await context.emailAddresses.saveDirect({ mode: "insert-select", changes, test});
+    e = await context.emailAddresses.saveDirect({ mode: "selectOrInsert", changes, test});
     assert.strictEqual("2", e.id);
 
-    e = await context.emailAddresses.saveDirect({ mode: "insert-select", changes, test});
+    e = await context.emailAddresses.saveDirect({ mode: "selectOrInsert", changes, test});
     assert.strictEqual("2", e.id);
 
     await context.saveChanges();
