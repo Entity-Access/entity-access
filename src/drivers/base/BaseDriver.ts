@@ -7,7 +7,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NotExits, NumberLiteral, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;
@@ -165,6 +165,36 @@ export abstract class BaseDriver {
 
     /** Must dispose ObjectPools */
     abstract dispose();
+
+    createSelectWithKeysExpression(type: EntityType, check: any ) {
+        let where = null as Expression;
+        for (const key in check) {
+            if (Object.prototype.hasOwnProperty.call(check, key)) {
+                const element = check[key];
+                const column = Expression.identifier(type.getField(key).columnName);
+                const condition = Expression.equal(column, Expression.constant(element));
+                where = where
+                    ? Expression.logicalAnd(where, condition)
+                    : condition;
+            }
+        }
+
+        // retrive generated and keys...
+        const fields = [] as Expression[];
+        for (const iterator of type.columns) {
+            if (iterator.key || iterator.generated) {
+                fields.push(Expression.identifier(iterator.columnName));
+            }
+        }
+
+        const source = type.fullyQualifiedName;
+
+        return SelectStatement.create({
+            source,
+            fields,
+            where
+        });
+    }
 
     createUpsertExpression(
         type: EntityType,

@@ -32,6 +32,31 @@ export class EntitySource<T = any> {
 
     public async saveDirect(item: Partial<T>, mode: DirectSaveType, keys?: Partial<T>) {
         const { driver } = this.context;
+
+        if (mode === "insert-select") {
+            // check if it exits..
+            if (!keys) {
+                keys = {};
+                for (const iterator of this.model.keys) {
+                    keys[iterator.name] = item[iterator.name];
+                }
+            }
+            const exists = driver.createSelectWithKeysExpression(this.model, keys);
+            const q = driver.compiler.compileExpression(null, exists);
+            const er = await this.context.connection.executeQuery(q);
+            if (er.rows?.[0]) {
+                const fr = er.rows[0];
+                for (const key in fr) {
+                    if (Object.prototype.hasOwnProperty.call(fr, key)) {
+                        const element = fr[key];
+                        const name = this.model.getColumn(key).name;
+                        item[name] = element;
+                    }
+                }
+                return item;
+            }
+        }
+
         const expression = driver.createUpsertExpression(this.model, item, mode, keys);
         const { text, values } = driver.compiler.compileExpression(null, expression);
         const r = await this.context.connection.executeQuery({ text, values });
