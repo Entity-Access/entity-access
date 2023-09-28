@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
@@ -136,14 +137,14 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         ? type.schema + "." + type.name
         : type.name;
 
-        let text = `select constraint_name 
-        from information_schema.constraint_column_usage 
-        where table_name = $1 and lower(constraint_name) = lower($2)`;
+        let text = `SELECT * FROM information_schema.referential_constraints
+        WHERE lower(constraint_name)=lower($1)
+        `;
 
-        const values = [type.name, constraint.name];
+        const values = [constraint.name];
 
         if(type.schema) {
-            text += " and schema_name = $3";
+            text += " and constraint_schema = $3";
             values.push(type.schema);
         }
 
