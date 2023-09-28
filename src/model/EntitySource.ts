@@ -6,6 +6,20 @@ import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
 import { Expression, Identifier } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 
+const removeUndefined = (obj) => {
+    const r = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const element = obj[key];
+            if (element === void 0) {
+                continue;
+            }
+            r[key] = element;
+        }
+    }
+    return r;
+};
+
 export class EntitySource<T = any> {
 
     public statements = {
@@ -58,6 +72,8 @@ export class EntitySource<T = any> {
             }
         }
 
+        // delete undefined keys..
+
         if (mode === "selectOrInsert" || mode === "upsert") {
             // check if it exits..
             if (!keys) {
@@ -66,7 +82,7 @@ export class EntitySource<T = any> {
                     keys[iterator.name] = changes[iterator.name];
                 }
             }
-            const exists = driver.createSelectWithKeysExpression(this.model, keys, returnFields);
+            const exists = driver.createSelectWithKeysExpression(this.model, removeUndefined(keys), returnFields);
             const q = driver.compiler.compileExpression(null, exists);
             const er = await this.context.connection.executeQuery(q);
             if (er.rows?.[0]) {
@@ -88,7 +104,7 @@ export class EntitySource<T = any> {
             retry--;
         }
 
-        const expression = driver.createUpsertExpression(this.model, changes, mode, keys, returnFields);
+        const expression = driver.createUpsertExpression(this.model, changes, mode, removeUndefined(keys), returnFields);
         if (!expression) {
             return changes;
         }
