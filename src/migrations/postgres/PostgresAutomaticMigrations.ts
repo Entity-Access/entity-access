@@ -144,7 +144,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         const values = [constraint.name];
 
         if(type.schema) {
-            text += " and constraint_schema = $3";
+            text += " and constraint_schema = $2";
             values.push(type.schema);
         }
 
