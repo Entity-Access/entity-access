@@ -7,7 +7,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, Identifier, InsertStatement, NotExits, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NotExits, NumberLiteral, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;
@@ -137,6 +137,24 @@ export abstract class BaseConnection {
     }
 }
 
+export type DirectSaveType =
+/**
+ * Inserts given item and returns generated columns
+ */
+    "insert" |
+/**
+ * Updates given item and returns generated columns
+ */
+    "update" |
+/**
+ * Inserts if not exists or update and returns generated columns for given keys
+ */
+    "upsert"|
+/**
+ * Inserts if not exists or selects generated columns for given keys
+ */
+"selectOrInsert";
+
 export abstract class BaseDriver {
     abstract get compiler(): QueryCompiler;
 
@@ -148,7 +166,34 @@ export abstract class BaseDriver {
     /** Must dispose ObjectPools */
     abstract dispose();
 
-    createUpsertExpression(type: EntityType, entity: any, mode: "update" | "upsert" | "insert"): Expression {
+    createSelectWithKeysExpression(type: EntityType, check: any, returnFields: Expression[] ) {
+        let where = null as Expression;
+        for (const key in check) {
+            if (Object.prototype.hasOwnProperty.call(check, key)) {
+                const element = check[key];
+                const column = Expression.identifier(type.getField(key).columnName);
+                const condition = Expression.equal(column, Expression.constant(element));
+                where = where
+                    ? Expression.logicalAnd(where, condition)
+                    : condition;
+            }
+        }
+
+        const source = type.fullyQualifiedName;
+
+        return SelectStatement.create({
+            source,
+            fields: returnFields,
+            where
+        });
+    }
+
+    createUpsertExpression(
+        type: EntityType,
+        entity: any,
+        mode: DirectSaveType,
+        test?: any,
+        returnFields?: Identifier[]): Expression {
         const table = type.fullyQualifiedName as TableLiteral;
 
         if (mode === "insert") {
@@ -164,6 +209,10 @@ export abstract class BaseDriver {
             }
             return InsertStatement.create({
                 table,
+                returnValues: returnFields.length ? ReturnUpdated.create({
+                    changes: "INSERTED",
+                    fields: returnFields
+                }) : void 0,
                 values: ValuesStatement.create({
                     fields,
                     values: [values]
@@ -181,9 +230,12 @@ export abstract class BaseDriver {
                 Expression.identifier(iterator.columnName),
                 Expression.constant(value)
             );
-            if (iterator.key) {
+            if (test ? iterator.name in test : iterator.key) {
                 keys.push(assign);
                 insert.push(assign);
+                continue;
+            }
+            if (iterator.generated) {
                 continue;
             }
             if (value === undefined) {
@@ -198,6 +250,9 @@ export abstract class BaseDriver {
 
 
         if (mode === "update") {
+            if (update.length === 0) {
+                return null;
+            }
             let where = null;
             for (const iterator of keys) {
                 where = where ? Expression.logicalAnd(where, iterator) : iterator;
@@ -209,11 +264,19 @@ export abstract class BaseDriver {
             });
         }
 
+        if (mode === "selectOrInsert") {
+            update.length = 0;
+        }
+
         return UpsertStatement.create({
             table,
             insert,
             update,
-            keys
+            keys,
+            returnUpdated: returnFields.length ? ReturnUpdated.create({
+                changes: "INSERTED",
+                fields: returnFields
+            }) : void 0
         });
     }
 

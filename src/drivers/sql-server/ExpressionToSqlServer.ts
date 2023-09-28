@@ -54,6 +54,8 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
         const compare = [];
 
+        const keys = [];
+
         for (const { left, right } of e.insert) {
             const c = this.visit(left);
             const v = this.visit(right);
@@ -71,18 +73,51 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
             const c = this.visit(left);
             const v = this.visit(right);
             compare.push(prepare `${c} = ${v}`);
+            keys.push(c);
         }
 
+        const returnValues = e.returnUpdated ? this.visit(e.returnUpdated) : [];
 
-        return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
-            SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
-            WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")});
+        if (!updateSet.length) {
+
+            if (e.returnUpdated) {
+
+                const fields = e.returnUpdated.fields.map((x) => this.visit(x));
+
+                return prepare `
+                    SELECT ${prepareJoin(fields)} FROM ${table}
+                    WHERE ${prepareJoin(compare, " AND ")};
+                    IF @@ROWCOUNT=0
+                    BEGIN
+                        INSERT INTO ${table} (${prepareJoin(insertColumns)})
+                        ${returnValues}
+                        SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
+                        WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")});
+                    END
+                `;
+            }
+            return prepare ` SELECT ${prepareJoin(keys)} FROM ${table}
+                WHERE ${prepareJoin(compare, " AND ")};
+                IF @@ROWCOUNT=0
+                BEGIN
+                    INSERT INTO ${table} (${prepareJoin(insertColumns)})
+                    SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
+                    WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")});
+                END;`;
+    }
+
+        return prepare `
+            UPDATE ${table}
+            SET
+                ${prepareJoin(updateSet)}
+                ${returnValues}
+            WHERE ${prepareJoin(compare, " AND ")};
             IF @@ROWCOUNT=0
             BEGIN
-                UPDATE ${table}
-                SET
-                    ${prepareJoin(updateSet)}
-                WHERE ${prepareJoin(compare, " AND ")}
+                INSERT INTO ${table} (${prepareJoin(insertColumns)})
+                ${returnValues}
+                SELECT * FROM (VALUES (${prepareJoin(insertValues)})) as A(${prepareJoin(insertColumns)})
+                WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${prepareJoin(compare, " AND ")});
             END;`;
     }
 
