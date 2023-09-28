@@ -7,6 +7,9 @@ import { Expression, Identifier } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 
 const removeUndefined = (obj) => {
+    if (!obj) {
+        return obj;
+    }
     const r = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
