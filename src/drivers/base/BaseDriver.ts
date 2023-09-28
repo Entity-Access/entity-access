@@ -166,7 +166,7 @@ export abstract class BaseDriver {
     /** Must dispose ObjectPools */
     abstract dispose();
 
-    createSelectWithKeysExpression(type: EntityType, check: any ) {
+    createSelectWithKeysExpression(type: EntityType, check: any, returnFields: Expression[] ) {
         let where = null as Expression;
         for (const key in check) {
             if (Object.prototype.hasOwnProperty.call(check, key)) {
@@ -179,19 +179,11 @@ export abstract class BaseDriver {
             }
         }
 
-        // retrive generated and keys...
-        const fields = [] as Expression[];
-        for (const iterator of type.columns) {
-            if (iterator.key || iterator.generated) {
-                fields.push(Expression.identifier(iterator.columnName));
-            }
-        }
-
         const source = type.fullyQualifiedName;
 
         return SelectStatement.create({
             source,
-            fields,
+            fields: returnFields,
             where
         });
     }
@@ -200,19 +192,16 @@ export abstract class BaseDriver {
         type: EntityType,
         entity: any,
         mode: "update" | "upsert" | "insert" | "insert-select",
-        entityKeys?: any): Expression {
+        test?: any,
+        returnFields?: Identifier[]): Expression {
         const table = type.fullyQualifiedName as TableLiteral;
 
-        const returnFields = [] as Identifier[];
         if (mode === "insert") {
             const fields = [];
             const values = [];
             for (const iterator of type.columns) {
                 const value = entity[iterator.name];
                 if (value === void 0) {
-                    if (iterator.generated) {
-                        returnFields.push(Expression.identifier(iterator.columnName));
-                    }
                     continue;
                 }
                 fields.push(Expression.identifier(iterator.columnName));
@@ -241,13 +230,12 @@ export abstract class BaseDriver {
                 Expression.identifier(iterator.columnName),
                 Expression.constant(value)
             );
-            if (entityKeys ? iterator.name in entityKeys : iterator.key) {
+            if (test ? iterator.name in test : iterator.key) {
                 keys.push(assign);
                 insert.push(assign);
                 continue;
             }
             if (iterator.generated) {
-                returnFields.push(Expression.identifier(iterator.columnName));
                 continue;
             }
             if (value === undefined) {

@@ -110,8 +110,8 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
             UPDATE ${table}
             SET
                 ${prepareJoin(updateSet)}
-            WHERE ${prepareJoin(compare, " AND ")}
-            ${returnValues};
+                ${returnValues}
+            WHERE ${prepareJoin(compare, " AND ")};
             IF @@ROWCOUNT=0
             BEGIN
                 INSERT INTO ${table} (${prepareJoin(insertColumns)})
