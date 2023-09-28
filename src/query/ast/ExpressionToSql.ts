@@ -531,7 +531,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 return prepare `WITH x AS(
                     INSERT INTO ${table} (${prepareJoin(insertColumns)})
                         VALUES (${prepareJoin(insertValues)})
-                        ON CONFLICT(${prepareJoin(compareKeys)})
+                        ON CONFLICT
                         DO NOTHING
                     ${returnValues}
                 )
@@ -542,7 +542,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
             return prepare `INSERT INTO ${table} (${prepareJoin(insertColumns)})
             VALUES (${prepareJoin(insertValues)})
-            ON CONFLICT(${prepareJoin(compareKeys)})
+            ON CONFLICT
             DO NOTHING`;
         }
 
@@ -569,7 +569,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             I1 AS(
                 INSERT INTO ${table} (${prepareJoin(insertColumns)})
                 VALUES (${prepareJoin(insertValues)})
-                ON CONFLICT(${prepareJoin(compareKeys)})
+                ON CONFLICT
                 DO UPDATE SET
                     ${prepareJoin(updateSet)}
                 ${returnValues}
