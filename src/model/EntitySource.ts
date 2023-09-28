@@ -6,6 +6,20 @@ import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
 import { Expression, Identifier } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 
+const removeUndefined = (obj) => {
+    const r = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const element = obj[key];
+            if (element === void 0) {
+                continue;
+            }
+            r[key] = element;
+        }
+    }
+    return r;
+};
+
 export class EntitySource<T = any> {
 
     public statements = {
@@ -35,7 +49,7 @@ export class EntitySource<T = any> {
         mode,
         changes,
         select
-    }: { keys?: Partial<T>, changes: Partial<T>, select?: Partial<T>, mode: DirectSaveType }) {
+    }: { keys?: Partial<T>, changes: Partial<T>, select?: Partial<T>, mode: DirectSaveType }, retry = 1) {
 
         const { driver } = this.context;
 
@@ -58,6 +72,8 @@ export class EntitySource<T = any> {
             }
         }
 
+        // delete undefined keys..
+
         if (mode === "selectOrInsert" || mode === "upsert") {
             // check if it exits..
             if (!keys) {
@@ -66,7 +82,7 @@ export class EntitySource<T = any> {
                     keys[iterator.name] = changes[iterator.name];
                 }
             }
-            const exists = driver.createSelectWithKeysExpression(this.model, keys, returnFields);
+            const exists = driver.createSelectWithKeysExpression(this.model, removeUndefined(keys), returnFields);
             const q = driver.compiler.compileExpression(null, exists);
             const er = await this.context.connection.executeQuery(q);
             if (er.rows?.[0]) {
@@ -84,25 +100,34 @@ export class EntitySource<T = any> {
                 }
                 mode = "update";
             }
+        } else {
+            retry--;
         }
 
-        const expression = driver.createUpsertExpression(this.model, changes, mode, keys, returnFields);
+        const expression = driver.createUpsertExpression(this.model, changes, mode, removeUndefined(keys), returnFields);
         if (!expression) {
             return changes;
         }
-        const { text, values } = driver.compiler.compileExpression(null, expression);
-        const r = await this.context.connection.executeQuery({ text, values });
-        if(r.rows?.length) {
-            const first = r.rows[0];
-            for (const key in first) {
-                if (Object.prototype.hasOwnProperty.call(first, key)) {
-                    const element = first[key];
-                    const name = this.model.getColumn(key).name;
-                    changes[name] = element;
+        try {
+            const { text, values } = driver.compiler.compileExpression(null, expression);
+            const r = await this.context.connection.executeQuery({ text, values });
+            if(r.rows?.length) {
+                const first = r.rows[0];
+                for (const key in first) {
+                    if (Object.prototype.hasOwnProperty.call(first, key)) {
+                        const element = first[key];
+                        const name = this.model.getColumn(key).name;
+                        changes[name] = element;
+                    }
                 }
             }
+            return changes;
+        } catch (error) {
+            if (retry) {
+                return await this.saveDirect({ keys, mode, changes, select}, retry -1);
+            }
+            throw error;
         }
-        return changes;
     }
 
     public add(item: Partial<T>): T {

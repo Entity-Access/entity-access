@@ -201,7 +201,7 @@ export abstract class BaseDriver {
             const values = [];
             for (const iterator of type.columns) {
                 const value = entity[iterator.name];
-                if (value === void 0) {
+                if (value === void 0 || iterator.generated) {
                     continue;
                 }
                 fields.push(Expression.identifier(iterator.columnName));
@@ -225,6 +225,9 @@ export abstract class BaseDriver {
         const update = [] as BinaryExpression[];
         const keys = [] as BinaryExpression[];
         for (const iterator of type.columns) {
+            if (iterator.generated) {
+                continue;
+            }
             const value = entity[iterator.name];
             const assign = Expression.assign(
                 Expression.identifier(iterator.columnName),
@@ -235,16 +238,10 @@ export abstract class BaseDriver {
                 insert.push(assign);
                 continue;
             }
-            if (iterator.generated) {
-                continue;
-            }
             if (value === undefined) {
                 continue;
             }
             insert.push(assign);
-            if (value === undefined) {
-                continue;
-            }
             update.push(assign);
         }
 
