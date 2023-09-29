@@ -182,6 +182,7 @@ export abstract class BaseDriver {
         const source = type.fullyQualifiedName;
 
         return SelectStatement.create({
+            limit: 1,
             source,
             fields: returnFields,
             where
