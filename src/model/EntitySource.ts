@@ -50,8 +50,7 @@ export class EntitySource<T = any> {
     public async saveDirect({
         keys,
         mode,
-        changes,
-        select
+        changes
     }: { keys?: Partial<T>, changes: Partial<T>, select?: Partial<T>, mode: DirectSaveType }, retry = 1) {
 
         const { driver } = this.context;
@@ -61,24 +60,9 @@ export class EntitySource<T = any> {
         const returnEntity = {} as any;
         Object.setPrototypeOf(returnEntity, this.model.typeClass.prototype);
 
-        if (!select) {
-            for (const iterator of this.model.columns) {
-                returnFields.push(Expression.identifier(iterator.columnName));
-            }
-        } else {
-            for (const key in select) {
-                if (Object.prototype.hasOwnProperty.call(select, key)) {
-                    returnEntity[key] = select[key];
-                    const field = this.model.getField(key);
-                    if (field) {
-                        returnFields.push(Expression.identifier(field.columnName));
-                    }
-                }
-            }
+        for (const iterator of this.model.columns) {
+            returnFields.push(Expression.identifier(iterator.columnName));
         }
-
-        // delete undefined keys..
-
 
         if (mode === "selectOrInsert" || mode === "upsert") {
             // check if it exits..
@@ -129,7 +113,7 @@ export class EntitySource<T = any> {
             return returnEntity;
         } catch (error) {
             if (retry) {
-                return await this.saveDirect({ keys, mode, changes, select}, retry -1);
+                return await this.saveDirect({ keys, mode, changes }, retry -1);
             }
             throw error;
         }
