@@ -139,6 +139,7 @@ export interface IWorkflowQueueParameter {
 
 export interface IWorkflowStartParams {
     taskGroup?: string;
+    taskGroups?: string[];
     signal?: AbortSignal;
 }
 
@@ -157,7 +158,17 @@ export default class WorkflowContext {
         this.registry.set(type.name, WorkflowRegistry.register(type, void 0));
     }
 
-    public async start({ taskGroup = "default", signal = void 0 as AbortSignal }: IWorkflowStartParams = {}) {
+    public async start({
+        taskGroup = "default",
+        taskGroups,
+        signal
+    }: IWorkflowStartParams = {}) {
+
+        if (taskGroups?.length) {
+            await Promise.all(taskGroups.map((g) => this.start({ signal, taskGroup: g})));
+            return;
+        }
+
         console.log(`Started executing workflow jobs`);
         while(!signal?.aborted) {
             try {
