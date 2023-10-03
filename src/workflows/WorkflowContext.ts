@@ -13,6 +13,8 @@ import TimeSpan from "../types/TimeSpan.js";
 import sleep from "../common/sleep.js";
 import Waiter from "./Waiter.js";
 
+export const runChildSymbol = Symbol("runChild");
+
 async function  hash(text) {
     const sha256 = crypto.createHash("sha256");
     return sha256.update(text).digest("base64");
@@ -138,7 +140,7 @@ export interface IWorkflowQueueParameter {
 }
 
 export interface IWorkflowStartParams {
-    taskGroup?: string;
+    taskGroups?: string[];
     signal?: AbortSignal;
 }
 
@@ -157,21 +159,11 @@ export default class WorkflowContext {
         this.registry.set(type.name, WorkflowRegistry.register(type, void 0));
     }
 
-    public async start({ taskGroup = "default", signal = void 0 as AbortSignal }: IWorkflowStartParams = {}) {
-        console.log(`Started executing workflow jobs`);
-        while(!signal?.aborted) {
-            try {
-                const total = await this.processQueueOnce({ taskGroup, signal });
-                if (total > 0) {
-                    // do not wait till we have zero messages to process
-                    continue;
-                }
-            } catch (error) {
-                console.error(error);
-            }
-            using ws = Waiter.create();
-            await sleep(15000, ws.signal);
-        }
+    public async start({
+        taskGroups = ["default"],
+        signal
+    }: IWorkflowStartParams = {}) {
+        await Promise.all(taskGroups.map((taskGroup) => this.startGroup(taskGroup, signal)));
     }
 
     public async get<T = any>(c: IClassOf<Workflow<any, T>> | string, id?: string): Promise<IWorkflowResult<T>> {
@@ -328,6 +320,24 @@ export default class WorkflowContext {
 
         await this.queue(type, input, { id, parentID: w.id });
         throw new ActivitySuspendedError();
+    }
+
+    private async startGroup(taskGroup, signal) {
+
+        console.log(`Started executing workflow jobs for group ${taskGroup}`);
+        while(!signal?.aborted) {
+            try {
+                const total = await this.processQueueOnce({ taskGroup, signal });
+                if (total > 0) {
+                    // do not wait till we have zero messages to process
+                    continue;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+            using ws = Waiter.create();
+            await sleep(15000, ws.signal);
+        }
     }
 
     private async run(workflow: WorkflowItem) {
