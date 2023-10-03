@@ -324,7 +324,7 @@ export default class WorkflowContext {
 
     private async startGroup(taskGroup, signal) {
 
-        console.log(`Started executing workflow jobs`);
+        console.log(`Started executing workflow jobs for group ${taskGroup}`);
         while(!signal?.aborted) {
             try {
                 const total = await this.processQueueOnce({ taskGroup, signal });
