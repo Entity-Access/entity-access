@@ -160,7 +160,7 @@ export default class WorkflowContext {
     }
 
     public async start({
-        taskGroups,
+        taskGroups = ["default"],
         signal
     }: IWorkflowStartParams = {}) {
         await Promise.all(taskGroups.map((taskGroup) => this.startGroup(taskGroup, signal)));
