@@ -50,8 +50,21 @@ export class EntitySource<T = any> {
     public async saveDirect({
         keys,
         mode,
-        changes
-    }: { keys?: Partial<T>, changes: Partial<T>, select?: Partial<T>, mode: DirectSaveType }, retry = 1) {
+        changes,
+        updateAfterSelect
+    }: {
+        keys?: Partial<T>,
+        changes: Partial<T>,
+        select?: Partial<T>,
+        mode: DirectSaveType,
+        /**
+         * You can use map to update any fields you
+         * retrieved from database to update
+         * @param item loaded from database
+         * @returns entity
+         */
+        updateAfterSelect?: (item:T) => T
+    }, retry = 1) {
 
         const { driver } = this.context;
 
@@ -88,6 +101,16 @@ export class EntitySource<T = any> {
                     return returnEntity;
                 }
                 mode = "update";
+                if (updateAfterSelect) {
+                    const original = { ... returnEntity, ... changes };
+                    const updates = updateAfterSelect(original);
+                    for (const key in updates) {
+                        if (Object.prototype.hasOwnProperty.call(updates, key)) {
+                            const element = updates[key];
+                            changes[key] = element;
+                        }
+                    }
+                }
             }
         } else {
             retry--;
