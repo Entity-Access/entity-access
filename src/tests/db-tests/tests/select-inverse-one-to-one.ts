@@ -33,4 +33,8 @@ export default async function(this: TestConfig) {
 
     const c = await context.userFiles.where({}, (p) => (x) => x.user.userID > 0).count();
     assert.equal(0, c);
+
+    await context.profilePhotos.all().include((x) => x.profile).toArray();
+
+    await context.userFiles.all().include((x) => x.user).toArray();
 }

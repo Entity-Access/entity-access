@@ -99,21 +99,6 @@ export class QueryExpander {
 
         if(relation.isInverseRelation) {
 
-            // joinWhere = Expression.equal(
-            //     Expression.member(
-            //         parent.sourceParameter,
-            //         Expression.identifier(fk.columnName)
-            //     ),
-            //     Expression.member(
-            //         select.sourceParameter,
-            //         Expression.identifier(model.keys[0].columnName)
-            //     )
-            // );
-            // // load parent..
-            // where = parent.where
-            //     ? Expression.logicalAnd(joinWhere, parent.where)
-            //     : joinWhere;
-
             const keyColumn = model.keys[0].columnName;
             let columnName = fk.columnName;
             // for inverse relation, we need to
@@ -164,30 +149,53 @@ export class QueryExpander {
 
         // if we can skip this if join already exists !!
 
-        joinWhere = Expression.equal(
-            Expression.member(
-                parent.sourceParameter,
-                Expression.identifier(fk.columnName)
-            ),
-            Expression.member(
-                select.sourceParameter,
-                Expression.identifier(relation.relatedEntity.keys[0].columnName)
+        // joinWhere = Expression.equal(
+        //     Expression.member(
+        //         parent.sourceParameter,
+        //         Expression.identifier(fk.columnName)
+        //     ),
+        //     Expression.member(
+        //         select.sourceParameter,
+        //         Expression.identifier(relation.relatedEntity.keys[0].columnName)
+        //     )
+        // );
+
+        // parent = cloner.clone({ ... parent, fields: [ NumberLiteral.one ]});
+
+        // parent.where = parent.where
+        //     ? Expression.logicalAnd(parent.where, joinWhere)
+        //     : joinWhere;
+
+        // const existsWhere = ExistsExpression.create({
+        //     target: parent
+        // });
+
+        // select.where = select.where
+        //     ? Expression.logicalAnd(select.where, existsWhere)
+        //     : existsWhere;
+
+        const selectJoins = (select.joins ??= []);
+        const selectJoinParameter = Expression.parameter(parent.sourceParameter.name);
+
+        // This join has to be INNER JOIN as we are only interested
+        // in the results that matches parent query exactly
+
+        selectJoins.push(JoinExpression.create({
+            joinType: "INNER",
+            source: { ... parent, fields: [ Expression.member(parent.sourceParameter, fk.columnName) ] },
+            as: selectJoinParameter,
+            model,
+            where: Expression.equal(
+                Expression.member(
+                    selectJoinParameter,
+                    Expression.identifier(fk.columnName)
+                ),
+                Expression.member(
+                    select.sourceParameter,
+                    Expression.identifier(relation.relatedEntity.keys[0].columnName)
+                )
             )
-        );
-
-        parent = cloner.clone({ ... parent, fields: [ NumberLiteral.one ]});
-
-        parent.where = parent.where
-            ? Expression.logicalAnd(parent.where, joinWhere)
-            : joinWhere;
-
-        const existsWhere = ExistsExpression.create({
-            target: parent
-        });
-
-        select.where = select.where
-            ? Expression.logicalAnd(select.where, existsWhere)
-            : existsWhere;
+        }));
 
         this.include.push(select);
 
