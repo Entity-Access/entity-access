@@ -182,17 +182,17 @@ export class QueryExpander {
 
         selectJoins.push(JoinExpression.create({
             joinType: "INNER",
-            source: { ... parent, fields: [ Expression.member(parent.sourceParameter, relation.relatedEntity.keys[0].columnName) ] },
+            source: { ... parent, fields: [ Expression.member(parent.sourceParameter, fk.columnName) ] },
             as: selectJoinParameter,
             model,
             where: Expression.equal(
                 Expression.member(
                     selectJoinParameter,
-                    Expression.identifier(relation.relatedEntity.keys[0].columnName)
+                    Expression.identifier(fk.columnName)
                 ),
                 Expression.member(
                     select.sourceParameter,
-                    Expression.identifier(fk.columnName)
+                    Expression.identifier(relation.relatedEntity.keys[0].columnName)
                 )
             )
         }));

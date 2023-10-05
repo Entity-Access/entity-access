@@ -15,7 +15,7 @@ export class UserFile {
         property: (uf) => uf.user,
         inverseProperty: (u) => u.files
     })
-    public userID: number;
+    public ownerID: number;
 
     public user: User;
 
