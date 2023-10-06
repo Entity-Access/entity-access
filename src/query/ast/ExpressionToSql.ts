@@ -108,6 +108,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     // list.push(iterator.as as ParameterExpression);
                     if (iterator.source.type === "SelectStatement") {
                         this.prepareStatement(iterator.source);
+                        // forcing visiting select statement before outer where
+                        this.visit(iterator.source);
                     }
                 }
             }
