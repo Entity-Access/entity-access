@@ -265,7 +265,7 @@ export default class WorkflowStorage {
         const items = await db.workflows
             .where({now, taskGroup}, (p) => (x) => x.eta <= p.now
                 && ( x.lockedTTL === null
-                    || (x.lockedTTL <= p.now && x.lockToken === null)
+                    || x.lockedTTL <= p.now
                 )
                 && x.isWorkflow === true
                 && x.taskGroup === p.taskGroup)
