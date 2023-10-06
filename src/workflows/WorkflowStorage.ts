@@ -243,7 +243,7 @@ export default class WorkflowStorage {
                             arguments: [CallExpression.create({
                                 callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "now")
                             }),
-                            NumberLiteral.create({ value: 5 })
+                            NumberLiteral.create({ value: 15 })
                         ]
                         })
                     )
@@ -264,8 +264,9 @@ export default class WorkflowStorage {
 
         const items = await db.workflows
             .where({now, taskGroup}, (p) => (x) => x.eta <= p.now
-                && (x.lockedTTL === null || x.lockedTTL <= p.now)
-                && x.lockToken === null
+                && ( x.lockedTTL === null
+                    || (x.lockedTTL <= p.now && x.lockToken === null)
+                )
                 && x.isWorkflow === true
                 && x.taskGroup === p.taskGroup)
             .orderBy({}, (p) => (x) => x.eta)
