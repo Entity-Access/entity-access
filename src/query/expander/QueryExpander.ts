@@ -109,7 +109,7 @@ export class QueryExpander {
 
 
             const joins = (select.joins ??= []);
-            const joinParameter = Expression.parameter(parent.sourceParameter.name);
+            const joinParameter = Expression.parameter(parent.sourceParameter.name, parent.model);
 
             // This join has to be INNER JOIN as we are only interested
             // in the results that matches parent query exactly
@@ -175,7 +175,7 @@ export class QueryExpander {
         //     : existsWhere;
 
         const selectJoins = (select.joins ??= []);
-        const selectJoinParameter = Expression.parameter(parent.sourceParameter.name);
+        const selectJoinParameter = Expression.parameter(parent.sourceParameter.name, parent.model);
 
         // This join has to be INNER JOIN as we are only interested
         // in the results that matches parent query exactly

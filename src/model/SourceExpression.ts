@@ -58,7 +58,7 @@ export class SourceExpression {
             }
         }
         const column = relation.relation.fkColumn;
-        const parameter = ParameterExpression.create({ name: this.parameter + "." + property});
+        const parameter = ParameterExpression.create({ name: this.parameter + "." + property, model });
         const source = this.addSource(model, parameter);
         const join = JoinExpression.create({
             as: source.alias,
@@ -101,7 +101,7 @@ export class SourceExpression {
                 break;
             }
         }while (true);
-        source.alias = ParameterExpression.create({ name: alias });
+        source.alias = ParameterExpression.create({ name: alias, model });
         this.map.set(alias, source);
         this.paramMap.set(parameter.name, source);
         return source;

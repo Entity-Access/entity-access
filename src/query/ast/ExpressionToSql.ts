@@ -693,8 +693,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 return join.as;
                             }
                             const joinType = select.preferLeftJoins ? "LEFT" : (fkColumn.nullable ? "LEFT" : "INNER");
-                            const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
-                            joinParameter.model = relation.relatedEntity;
+                            const joinParameter = ParameterExpression.create({
+                                name: relation.relatedEntity.name[0],
+                                model: relation.relatedEntity
+                            });
                             join = JoinExpression.create({
                                 as: joinParameter,
                                 joinType,
@@ -779,79 +781,79 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         // };
     }
 
-    private flatten(pc: IPropertyChain) : IPropertyChain {
+    // private flatten(pc: IPropertyChain) : IPropertyChain {
 
-        if (!pc) {
-            return pc;
-        }
+    //     if (!pc) {
+    //         return pc;
+    //     }
 
-        // check if we have parameter..
-        let { parameter } = pc;
-        if (!parameter) {
-            return pc;
-        }
-        if (pc.chain.length <= 1) {
-            return pc;
-        }
+    //     // check if we have parameter..
+    //     let { parameter } = pc;
+    //     if (!parameter) {
+    //         return pc;
+    //     }
+    //     if (pc.chain.length <= 1) {
+    //         return pc;
+    //     }
 
-        const chain = [ ... pc.chain];
+    //     const chain = [ ... pc.chain];
 
-        const scope = this.scope.get(parameter);
-        const select = scope?.selectStatement ?? this.source?.selectStatement;
-        if (!select) {
-            return pc;
-        }
-        let type = select.model;
+    //     const scope = this.scope.get(parameter);
+    //     const select = scope?.selectStatement ?? this.source?.selectStatement;
+    //     if (!select) {
+    //         return pc;
+    //     }
+    //     let type = select.model;
 
-        select.joins ??= [];
+    //     select.joins ??= [];
 
-        while(chain.length > 1) {
-            const property = chain.shift();
-            const propertyInfo = type.getProperty(property);
-            if (!propertyInfo.relation || propertyInfo.relation.isInverseRelation) {
-                return pc;
-            }
+    //     while(chain.length > 1) {
+    //         const property = chain.shift();
+    //         const propertyInfo = type.getProperty(property);
+    //         if (!propertyInfo.relation || propertyInfo.relation.isInverseRelation) {
+    //             return pc;
+    //         }
 
-            const relation = propertyInfo.relation;
-            // check if relation is optional...
-            if (!relation.fkColumn) {
-                return pc;
-            }
+    //         const relation = propertyInfo.relation;
+    //         // check if relation is optional...
+    //         if (!relation.fkColumn) {
+    //             return pc;
+    //         }
 
-            const { fkColumn } = relation;
+    //         const { fkColumn } = relation;
 
-            const join = select.joins.find((x) => x.model === relation.relatedEntity);
-            if (!join) {
-                const joinType = fkColumn.nullable ? "LEFT" : "INNER";
-                const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
-                joinParameter.model = relation.relatedEntity;
-                select.joins.push(JoinExpression.create({
-                    as: joinParameter,
-                    joinType,
-                    model: joinParameter.model,
-                    source: Expression.identifier(relation.relatedEntity.name),
-                    where: Expression.equal(
-                        Expression.member(parameter, fkColumn.columnName),
-                        Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
-                    )
-                }));
-                parameter = joinParameter;
-                type = relation.relatedEntity;
-                this.scope.create({ parameter, model: type, selectStatement: select });
-                pc.parameter = parameter;
-                pc.chain = [ ... chain ];
-            } else {
-                // we will add parameter in scope in case if it is not there
-                // this is the case when query is composed over already existing
-                // there is still an error on this one...
-                pc.parameter = parameter = join.as as ParameterExpression;
-                type = join.model;
-                pc.chain = [... chain];
-                this.scope.create({ parameter, model: type, selectStatement: select });
-            }
-        }
+    //         const join = select.joins.find((x) => x.model === relation.relatedEntity);
+    //         if (!join) {
+    //             const joinType = fkColumn.nullable ? "LEFT" : "INNER";
+    //             const joinParameter = ParameterExpression.create({ name: relation.relatedEntity.name[0]});
+    //             joinParameter.model = relation.relatedEntity;
+    //             select.joins.push(JoinExpression.create({
+    //                 as: joinParameter,
+    //                 joinType,
+    //                 model: joinParameter.model,
+    //                 source: Expression.identifier(relation.relatedEntity.name),
+    //                 where: Expression.equal(
+    //                     Expression.member(parameter, fkColumn.columnName),
+    //                     Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
+    //                 )
+    //             }));
+    //             parameter = joinParameter;
+    //             type = relation.relatedEntity;
+    //             this.scope.create({ parameter, model: type, selectStatement: select });
+    //             pc.parameter = parameter;
+    //             pc.chain = [ ... chain ];
+    //         } else {
+    //             // we will add parameter in scope in case if it is not there
+    //             // this is the case when query is composed over already existing
+    //             // there is still an error on this one...
+    //             pc.parameter = parameter = join.as as ParameterExpression;
+    //             type = join.model;
+    //             pc.chain = [... chain];
+    //             this.scope.create({ parameter, model: type, selectStatement: select });
+    //         }
+    //     }
 
-        return pc;
-    }
+    //     return pc;
+    // }
 
 }

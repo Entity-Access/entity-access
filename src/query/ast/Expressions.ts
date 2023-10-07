@@ -58,8 +58,8 @@ export abstract class Expression {
         return Constant.create({ value });
     }
 
-    static parameter(name: string) {
-        return ParameterExpression.create({ name });
+    static parameter(name: string, model?: EntityType) {
+        return ParameterExpression.create({ name, model });
     }
 
     static identifier(name: string) {
