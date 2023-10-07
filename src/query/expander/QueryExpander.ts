@@ -91,8 +91,8 @@ export class QueryExpander {
         // }
         const select = cloner.clone((query as EntityQuery).selectStatement);
 
-        let where: Expression;
-        let joinWhere: Expression;
+        // let where: Expression;
+        // let joinWhere: Expression;
 
         const fk = relation.fkColumn ?? relation.relatedRelation.fkColumn;
 
@@ -184,7 +184,8 @@ export class QueryExpander {
             joinType: "INNER",
             source: { ... parent, fields: [ Expression.member(parent.sourceParameter, fk.columnName) ] },
             as: selectJoinParameter,
-            model,
+            model: parent.model,
+            // model,
             where: Expression.equal(
                 Expression.member(
                     selectJoinParameter,

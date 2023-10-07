@@ -48,4 +48,8 @@ export default async function (this: TestConfig) {
     await context.saveChanges();
     assert.equal(true, p.afterInsertInvoked);
 
+    await context.userFiles.filtered("read").where({}, (_) => (x) => x.photoUsers.some((p1) => true))
+        .include((x) => x.user.profile).toArray();
+
+
 }
