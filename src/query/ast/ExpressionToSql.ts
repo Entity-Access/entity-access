@@ -689,6 +689,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             let join = select.joins.find((j) => j.model === relation.relatedEntity);
                             if (join) {
                                 // verify if join exits..
+                                this.scope.create({ parameter: join.as as ParameterExpression, model: join.model, selectStatement: select });
                                 return join.as;
                             }
                             const joinType = select.preferLeftJoins ? "LEFT" : (fkColumn.nullable ? "LEFT" : "INNER");
@@ -846,9 +847,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 pc.parameter = parameter = join.as as ParameterExpression;
                 type = join.model;
                 pc.chain = [... chain];
-                if (!this.scope.get(parameter)) {
-                    this.scope.create({ parameter, model: type, selectStatement: select });
-                }
+                this.scope.create({ parameter, model: type, selectStatement: select });
             }
         }
 
