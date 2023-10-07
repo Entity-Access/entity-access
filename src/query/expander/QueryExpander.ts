@@ -116,9 +116,9 @@ export class QueryExpander {
 
             joins.push(JoinExpression.create({
                 joinType: "INNER",
-                source: { ... parent, fields: [ Expression.member(parent.sourceParameter, keyColumn) ] },
+                source: { ... parent },
                 as: joinParameter,
-                model,
+                model: parent.model,
                 where: Expression.equal(
                     Expression.member(
                         joinParameter,
@@ -182,7 +182,7 @@ export class QueryExpander {
 
         selectJoins.push(JoinExpression.create({
             joinType: "INNER",
-            source: { ... parent, fields: [ Expression.member(parent.sourceParameter, fk.columnName) ] },
+            source: { ... parent },
             as: selectJoinParameter,
             model: parent.model,
             // model,

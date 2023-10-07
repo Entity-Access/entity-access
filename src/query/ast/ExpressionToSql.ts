@@ -836,7 +836,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 }));
                 parameter = joinParameter;
                 type = relation.relatedEntity;
-                this.scope.create({ parameter, model: type});
+                this.scope.create({ parameter, model: type, selectStatement: select });
                 pc.parameter = parameter;
                 pc.chain = [ ... chain ];
             } else {
@@ -847,12 +847,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 type = join.model;
                 pc.chain = [... chain];
                 if (!this.scope.get(parameter)) {
-                    this.scope.create({ parameter, model: type });
+                    this.scope.create({ parameter, model: type, selectStatement: select });
                 }
             }
         }
 
-        return { parameter, chain };
+        return pc;
     }
 
 }
