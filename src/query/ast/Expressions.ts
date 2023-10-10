@@ -70,6 +70,10 @@ export abstract class Expression {
         return BinaryExpression.create({ left, operator: "AND", right});
     }
 
+    static logicalOr(left: Expression, right: Expression): BinaryExpression {
+        return BinaryExpression.create({ left, operator: "OR", right});
+    }
+
     static member(target: Expression, identifier: string |Expression): MemberExpression {
         return MemberExpression.create({
             target,
@@ -81,6 +85,14 @@ export abstract class Expression {
 
     static equal(left: Expression, right: Expression) {
         return BinaryExpression.create({ left, right, operator: "="});
+    }
+
+    static less(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "<"});
+    }
+
+    static lessOrEqual(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "<="});
     }
 
     static assign(left: Expression, right: Expression) {

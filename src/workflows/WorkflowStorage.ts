@@ -251,9 +251,17 @@ export default class WorkflowStorage {
                 where: Expression.logicalAnd(Expression.equal(
                     Expression.identifier("id"),
                     Expression.member(px, "id")
-                ), Expression.equal(
-                    Expression.identifier(lockTokenField),
-                    NullExpression.create({})
+                ), Expression.logicalOr(
+                    Expression.equal(
+                        Expression.identifier(lockTTLField),
+                        NullExpression.create({})
+                    ),
+                    Expression.lessOrEqual(
+                        Expression.identifier(lockTTLField),
+                        CallExpression.create({
+                            callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "now")
+                        })
+                    )
                 ))
             });
 
