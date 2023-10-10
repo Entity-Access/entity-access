@@ -1,15 +1,16 @@
 import { IClassOf } from "../../decorators/IClassOf.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
+import { ContextEvents } from "../../index.js";
 import { ShoppingContext, User, statusPublished } from "./ShoppingContext.js";
 
 const status = statusPublished;
 
-export async function createContext(driver: BaseDriver) {
+export async function createContext(driver: BaseDriver, events?: ContextEvents) {
 
     const copy = { ... driver } as BaseDriver;
     (copy as any).connectionString = { ... driver.connectionString };
     Object.setPrototypeOf(copy, Object.getPrototypeOf(driver));
-    const context = new ShoppingContext(copy);
+    const context = new ShoppingContext(copy, events);
 
     await context.connection.ensureDatabase();
 

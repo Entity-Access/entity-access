@@ -58,8 +58,8 @@ export abstract class Expression {
         return Constant.create({ value });
     }
 
-    static parameter(name: string) {
-        return ParameterExpression.create({ name });
+    static parameter(name: string, model?: EntityType) {
+        return ParameterExpression.create({ name, model });
     }
 
     static identifier(name: string) {
@@ -68,6 +68,10 @@ export abstract class Expression {
 
     static logicalAnd(left: Expression, right: Expression): BinaryExpression {
         return BinaryExpression.create({ left, operator: "AND", right});
+    }
+
+    static logicalOr(left: Expression, right: Expression): BinaryExpression {
+        return BinaryExpression.create({ left, operator: "OR", right});
     }
 
     static member(target: Expression, identifier: string |Expression): MemberExpression {
@@ -81,6 +85,14 @@ export abstract class Expression {
 
     static equal(left: Expression, right: Expression) {
         return BinaryExpression.create({ left, right, operator: "="});
+    }
+
+    static less(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "<"});
+    }
+
+    static lessOrEqual(left: Expression, right: Expression) {
+        return BinaryExpression.create({ left, right, operator: "<="});
     }
 
     static assign(left: Expression, right: Expression) {

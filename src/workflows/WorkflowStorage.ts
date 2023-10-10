@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { randomUUID } from "crypto";
 import Column from "../decorators/Column.js";
 import Index from "../decorators/Index.js";
@@ -251,9 +252,17 @@ export default class WorkflowStorage {
                 where: Expression.logicalAnd(Expression.equal(
                     Expression.identifier("id"),
                     Expression.member(px, "id")
-                ), Expression.equal(
-                    Expression.identifier(lockTokenField),
-                    NullExpression.create({})
+                ), Expression.logicalOr(
+                    Expression.equal(
+                        Expression.identifier(lockTTLField),
+                        NullExpression.create({})
+                    ),
+                    Expression.lessOrEqual(
+                        Expression.identifier(lockTTLField),
+                        CallExpression.create({
+                            callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "now")
+                        })
+                    )
                 ))
             });
 
@@ -265,7 +274,7 @@ export default class WorkflowStorage {
         const items = await db.workflows
             .where({now, taskGroup}, (p) => (x) => x.eta <= p.now
                 && ( x.lockedTTL === null
-                    || (x.lockedTTL <= p.now && x.lockToken === null)
+                    || x.lockedTTL <= p.now
                 )
                 && x.isWorkflow === true
                 && x.taskGroup === p.taskGroup)
@@ -279,9 +288,13 @@ export default class WorkflowStorage {
         for (const iterator of items) {
             // try to acquire lock...
             iterator.lockToken = uuid;
-            const r = await q.invoke(db.connection, iterator);
-            if (r.updated > 0) {
-                list.push(iterator);
+            try {
+                const r = await q.invoke(db.connection, iterator);
+                if (r.updated > 0) {
+                    list.push(iterator);
+                }
+            } catch (error) {
+                console.error(error);
             }
         }
         return list;

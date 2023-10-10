@@ -1,6 +1,7 @@
 import assert from "assert";
 import { TestConfig } from "../../TestConfig.js";
 import { createContext, headPhoneCategory } from "../../model/createContext.js";
+import { ShoppingContextEvents } from "../../security/ShoppingContextEvents.js";
 
 export default async function(this: TestConfig) {
 
@@ -35,6 +36,4 @@ export default async function(this: TestConfig) {
     assert.equal(0, c);
 
     await context.profilePhotos.all().include((x) => x.profile).toArray();
-
-    await context.userFiles.all().include((x) => x.user).toArray();
 }

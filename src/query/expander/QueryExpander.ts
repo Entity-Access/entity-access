@@ -91,8 +91,8 @@ export class QueryExpander {
         // }
         const select = cloner.clone((query as EntityQuery).selectStatement);
 
-        let where: Expression;
-        let joinWhere: Expression;
+        // let where: Expression;
+        // let joinWhere: Expression;
 
         const fk = relation.fkColumn ?? relation.relatedRelation.fkColumn;
 
@@ -109,16 +109,16 @@ export class QueryExpander {
 
 
             const joins = (select.joins ??= []);
-            const joinParameter = Expression.parameter(parent.sourceParameter.name);
+            const joinParameter = Expression.parameter(parent.sourceParameter.name, parent.model);
 
             // This join has to be INNER JOIN as we are only interested
             // in the results that matches parent query exactly
 
             joins.push(JoinExpression.create({
                 joinType: "INNER",
-                source: { ... parent, fields: [ Expression.member(parent.sourceParameter, keyColumn) ] },
+                source: { ... parent },
                 as: joinParameter,
-                model,
+                model: parent.model,
                 where: Expression.equal(
                     Expression.member(
                         joinParameter,
@@ -175,16 +175,17 @@ export class QueryExpander {
         //     : existsWhere;
 
         const selectJoins = (select.joins ??= []);
-        const selectJoinParameter = Expression.parameter(parent.sourceParameter.name);
+        const selectJoinParameter = Expression.parameter(parent.sourceParameter.name, parent.model);
 
         // This join has to be INNER JOIN as we are only interested
         // in the results that matches parent query exactly
 
         selectJoins.push(JoinExpression.create({
             joinType: "INNER",
-            source: { ... parent, fields: [ Expression.member(parent.sourceParameter, fk.columnName) ] },
+            source: { ... parent },
             as: selectJoinParameter,
-            model,
+            model: parent.model,
+            // model,
             where: Expression.equal(
                 Expression.member(
                     selectJoinParameter,

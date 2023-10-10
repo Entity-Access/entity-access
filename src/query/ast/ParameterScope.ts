@@ -50,9 +50,9 @@ export default class ParameterScope {
 
         const existing = this.map.get(model.parameter);
         if (existing) {
-            existing.replace = model.replace;
-            existing.selectStatement = model.selectStatement;
-            existing.model ??= existing.selectStatement.model;
+            existing.replace = model.replace ?? existing.replace;
+            existing.selectStatement = model.selectStatement ?? existing.selectStatement;
+            existing.model ??= existing.selectStatement.model ?? existing.model;
             return;
         }
 
