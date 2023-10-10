@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { randomUUID } from "crypto";
 import Column from "../decorators/Column.js";
 import Index from "../decorators/Index.js";
@@ -293,7 +294,7 @@ export default class WorkflowStorage {
                     list.push(iterator);
                 }
             } catch (error) {
-                console.error(error);            
+                console.error(error);
             }
         }
         return list;
