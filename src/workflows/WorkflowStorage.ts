@@ -287,9 +287,13 @@ export default class WorkflowStorage {
         for (const iterator of items) {
             // try to acquire lock...
             iterator.lockToken = uuid;
-            const r = await q.invoke(db.connection, iterator);
-            if (r.updated > 0) {
-                list.push(iterator);
+            try {
+                const r = await q.invoke(db.connection, iterator);
+                if (r.updated > 0) {
+                    list.push(iterator);
+                }
+            } catch (error) {
+                console.error(error);            
             }
         }
         return list;
