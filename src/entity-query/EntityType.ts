@@ -26,6 +26,7 @@ export default class EntityType {
 
     public readonly name: string;
     public readonly schema: string;
+    public readonly doNotCreate: string;
     public readonly entityName: string;
 
 
@@ -64,6 +65,7 @@ export default class EntityType {
         this.name = namingConvention ? namingConvention(original.name) : original.name;
         this.schema = original.schema ? (namingConvention ? namingConvention(original.schema) : original.schema) : original.schema;
         this.entityName = original.entityName;
+        this.doNotCreate = original.doNotCreate;
     }
 
     [addOrCreateColumnSymbol](name: string): IColumn {

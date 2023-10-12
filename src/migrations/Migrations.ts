@@ -16,6 +16,10 @@ export default abstract class Migrations {
         for (const s of model.sources.values()) {
             const type = s[modelSymbol] as EntityType;
 
+            if (type.doNotCreate) {
+                continue;
+            }
+
             for (const column of type.columns) {
                 if (column.computed && typeof column.computed !== "string") {
                     // parse..
