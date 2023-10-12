@@ -323,7 +323,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitIdentifier(e: Identifier): ITextQuery {
-        // need to visit parameters
+        if (e.quoted) {
+            return [this.compiler.quote(e.value)];
+        }
         return [e.value];
     }
 
@@ -358,10 +360,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 const name = this.scope.nameOf(parameter);
 
                 // need to change name as per naming convention here...
-                const namingConvention = this.compiler.namingConvention;
-                if (scope.model && namingConvention) {
-                    chain[0] = namingConvention(chain[0]);
-                }
+                // const namingConvention = this.compiler.namingConvention;
+                // if (scope.model && namingConvention) {
+                //     chain[0] = namingConvention(chain[0]);
+                // }
 
                 return [ QueryParameter.create(() => name) , "." , chain.join(".")];
             }
@@ -669,7 +671,11 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             const scope = this.scope.get(pe);
             const peModel = scope?.model;
             if (peModel) {
-                const { relation } = peModel.getProperty(id.value);
+                const { relation, field } = peModel.getProperty(id.value);
+                if (field) {
+                    // we need to replace field with column name...
+                    return Expression.member(target, field.columnName);
+                }
                 if (relation) {
 
                     const { fkColumn } = relation;

@@ -24,3 +24,11 @@ export function EntityName(name: string) {
         SchemaRegistry.registerClassForName(name, target);
     };
 }
+
+export function DoNotCreate() {
+    return (target) => {
+        const model = SchemaRegistry.model(target);
+        // @ts-expect-error readonly
+        model.doNotCreate = true;
+    };
+}
