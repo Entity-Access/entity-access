@@ -10,7 +10,7 @@ export default class SqlServerQueryCompiler extends QueryCompiler {
     constructor({
         arrowToExpression = ArrowToExpression,
         expressionToSql = ExpressionToSqlServer,
-        // quotedLiteral = SqlServerLiteral.quotedLiteral,
+        quote = SqlServerLiteral.quotedLiteral,
         namingConvention = NamingConventions.pascalCase,
         escapeLiteral = SqlServerLiteral.escapeLiteral,
         sqlMethodTransformer = SqlServerSqlMethodTransformer
@@ -19,6 +19,7 @@ export default class SqlServerQueryCompiler extends QueryCompiler {
             arrowToExpression,
             expressionToSql,
             namingConvention,
+            quote,
             // quotedLiteral,
             escapeLiteral,
             sqlMethodTransformer

@@ -3,7 +3,7 @@ import { IClassOf } from "../decorators/IClassOf.js";
 import { Query } from "../query/Query.js";
 import NameParser from "../decorators/parser/NameParser.js";
 import SchemaRegistry from "../decorators/SchemaRegistry.js";
-import { Expression, ExpressionAs, NumberLiteral, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { Expression, ExpressionAs, NumberLiteral, ParameterExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
 import { IStringTransformer } from "../query/ast/IStringTransformer.js";
@@ -104,6 +104,11 @@ export default class EntityType {
         return this.fieldMap.get(name);
     }
 
+    public getFieldMap(p: ParameterExpression) {
+        return this.columns.map((x) => Expression.as( Expression.member( p, x.columnName ), Expression.quotedIdentifier(x.name)));
+    }
+
+
     addRelation(relation: IEntityRelation, getInverseModel?: (t) => EntityType) {
         // we will also set fk to the corresponding column
         this.relations.push(relation);
@@ -199,14 +204,16 @@ export default class EntityType {
     }
 
     public map(row: any) {
-        const c = new this.typeClass();
-        for (const iterator of this.columns) {
-            const value = row[iterator.columnName];
-            if (value === void 0) {
-                continue;
-            }
-            c[iterator.name] = value;
-        }
-        return c;
+        Object.setPrototypeOf(row, this.typeClass.prototype);
+        return row;
+        // const c = new this.typeClass();
+        // for (const iterator of this.columns) {
+        //     const value = row[iterator.columnName];
+        //     if (value === void 0) {
+        //         continue;
+        //     }
+        //     c[iterator.name] = value;
+        // }
+        // return c;
     }
 }
