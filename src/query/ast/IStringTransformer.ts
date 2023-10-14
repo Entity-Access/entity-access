@@ -105,3 +105,5 @@ export const prepareJoin = (a: (ITextQueryFragment | ITextQuery)[], sep: string 
     }
     return r.flat(2);
 };
+
+export const joinAny = prepareJoin as (... a: any[]) => any;

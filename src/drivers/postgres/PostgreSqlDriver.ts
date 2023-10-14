@@ -90,7 +90,7 @@ export default class PostgreSqlDriver extends BaseDriver {
         config.poolSize ??= 20;
         this.pool = new ObjectPool({
             poolSize: config.poolSize,
-            maxSize: (config.poolSize) * 2,
+            maxSize: (config.poolSize) * 10,
             asyncFactory: async () => {
                 const c = new pg.Client(this.config);
                 await c.connect();

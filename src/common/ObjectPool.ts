@@ -74,9 +74,9 @@ export default class ObjectPool<T> {
     private logger: (text: string) => void;
 
     constructor({
-        maxSize = 40,
         maxWait = 5000,
         poolSize = 20,
+        maxSize = poolSize * 2,
         logger,
         asyncFactory,
         factory,
