@@ -1,5 +1,5 @@
 
-import { joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
+import { joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers } from "../ISqlHelpers.js";
 import type QueryCompiler from "../QueryCompiler.js";
@@ -82,6 +82,14 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         },
         yearOf(d) {
             return prepareAny `DATE_PART(year, ${d})`;
+        },
+    },
+    math: {
+        min(...p) {
+            return prepareAny `LEAST(${ joinAny(p) })`;
+        },
+        max(...p) {
+            return prepareAny `GREATEST(${ joinAny(p) })`;
         },
     },
     text: {

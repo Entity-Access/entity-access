@@ -17,7 +17,11 @@ export interface ISql {
         asDate(a: any): Date;
         asDateTime(a: any): Date;
         asDecimal(a: any): number;
-    }
+    },
+    math: {
+        min<T>(... a: T[]): T,
+        max<T>(... a: T[]): T,
+    },
 
     text: {
         concat(... fragments: string[]): string;
