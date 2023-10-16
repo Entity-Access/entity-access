@@ -249,6 +249,43 @@ export default class EntityQuery<T = any>
 
     }
 
+    async some(): Promise<boolean> {
+        // if (parameters !== void 0) {
+        //     return this.where(parameters, fx).count();
+        // }
+
+        const select = { ... this.selectStatement, fields: [
+            Expression.as(
+                Identifier.create({ value: "1"}),
+                "c1")
+            ],
+            orderBy: void 0
+        };
+
+        const nq = new EntityQuery({ ... this, selectStatement: select });
+
+        await using scope = new AsyncDisposableScope();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
+        try {
+            query = this.context.driver.compiler.compileExpression(nq, select);
+            const reader = await this.context.connection.executeReader(query);
+            scope.register(reader);
+            for await (const iterator of reader.next()) {
+                if(iterator.c1 as number) {
+                    return true;
+                }
+            }
+            // this is special case when database does not return any count
+            // like sql server
+            return false;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
+        }
+
+    }
+
     async count(parameters?:any, fx?: any): Promise<number> {
         if (parameters !== void 0) {
             return this.where(parameters, fx).count();
