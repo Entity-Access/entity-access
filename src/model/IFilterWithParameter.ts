@@ -11,6 +11,8 @@ export interface IBaseQuery<T> {
     firstOrFail(): Promise<T>;
     first(): Promise<T>;
 
+    some(): Promise<boolean>;
+
     select<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
     map<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
 

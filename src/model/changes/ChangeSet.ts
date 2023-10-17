@@ -124,4 +124,17 @@ export default class ChangeSet {
 
     }
 
+    /**
+     * Warning, this will remove all the tracked entries,
+     * use with caution.
+     */
+    public clear() {
+        for (const iterator of this.entries) {
+            iterator.cancel();
+        }
+        this.entries.length = 0;
+        this.identityMap.clear();
+        this.entryMap.clear();
+    }
+
 }
