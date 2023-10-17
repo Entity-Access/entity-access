@@ -1,4 +1,4 @@
-import { joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
+import { joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers } from "../ISqlHelpers.js";
@@ -20,6 +20,14 @@ export const PostgreSqlHelper: ISqlHelpers = {
         },
         avg(a) {
             return prepareAny `COALESCE(AVG(${a}, 0.0)`;
+        },
+    },
+    math: {
+        min(...p) {
+            return prepareAny `LEAST(${ joinAny(p) })`;
+        },
+        max(...p) {
+            return prepareAny `GREATEST(${ joinAny(p) })`;
         },
     },
     cast: {
@@ -68,22 +76,22 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return prepareAny `(${d} + (${n} * interval '1 year'))`;
         },
         dayOf(d) {
-            return prepareAny `DATE_PART(${d}, day)`;
+            return prepareAny `DATE_PART('day', ${d})`;
         },
         hourOf(d) {
-            return prepareAny `DATE_PART(${d}, hour)`;
+            return prepareAny `DATE_PART('hour', ${d})`;
         },
         minuteOf(d) {
-            return prepareAny `DATE_PART(${d}, minute)`;
+            return prepareAny `DATE_PART('minute', ${d})`;
         },
         monthOf(d) {
-            return prepareAny `DATE_PART(${d}, month)`;
+            return prepareAny `DATE_PART('month', ${d})`;
         },
         secondOf(d) {
-            return prepareAny `DATE_PART(${d}, second)`;
+            return prepareAny `DATE_PART('second', ${d})`;
         },
         yearOf(d) {
-            return prepareAny `DATE_PART(${d}, year)`;
+            return prepareAny `DATE_PART('year', ${d})`;
         },
     },
     text: {

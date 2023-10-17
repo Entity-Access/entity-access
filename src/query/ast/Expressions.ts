@@ -66,6 +66,10 @@ export abstract class Expression {
         return Identifier.create({ value: name });
     }
 
+    static quotedIdentifier(name: string) {
+        return Identifier.create({ value: name, quoted: true });
+    }
+
     static logicalAnd(left: Expression, right: Expression): BinaryExpression {
         return BinaryExpression.create({ left, operator: "AND", right});
     }
@@ -307,6 +311,7 @@ export class Constant extends Expression {
 export class Identifier extends Expression {
     readonly type = "Identifier";
     public value: string;
+    public quoted: boolean;
 }
 
 export class NullExpression extends Expression {

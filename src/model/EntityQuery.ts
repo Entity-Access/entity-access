@@ -33,7 +33,7 @@ export default class EntityQuery<T = any>
     }
 
     map(parameters: any, fx: any): any {
-        return this.extend(parameters, fx, (select, body) => {
+        const q = this.extend(parameters, fx, (select, body) => {
             const fields = [] as Expression[];
             switch(body.type) {
                 case "NewObjectExpression":
@@ -41,7 +41,7 @@ export default class EntityQuery<T = any>
                     for (const iterator of noe.properties) {
                         fields.push(ExpressionAs.create({
                             expression: iterator.expression,
-                            alias: iterator.alias
+                            alias: Expression.quotedIdentifier(iterator.alias.value)
                         }));
                     }
                     break;
@@ -52,6 +52,8 @@ export default class EntityQuery<T = any>
             }
             return { ... select, fields };
         });
+        q.type = null;
+        return q;
     }
 
     withSignal(signal: AbortSignal): any {
@@ -111,14 +113,19 @@ export default class EntityQuery<T = any>
             }
 
             signal?.throwIfAborted();
+            let select = this.selectStatement;
 
-            query = this.context.driver.compiler.compileExpression(this, this.selectStatement);
+            if (type && select.model) {
+                select = { ... select, fields: select.model.getFieldMap(select.sourceParameter) };
+            }
+
+            query = this.context.driver.compiler.compileExpression(this, select);
             this.traceQuery?.(query.text);
             const reader = await this.context.connection.executeReader(query, signal);
             scope.register(reader);
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
-                    const item = type?.map(iterator) ?? iterator;
+                    const item = type.map(iterator) as any;
                     // set identity...
                     const entry = this.context.changeSet.getEntry(item, item);
                     relationMapper.fix(entry);
@@ -138,6 +145,9 @@ export default class EntityQuery<T = any>
         let query: { text, values };
         let reader: IDbReader;
         try {
+            if (select.model) {
+                select = { ... select, fields: select.model.getFieldMap(select.sourceParameter) };
+            }
             query = this.context.driver.compiler.compileExpression(this, select);
             this.traceQuery?.(query.text);
             reader = await this.context.connection.executeReader(query, signal);
@@ -232,6 +242,43 @@ export default class EntityQuery<T = any>
             // this is special case when database does not return any count
             // like sql server
             return 0;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
+        }
+
+    }
+
+    async some(): Promise<boolean> {
+        // if (parameters !== void 0) {
+        //     return this.where(parameters, fx).count();
+        // }
+
+        const select = { ... this.selectStatement, fields: [
+            Expression.as(
+                Identifier.create({ value: "1"}),
+                "c1")
+            ],
+            orderBy: void 0
+        };
+
+        const nq = new EntityQuery({ ... this, selectStatement: select });
+
+        await using scope = new AsyncDisposableScope();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
+        try {
+            query = this.context.driver.compiler.compileExpression(nq, select);
+            const reader = await this.context.connection.executeReader(query);
+            scope.register(reader);
+            for await (const iterator of reader.next()) {
+                if(iterator.c1 as number) {
+                    return true;
+                }
+            }
+            // this is special case when database does not return any count
+            // like sql server
+            return false;
         } catch (error) {
             session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
             throw error;

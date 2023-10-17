@@ -19,7 +19,10 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
     map.set(type,  t);
     for (const iterator of original.columns) {
         const column = { ... iterator };
-        column.columnName = column.explicitName ? column.columnName : (namingConvention ? namingConvention(column.columnName) : column.columnName);
+        column.columnName = column.explicitName
+            ? column.columnName
+            : (namingConvention
+                    ? namingConvention(column.columnName) : column.columnName);
         t.addColumn(column);
         column.entityType = t;
     }
@@ -54,7 +57,11 @@ export default class EntityModel {
         let source = this.sources.get(type);
         if (!source) {
             const cache = (this.context.driver[driverModelCache] ??= new Map());
-            const entityType = getOrCreateModel(cache, type, this.context.driver.compiler.namingConvention);
+            const entityType = getOrCreateModel(
+                cache,
+                type,
+                this.context.driver.compiler.namingConvention
+            );
             this.types.set(type, entityType);
             source = new EntitySource(entityType, this.context);
             this.sources.set(type, source);
