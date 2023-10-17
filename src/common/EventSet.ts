@@ -11,8 +11,10 @@ export default class EventSet<TArg, Target = any> {
 
     public listeners: Set<((x: IEventSetArgs<Target, TArg>) => any)>;
 
-    constructor(private readonly owner: Target) {
+    public readonly dispatcher: (a: TArg) => void;
 
+    constructor(private readonly owner: Target) {
+        this.dispatcher = (a) => this.dispatch(a);
     }
 
     listen(listener: (x: IEventSetArgs<Target, TArg>) => any) {
