@@ -55,7 +55,7 @@ export class EntitySource<T = any> {
     }: {
         keys?: Partial<T>,
         changes: Partial<T>,
-        select?: Partial<T>,
+        // select?: Partial<T>,
         mode: DirectSaveType,
         /**
          * You can use map to update any fields you
@@ -64,7 +64,7 @@ export class EntitySource<T = any> {
          * @returns entity
          */
         updateAfterSelect?: (item:T) => T
-    }, retry = 1) {
+    }, retry = 1): Promise<T> {
 
         const { driver } = this.context;
 
@@ -118,7 +118,7 @@ export class EntitySource<T = any> {
 
         const expression = driver.createUpsertExpression(this.model, changes, mode, removeUndefined(keys), returnFields);
         if (!expression) {
-            return changes;
+            return changes as any;
         }
         try {
             const { text, values } = driver.compiler.compileExpression(null, expression);
