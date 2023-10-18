@@ -34,7 +34,7 @@ export interface IBaseQuery<T> {
 
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
 
-    trace<DT>(tracer: (this: DT, text: string) => void): DT;
+    trace<DT>(this: DT, tracer: (text: string) => void): DT;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
