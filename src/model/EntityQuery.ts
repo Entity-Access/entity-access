@@ -269,6 +269,7 @@ export default class EntityQuery<T = any>
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(nq, select);
+            this.traceQuery?.(query.text);
             const reader = await this.context.connection.executeReader(query);
             scope.register(reader);
             for await (const iterator of reader.next()) {
@@ -310,6 +311,7 @@ export default class EntityQuery<T = any>
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(nq, select);
+            this.traceQuery?.(query.text);
             const reader = await this.context.connection.executeReader(query);
             scope.register(reader);
             for await (const iterator of reader.next()) {
