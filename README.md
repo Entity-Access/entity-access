@@ -114,7 +114,7 @@ const q = db.orders.where({ userName },
         (order) =>
             Sql.text.like(
                 order.customer.userName,
-                p.userName
+                params.userName
             )
 );
 
