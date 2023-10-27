@@ -327,7 +327,10 @@ export default class EntityQuery<T = any>
 
     private extend(parameters: any, fx: any, map: (select: SelectStatement, exp: Expression) => SelectStatement) {
         const exp = this.context.driver.compiler.compile(this, fx);
-        exp.params[0].value = parameters;
+        const p1 = exp.params[0];
+        if (p1) {
+            p1.value = parameters;
+        }
         return new EntityQuery({ ... this, selectStatement: map(this.selectStatement, exp.body)});
     }
 

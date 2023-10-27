@@ -153,7 +153,10 @@ export type DirectSaveType =
 /**
  * Inserts if not exists or selects generated columns for given keys
  */
-"selectOrInsert";
+"selectOrInsert" |
+/**
+ * Deletes the record with keys provided.*/
+"delete";
 
 export abstract class BaseDriver {
     abstract get compiler(): QueryCompiler;
@@ -196,6 +199,30 @@ export abstract class BaseDriver {
         test: any,
         returnFields?: Identifier[]): Expression {
         const table = type.fullyQualifiedName as TableLiteral;
+
+        if (mode === "delete") {
+            let where = null as Expression;
+            for (const key in test) {
+                if (Object.prototype.hasOwnProperty.call(test, key)) {
+                    const element = test[key];
+                    const { columnName } = type.getField(key);
+                    const compare = Expression.equal(Expression.identifier(columnName), Expression.constant(element));
+                    where = where
+                        ? Expression.logicalAnd(where, compare)
+                        : compare;
+                }
+            }
+
+            if (!where) {
+                throw new EntityAccessError(`No Keys specified`);
+            }
+
+            const deleteStatement = DeleteStatement.create({
+                table,
+                where
+            });
+            return deleteStatement;
+        }
 
         if (mode === "insert") {
             const fields = [];

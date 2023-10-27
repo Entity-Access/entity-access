@@ -23,6 +23,31 @@ const removeUndefined = (obj) => {
     return r;
 };
 
+export type ISaveDirect<T> = {
+    keys: Partial<T>,
+    changes: Partial<T>,
+    // select?: Partial<T>,
+    mode: "selectOrInsert" | "insert",
+    updateAfterSelect?: never
+} | {
+    keys?: Partial<T>,
+    changes: Partial<T>,
+    // select?: Partial<T>,
+    mode: "update" | "upsert"
+    /**
+     * You can use map to update any fields you
+     * retrieved from database to update
+     * @param item loaded from database
+     * @returns entity
+     */
+    updateAfterSelect?: (item:T) => T
+} | {
+    keys: Partial<T>,
+    mode: "delete",
+    updateAfterSelect?: never,
+    changes?: never
+};
+
 export class EntitySource<T = any> {
 
     public statements = {
@@ -52,19 +77,7 @@ export class EntitySource<T = any> {
         mode,
         changes,
         updateAfterSelect
-    }: {
-        keys?: Partial<T>,
-        changes: Partial<T>,
-        // select?: Partial<T>,
-        mode: DirectSaveType,
-        /**
-         * You can use map to update any fields you
-         * retrieved from database to update
-         * @param item loaded from database
-         * @returns entity
-         */
-        updateAfterSelect?: (item:T) => T
-    }, retry = 1): Promise<T> {
+    }: ISaveDirect<T> , retry = 1): Promise<T> {
 
         const { driver } = this.context;
 
@@ -136,7 +149,7 @@ export class EntitySource<T = any> {
             return returnEntity;
         } catch (error) {
             if (retry) {
-                return await this.saveDirect({ keys, mode, changes }, retry -1);
+                return await this.saveDirect({ keys, mode, changes, updateAfterSelect } as any, retry -1);
             }
             throw error;
         }
