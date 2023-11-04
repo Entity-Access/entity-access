@@ -42,7 +42,7 @@ export default class EntityQuery<T = any>
         });
         const { driver } = this.context;
         const insert = driver.compiler.compileExpression(null, query);
-        return this.context.connection.executeQuery(insert);
+        return this.context.connection.executeQuery(insert, this.signal);
     }
 
     map(parameters: any, fx: any): any {
