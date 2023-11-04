@@ -8,6 +8,7 @@ import { CallExpression, Expression, ExpressionAs, Identifier, InsertStatement, 
 import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
+import type EntityModel from "./EntityModel.js";
 import type { EntitySource } from "./EntitySource.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
 import { filteredSymbol } from "./events/FilteredExpression.js";
@@ -34,8 +35,22 @@ export default class EntityQuery<T = any>
     }
 
     insert(es: EntitySource) {
+        const model = (es as any).mode as EntityType;
         const table = (es as any).model.fullyQualifiedName as TableLiteral;
-        const values = this.selectStatement;
+        const fields = [];
+        for (const iterator of this.selectStatement.fields) {
+            if (iterator.type !== "ExpressionAs") {
+                fields.push(iterator);
+                continue;
+            }
+            const expAs = iterator as ExpressionAs;
+            const field = model.getField(expAs.alias.value);
+            if (!field) {
+                throw new EntityAccessError(`Field ${expAs.alias.value} not found in ${model.name}`);
+            }
+            fields.push(Expression.as(expAs.expression, field.columnName));
+        }
+        const values = { ... this.selectStatement, fields };
         const query = InsertStatement.create({
             table,
             values
