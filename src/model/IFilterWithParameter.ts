@@ -1,3 +1,4 @@
+import { IQueryResult } from "../drivers/base/BaseDriver.js";
 import type { EntitySource } from "./EntitySource.js";
 
 export type IFilterWithParameter<P = any, T = any> = (p: P) => (x: T) => boolean;
@@ -42,7 +43,7 @@ export interface IBaseQuery<T> {
      * @param this query
      * @param destination entity source
      */
-    insert<DT>(this: DT, destination: EntitySource<Partial<T>>);
+    insert<DT>(this: DT, destination: EntitySource<Partial<T>>): Promise<IQueryResult>;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
