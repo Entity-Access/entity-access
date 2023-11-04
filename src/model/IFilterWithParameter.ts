@@ -1,3 +1,4 @@
+import type { EntitySource } from "./EntitySource.js";
 
 export type IFilterWithParameter<P = any, T = any> = (p: P) => (x: T) => boolean;
 
@@ -35,6 +36,13 @@ export interface IBaseQuery<T> {
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
 
     trace<DT>(this: DT, tracer: (text: string) => void): DT;
+
+    /**
+     * Inserts current sql statement into given entity source.
+     * @param this query
+     * @param destination entity source
+     */
+    insert<DT>(this: DT, destination: EntitySource<Partial<T>>);
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {

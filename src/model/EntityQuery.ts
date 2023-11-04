@@ -4,10 +4,11 @@ import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, Expression, ExpressionAs, Identifier, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement } from "../query/ast/Expressions.js";
+import { CallExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
+import type { EntitySource } from "./EntitySource.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
 import { filteredSymbol } from "./events/FilteredExpression.js";
 import RelationMapper from "./identity/RelationMapper.js";
@@ -30,6 +31,18 @@ export default class EntityQuery<T = any>
 
     select(p: any, fx: any): any {
         return this.map(p, fx);
+    }
+
+    insert(es: EntitySource) {
+        const table = (es as any).model.fullyQualifiedName as TableLiteral;
+        const values = this.selectStatement;
+        const query = InsertStatement.create({
+            table,
+            values
+        });
+        const { driver } = this.context;
+        const insert = driver.compiler.compileExpression(null, query);
+        return this.context.connection.executeQuery(insert);
     }
 
     map(parameters: any, fx: any): any {
