@@ -1,4 +1,5 @@
 import { cloner } from "../../common/cloner.js";
+import { IEntityRelation } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import EntityQuery from "../../model/EntityQuery.js";
@@ -17,6 +18,8 @@ export class QueryExpander {
     }
 
     private include: SelectStatement[] = [];
+
+    private included = new Map<IEntityRelation, [SelectStatement, EntityType]>();
 
     constructor(
         private context: EntityContext,
@@ -96,6 +99,10 @@ export class QueryExpander {
 
         const fk = relation.fkColumn ?? relation.relatedRelation.fkColumn;
 
+        let relationSet = this.included.get(relation);
+        if (relationSet) {
+            return relationSet;
+        }
 
         if(relation.isInverseRelation) {
 
@@ -144,7 +151,9 @@ export class QueryExpander {
             // const text = DebugStringVisitor.expressionToString(select);
             // console.log(text);
             this.include.push(select);
-            return [select, relation.relatedEntity];
+            relationSet = [select, relation.relatedEntity];
+            this.included.set(relation, relationSet);
+            return relationSet;
         }
 
         // if we can skip this if join already exists !!
@@ -200,6 +209,8 @@ export class QueryExpander {
 
         this.include.push(select);
 
-        return [select, relation.relatedEntity];
+        relationSet = [select, relation.relatedEntity];
+        this.included.set(relation, relationSet);
+        return relationSet;
     }
 }
