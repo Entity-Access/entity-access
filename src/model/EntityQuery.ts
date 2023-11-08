@@ -34,7 +34,7 @@ export default class EntityQuery<T = any>
         return this.map(p, fx);
     }
 
-    insert(es: EntitySource) {
+    insertInTo(es: EntitySource) {
         const model = (es as any).mode as EntityType;
         const table = (es as any).model.fullyQualifiedName as TableLiteral;
         const fields = [];

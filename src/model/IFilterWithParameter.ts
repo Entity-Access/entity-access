@@ -43,7 +43,7 @@ export interface IBaseQuery<T> {
      * @param this query
      * @param destination entity source
      */
-    insert<DT>(this: DT, destination: EntitySource<Partial<T>>): Promise<IQueryResult>;
+    insertInTo<DT>(this: DT, destination: EntitySource<Partial<T>>): Promise<IQueryResult>;
 }
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {

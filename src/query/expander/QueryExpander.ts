@@ -1,4 +1,5 @@
 import { cloner } from "../../common/cloner.js";
+import { IEntityRelation } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import EntityQuery from "../../model/EntityQuery.js";
@@ -12,11 +13,13 @@ export class QueryExpander {
     static expand(context: EntityContext, select: SelectStatement, p, filter: boolean) {
         const qe = new QueryExpander(context, select, filter);
         const expression = ArrowToExpression.transform(`(_____________________x) => ${p}` as any);
-        qe.expandNode(select, select.model, expression.body as ExpressionType);
+        qe.expandNode("", select, select.model, expression.body as ExpressionType);
         return qe.include;
     }
 
     private include: SelectStatement[] = [];
+
+    private included = new Map<string, [SelectStatement, EntityType]>();
 
     constructor(
         private context: EntityContext,
@@ -26,13 +29,13 @@ export class QueryExpander {
 
     }
 
-    expandNode(parent: SelectStatement, model: EntityType, node: ExpressionType): [SelectStatement, EntityType] {
+    expandNode(key: string, parent: SelectStatement, model: EntityType, node: ExpressionType): [SelectStatement, EntityType] {
 
         parent = cloner.clone(parent);
 
         if (node.type === "ArrayExpression") {
             for (const iterator of node.elements) {
-                this.expandNode(parent, model,  iterator as ExpressionType);
+                this.expandNode(key, parent, model,  iterator as ExpressionType);
             }
             return;
         }
@@ -49,13 +52,13 @@ export class QueryExpander {
             if (property.value !== "forEach") {
                 throw new NotSupportedError(property.value);
             }
-            const [expandedSelect, expandedType] = this.expandNode(parent, model, callee.target as ExpressionType);
+            const [expandedSelect, expandedType] = this.expandNode(key, parent, model, callee.target as ExpressionType);
 
             const arrow = node.arguments[0];
             if (!arrow || arrow.type !== "ArrowFunctionExpression") {
                 throw new NotSupportedError(arrow?.type ?? "Empty Expression");
             }
-            this.expandNode(expandedSelect, expandedType, (arrow as ArrowFunctionExpression).body as ExpressionType);
+            this.expandNode(key, expandedSelect, expandedType, (arrow as ArrowFunctionExpression).body as ExpressionType);
             return [expandedSelect, expandedType];
         }
 
@@ -70,7 +73,7 @@ export class QueryExpander {
 
         const target = node.target as ExpressionType;
         if (target.type === "MemberExpression") {
-            const [mepSelect, mepType] = this.expandNode(parent, model, target);
+            const [mepSelect, mepType] = this.expandNode( key, parent, model, target);
             parent = mepSelect;
             model = mepType;
         }
@@ -96,6 +99,12 @@ export class QueryExpander {
 
         const fk = relation.fkColumn ?? relation.relatedRelation.fkColumn;
 
+        key += "." + relation.name;
+
+        let relationSet = this.included.get(key);
+        if (relationSet) {
+            return relationSet;
+        }
 
         if(relation.isInverseRelation) {
 
@@ -144,7 +153,9 @@ export class QueryExpander {
             // const text = DebugStringVisitor.expressionToString(select);
             // console.log(text);
             this.include.push(select);
-            return [select, relation.relatedEntity];
+            relationSet = [select, relation.relatedEntity];
+            this.included.set(key, relationSet);
+            return relationSet;
         }
 
         // if we can skip this if join already exists !!
@@ -200,6 +211,8 @@ export class QueryExpander {
 
         this.include.push(select);
 
-        return [select, relation.relatedEntity];
+        relationSet = [select, relation.relatedEntity];
+        this.included.set(key, relationSet);
+        return relationSet;
     }
 }
