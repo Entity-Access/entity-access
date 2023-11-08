@@ -197,6 +197,11 @@ export class NotExits extends Expression {
     target: Expression;
 }
 
+export class NotExpression extends Expression {
+    readonly type = "Not";
+    expression: Expression;
+}
+
 export class ExistsExpression extends Expression {
     readonly type = "ExistsExpression";
     target: Expression;
@@ -462,5 +467,6 @@ export type ExpressionType =
     ArrayExpression |
     NotExits |
     UnionAllStatement |
+    NotExpression |
     TemplateElement
 ;

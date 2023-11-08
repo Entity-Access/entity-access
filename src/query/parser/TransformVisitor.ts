@@ -68,6 +68,10 @@ export default class TransformVisitor extends BabelVisitor<bpe.Node> {
         return bpe.binaryExpression(node.operator, this.transform(node.left), this.transform(node.right));
     }
 
+    visitUnaryExpression(node: bpe.UnaryExpression): bpe.Node {
+        return bpe.unaryExpression(node.operator, node.argument, node.prefix);
+    }
+
     visitObjectProperty(node: bpe.ObjectProperty): bpe.Node {
 
         let key = node.key;

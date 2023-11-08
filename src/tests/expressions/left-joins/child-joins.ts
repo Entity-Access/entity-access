@@ -88,4 +88,9 @@ export default function() {
     const q = context.orderItems.where({ o: 1,  owner: 1}, (p) => (x) => x.productID === p.o || x.product.ownerID === p.owner);
     r = q.toQuery();
     assertSqlMatch(join2, r.text);
+
+    query = old.where({ date: new Date()}, (p) => (x) => !x.orderItems.some((o) => o.order.orderDate > p.date));
+    r = query.toQuery();
+    assertSqlMatch(sql3, r.text);
+
 }
