@@ -19,7 +19,7 @@ export class QueryExpander {
 
     private include: SelectStatement[] = [];
 
-    private included = new Map<string, [SelectStatement, EntityType]>();
+    private included = new Map<string, [string, SelectStatement, EntityType]>();
 
     constructor(
         private context: EntityContext,
@@ -29,7 +29,7 @@ export class QueryExpander {
 
     }
 
-    expandNode(key: string, parent: SelectStatement, model: EntityType, node: ExpressionType): [SelectStatement, EntityType] {
+    expandNode(key: string, parent: SelectStatement, model: EntityType, node: ExpressionType): [string, SelectStatement, EntityType] {
 
         parent = cloner.clone(parent);
 
@@ -52,14 +52,14 @@ export class QueryExpander {
             if (property.value !== "forEach") {
                 throw new NotSupportedError(property.value);
             }
-            const [expandedSelect, expandedType] = this.expandNode(key, parent, model, callee.target as ExpressionType);
-
+            const [k, expandedSelect, expandedType] = this.expandNode(key, parent, model, callee.target as ExpressionType);
+            key = k;
             const arrow = node.arguments[0];
             if (!arrow || arrow.type !== "ArrowFunctionExpression") {
                 throw new NotSupportedError(arrow?.type ?? "Empty Expression");
             }
             this.expandNode(key, expandedSelect, expandedType, (arrow as ArrowFunctionExpression).body as ExpressionType);
-            return [expandedSelect, expandedType];
+            return [key, expandedSelect, expandedType];
         }
 
         if (node.type !== "MemberExpression") {
@@ -73,7 +73,8 @@ export class QueryExpander {
 
         const target = node.target as ExpressionType;
         if (target.type === "MemberExpression") {
-            const [mepSelect, mepType] = this.expandNode( key, parent, model, target);
+            const [k, mepSelect, mepType] = this.expandNode( key, parent, model, target);
+            key = k;
             parent = mepSelect;
             model = mepType;
         }
@@ -153,7 +154,7 @@ export class QueryExpander {
             // const text = DebugStringVisitor.expressionToString(select);
             // console.log(text);
             this.include.push(select);
-            relationSet = [select, relation.relatedEntity];
+            relationSet = [key, select, relation.relatedEntity];
             this.included.set(key, relationSet);
             return relationSet;
         }
@@ -211,7 +212,7 @@ export class QueryExpander {
 
         this.include.push(select);
 
-        relationSet = [select, relation.relatedEntity];
+        relationSet = [key, select, relation.relatedEntity];
         this.included.set(key, relationSet);
         return relationSet;
     }
