@@ -73,7 +73,7 @@ export default abstract class Visitor<T = any> {
                 return this.visitUnionAllStatement(e);
             case "UpsertStatement":
                 return this.visitUpsertStatement(e);
-            case "Not":
+            case "NotExpression":
                 return this.visitNotExpression(e);
         }
         const c: never = e;

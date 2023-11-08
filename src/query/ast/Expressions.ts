@@ -198,7 +198,7 @@ export class NotExits extends Expression {
 }
 
 export class NotExpression extends Expression {
-    readonly type = "Not";
+    readonly type = "NotExpression";
     expression: Expression;
 }
 
