@@ -64,6 +64,8 @@ FROM order_items AS o1
  LEFT JOIN products AS p ON o1.product_id = p.product_id
 WHERE (o1.product_id = $1) OR (p.owner_id = $2)`;
 
+const notExp = 'SELECT\n        p1.product_id,\n\t\tp1.name,\n\t\tp1.owner_id,\n\t\tp1.status\n        FROM products AS p1\n\tWHERE EXISTS (SELECT\n        1\n        FROM order_items AS o\n\tWHERE (p1.product_id = o.product_id) AND (o.product_id = $1)) AND  NOT (EXISTS (SELECT\n        1\n        FROM order_items AS o1\n\t\t INNER JOIN orders AS o2 ON o1.order_id = o2.order_id\n\tWHERE (p1.product_id = o1.product_id) AND (o2.order_date > $2)))';
+
 export default function() {
 
     const context = new ShoppingContext(new PostgreSqlDriver({}));
@@ -88,4 +90,9 @@ export default function() {
     const q = context.orderItems.where({ o: 1,  owner: 1}, (p) => (x) => x.productID === p.o || x.product.ownerID === p.owner);
     r = q.toQuery();
     assertSqlMatch(join2, r.text);
+
+    query = old.where({ date: new Date()}, (p) => (x) => !x.orderItems.some((o) => o.order.orderDate > p.date));
+    r = query.toQuery();
+    assertSqlMatch(notExp, r.text);
+
 }

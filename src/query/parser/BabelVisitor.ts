@@ -41,6 +41,8 @@ export abstract class BabelVisitor<T> {
                 return this.visitTemplateElement(node);
             case "ArrayExpression":
                 return this.visitArrayExpression(node);
+            case "UnaryExpression":
+                return this.visitUnaryExpression(node);
             case "RegExpLiteral":
             default:
                 throw new Error(`Translation from ${node.type} not supported`);
@@ -53,6 +55,7 @@ export abstract class BabelVisitor<T> {
     visitObjectProperty(node: bpe.ObjectProperty): T {
         throw new Error("Method not implemented.");
     }
+    abstract visitUnaryExpression(node: bpe.UnaryExpression): T;
     abstract visitObjectExpression(node: bpe.ObjectExpression): T;
     abstract visitMemberExpression(node: bpe.MemberExpression): T;
     abstract visitLogicalExpression(node: bpe.LogicalExpression): T;

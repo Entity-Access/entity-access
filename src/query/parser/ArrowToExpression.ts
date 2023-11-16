@@ -1,5 +1,5 @@
 import { parseExpression } from "@babel/parser";
-import { ArrowFunctionExpression, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NullExpression, NumberLiteral, ParameterExpression, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NotExpression, NullExpression, NumberLiteral, ParameterExpression, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import Restructure from "./Restructure.js";
@@ -102,6 +102,10 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     visitNumericLiteral({ value }: bpe.NumericLiteral) {
         return NumberLiteral.create({ value });
+    }
+
+    visitUnaryExpression(node: bpe.UnaryExpression): Expression {
+        return NotExpression.create({ expression: this.visit(node.argument)});
     }
 
     visitTemplateLiteral(node: bpe.TemplateLiteral) {
