@@ -71,18 +71,18 @@ export interface ISql {
 
     date: {
         now(): DateTime,
-        yearOf(d: Date): number;
-        monthOf(d: Date): number;
-        dayOf(d: Date): number;
-        minuteOf(d: Date): number;
-        hourOf(d: Date): number;
-        secondOf(d: Date): number;
-        addYears(d: Date, n: number): Date;
-        addMonths(d: Date, n: number): Date;
-        addDays(d: Date, n: number): Date;
-        addHours(d: Date, n: number): Date;
-        addMinutes(d: Date, n: number): Date;
-        addSeconds(d: Date, n: number): Date;
+        yearOf(d: Date|DateTime): number;
+        monthOf(d: Date|DateTime): number;
+        dayOf(d: Date|DateTime): number;
+        minuteOf(d: Date|DateTime): number;
+        hourOf(d: Date|DateTime): number;
+        secondOf(d: Date|DateTime): number;
+        addYears(d: Date|DateTime, n: number): Date;
+        addMonths(d: Date|DateTime, n: number): Date;
+        addDays(d: Date|DateTime, n: number): Date;
+        addHours(d: Date|DateTime, n: number): Date;
+        addMinutes(d: Date|DateTime, n: number): Date;
+        addSeconds(d: Date|DateTime, n: number): Date;
     }
 
 }
