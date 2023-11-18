@@ -30,14 +30,14 @@ export default class ChangeSet {
     constructor(private context: EntityContext) {
     }
 
-    *getChanges(max = 5) {
+    *getChanges(max = 5): Generator<ChangeEntry, any, any> {
 
         const pending = [] as ChangeEntry[];
         const d = this.addedEvent.listen((ce) => pending.push(ce.detail));
         try {
             this.detectChanges();
 
-            yield * [].concat(this.entries);
+            yield * [].concat(this.entries) as any;
 
             while(pending.length) {
                 const copy = [].concat(pending) as ChangeEntry[];
@@ -46,7 +46,7 @@ export default class ChangeSet {
                     iterator.detect();
                 }
                 pending.length = 0;
-                yield *copy;
+                yield *copy as any;
             }
 
 

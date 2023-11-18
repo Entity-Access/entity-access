@@ -155,6 +155,13 @@ export default class EntityContext {
 
         for (const iterator of this.changeSet.getChanges()) {
 
+            switch(iterator.status) {
+                case "unchanged":
+                case "detached":
+                case "attached":
+                    continue;
+            }
+
             const events = this.eventsFor(iterator.type.typeClass);
             switch(iterator.status) {
                 case "inserted":
