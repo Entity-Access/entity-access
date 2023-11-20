@@ -20,7 +20,7 @@ class MockClock extends WorkflowClock {
         this.time = v;
     }
 
-    private time: DateTime = DateTime.utcNow;
+    private time: DateTime = DateTime.now;
 
     public add(ts: TimeSpan) {
         this.time = this.time.add(ts);

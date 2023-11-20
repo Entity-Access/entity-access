@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import assert from "assert";
 import Inject, { Register, RegisterScoped, RegisterSingleton, ServiceProvider } from "../../di/di.js";
 import WorkflowContext from "../../workflows/WorkflowContext.js";
@@ -20,7 +21,7 @@ class MockClock extends WorkflowClock {
         this.time = v;
     }
 
-    private time: DateTime = DateTime.utcNow;
+    private time: DateTime = DateTime.now;
 
     public add(ts: TimeSpan) {
         this.time = this.time.add(ts);

@@ -20,6 +20,7 @@ export default async function(this: TestConfig) {
         await addNewOrder.call(this, customer, 1);
         assert.fail("No error thrown");
     } catch(error) {
+        // do nothing
     }
 
     await getNewOrders.call(this);
@@ -49,7 +50,7 @@ async function createInterests(this: TestConfig) {
     context.userCategories.add({
         userID,
         categoryID: category.categoryID,
-        lastUpdated: DateTime.utcNow
+        lastUpdated: DateTime.now
     });
 
     await context.saveChanges();

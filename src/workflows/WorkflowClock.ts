@@ -5,6 +5,6 @@ import DateTime from "../types/DateTime.js";
 export default class WorkflowClock {
 
     public get utcNow() {
-        return DateTime.utcNow;
+        return DateTime.now;
     }
 }

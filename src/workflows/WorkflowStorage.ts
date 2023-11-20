@@ -198,9 +198,9 @@ export default class WorkflowStorage {
             // }
 
             // w.state ||= "queued";
-            // w.updated ??= DateTime.utcNow;
+            // w.updated ??= DateTime.now;
             state.state ||= "queued";
-            state.updated ??= DateTime.utcNow;
+            state.updated ??= DateTime.now;
             state.taskGroup ||= "default";
             // await db.saveChanges();
             if(state[loadedFromDb]) {

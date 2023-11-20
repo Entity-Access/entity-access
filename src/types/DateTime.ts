@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import TimeSpan from "./TimeSpan.js";
 
 /**
@@ -24,14 +25,6 @@ export default class DateTime {
     public static get today(): DateTime {
         const a = new DateTime();
         return a.date;
-    }
-
-    /**
-     * Current UTC Date
-     */
-    public static get utcNow(): DateTime {
-        const now = new Date();
-        return new DateTime(now.getTime() + now.getTimezoneOffset());
     }
 
     /**
