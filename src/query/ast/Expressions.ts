@@ -256,6 +256,9 @@ export class SelectStatement extends Expression {
 
     preferLeftJoins: boolean;
 
+    // will come in future
+    updateStatement: boolean;
+
     source: TableSource | ValuesStatement;
 
     sourceParameter: ParameterExpression;
@@ -411,6 +414,8 @@ export class UpdateStatement extends Expression {
     set: BinaryExpression[];
 
     where: Expression;
+
+    joins: JoinExpression[];
 
 }
 
