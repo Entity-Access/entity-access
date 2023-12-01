@@ -36,6 +36,8 @@ export interface IBaseQuery<T> {
 
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
 
+    update<P>(parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<number>;
+
     trace<DT>(this: DT, tracer: (text: string) => void): DT;
 
     /**

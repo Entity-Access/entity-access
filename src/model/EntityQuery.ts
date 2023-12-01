@@ -4,7 +4,7 @@ import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
@@ -109,6 +109,42 @@ export default class EntityQuery<T = any>
             includes: this.includes ? [ ... this.includes, p] : [p]
             // selectStatement
         });
+    }
+
+    async update(p, f): Promise<number> {
+        const q = this.extend(p, f, (select, body) => {
+            const fields = [] as Expression[];
+            switch(body.type) {
+                case "NewObjectExpression":
+                    const noe = body as NewObjectExpression;
+                    for (const iterator of noe.properties) {
+                        const column = this.type.getProperty(iterator.alias.value);
+                        fields.push(Expression.equal(
+                            Expression.quotedIdentifier(column.field.columnName),
+                            iterator.expression
+                        ));
+                    }
+                    break;
+                default:
+                    fields.push(body);
+                    break;
+
+            }
+            return { ... select, fields };
+        });
+        q.selectStatement.updateStatement = true;
+
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
+        try {
+            query = this.context.driver.compiler.compileExpression(q, q.selectStatement);
+            this.traceQuery?.(query.text);
+            const r = await this.context.connection.executeQuery(query);
+            return r.updated;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
+        }
     }
 
     async toArray(): Promise<T[]> {

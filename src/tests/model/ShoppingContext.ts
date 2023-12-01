@@ -212,6 +212,9 @@ export class Product {
     @Column({ dataType: "Char", length: 20})
     public status: string;
 
+    @Column({ dataType: "Char", nullable: true})
+    public productDescription: string;
+
     public orderItems: OrderItem[];
     public prices: ProductPrice[];
     public categories: ProductCategory[];

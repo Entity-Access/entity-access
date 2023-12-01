@@ -163,6 +163,19 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         // const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
         const offset = showFetch ? prepare ` OFFSET ${Number(e.offset).toString()} ROWS ` : "";
         const next = showFetch ? prepare ` FETCH NEXT ${Number(e.limit).toString()} ROWS ONLY` : "";
+        if (e.updateStatement) {
+            const s = e.source;
+            switch(s.type) {
+                case "Identifier":
+                case "TableLiteral":
+                    break;
+                default:
+                    throw new Error(`${s.type} Not supported`);
+            }
+            return prepare `UPDATE ${top} ${this.visit(e.source)} SET 
+            ${fields}
+            FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
+        }
         return prepare `SELECT ${top}
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;

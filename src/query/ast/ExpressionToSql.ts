@@ -89,6 +89,21 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const as = e.sourceParameter ? prepare ` AS ${this.scope.nameOf(e.sourceParameter)}` : "";
         const fields = this.visitArray(e.fields, ",\n\t\t");
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
+
+        if (e.updateStatement) {
+            const s = e.source;
+            switch(s.type) {
+                case "Identifier":
+                case "TableLiteral":
+                    break;
+                default:
+                    throw new Error(`${s.type} Not supported`);
+            }
+            return prepare `UPDATE ${this.visit(e.source)} SET
+                ${fields}
+            FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
+        }
+
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
