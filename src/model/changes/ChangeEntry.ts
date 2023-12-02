@@ -261,6 +261,7 @@ export default class ChangeEntry<T = any> implements IChanges {
 
             if(!relatedChanges.dependents.has(this)) {
                 relatedChanges.dependents.add(this);
+                this.order += relatedChanges.order;
             }
             this.entity[iterator.fkColumn.name] = related[rKey.name];
         }
