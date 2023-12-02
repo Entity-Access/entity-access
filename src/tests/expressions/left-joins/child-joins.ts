@@ -8,7 +8,8 @@ const sql1 = `SELECT
 p1.product_id,
 p1.name,
 p1.owner_id,
-p1.status
+p1.status,
+p1.product_description
 FROM products AS p1
 WHERE EXISTS (SELECT
 1
@@ -19,7 +20,8 @@ const sql2 = `SELECT
 p1.product_id,
 p1.name,
 p1.owner_id,
-p1.status
+p1.status,
+p1.product_description
 FROM products AS p1
 WHERE EXISTS (SELECT
 1
@@ -33,7 +35,8 @@ const sql3 = `SELECT
 p1.product_id,
 p1.name,
 p1.owner_id,
-p1.status
+p1.status,
+p1.product_description
 FROM products AS p1
 WHERE EXISTS (SELECT
 1
@@ -48,7 +51,8 @@ const productJoin = `SELECT
 p1.product_id,
 p1.name,
 p1.owner_id,
-p1.status
+p1.status,
+p1.product_description
 FROM products AS p1
  LEFT JOIN users AS u ON p1.owner_id = u.user_id
 WHERE u.date_created > $1`;
@@ -64,7 +68,20 @@ FROM order_items AS o1
  LEFT JOIN products AS p ON o1.product_id = p.product_id
 WHERE (o1.product_id = $1) OR (p.owner_id = $2)`;
 
-const notExp = 'SELECT\n        p1.product_id,\n\t\tp1.name,\n\t\tp1.owner_id,\n\t\tp1.status\n        FROM products AS p1\n\tWHERE EXISTS (SELECT\n        1\n        FROM order_items AS o\n\tWHERE (p1.product_id = o.product_id) AND (o.product_id = $1)) AND  NOT (EXISTS (SELECT\n        1\n        FROM order_items AS o1\n\t\t INNER JOIN orders AS o2 ON o1.order_id = o2.order_id\n\tWHERE (p1.product_id = o1.product_id) AND (o2.order_date > $2)))';
+const notExp = `SELECT
+p1.product_id,
+p1.name,
+p1.owner_id,
+p1.status,
+p1.product_description
+FROM products AS p1
+WHERE EXISTS
+    (SELECT 1 FROM order_items AS o
+        WHERE (p1.product_id = o.product_id) AND (o.product_id = $1)) AND
+        NOT (EXISTS (SELECT 1 FROM order_items AS o1
+                INNER JOIN orders AS o2 ON o1.order_id = o2.order_id
+                    WHERE (p1.product_id = o1.product_id) AND (o2.order_date > $2)))
+`;
 
 export default function() {
 

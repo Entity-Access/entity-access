@@ -246,6 +246,9 @@ export default class ChangeEntry<T = any> implements IChanges {
                 continue;
             }
 
+            if(!relatedChanges.dependents.has(this)) {
+                relatedChanges.dependents.add(this);
+            }
             this.entity[iterator.fkColumn.name] = related[rKey.name];
         }
     }

@@ -1,4 +1,4 @@
-import { AssertionError } from "assert";
+import assert, { AssertionError } from "assert";
 
 export const trimInternal = (text: string) => {
     let r = "";
@@ -8,16 +8,18 @@ export const trimInternal = (text: string) => {
             case "\t":
             case "\r":
             case " ":
+                if (!r.endsWith(" ")) {
+                    r += " ";
+                }
                 continue;
         }
         r += iterator;
     }
-    return r;
+    return r.trim();
 };
 
 export const assertSqlMatch = (expected: string, actual: string) => {
-    if (trimInternal(expected) === trimInternal(actual)) {
-        return;
-    }
-    throw new AssertionError({ expected, actual, operator: "===" });
+    const expectedTrimmed = trimInternal(expected);
+    const actualTrimmed = trimInternal(actual);
+    assert.strictEqual(actualTrimmed, expectedTrimmed);
 };
