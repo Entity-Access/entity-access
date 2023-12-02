@@ -4,7 +4,7 @@ import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, CallExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, ParameterExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { ITextQuery } from "../query/ast/IStringTransformer.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
@@ -112,7 +112,16 @@ export default class EntityQuery<T = any>
     }
 
     async update(p, f): Promise<number> {
-        const q = this.extend(p, f, (select, body) => {
+        let updateQuery = new EntityQuery({ ... this, selectStatement: {
+            ... this.selectStatement,
+            sourceParameter: {
+                ... this.selectStatement.sourceParameter
+            },
+            where: null,
+            joins: null
+        }});
+
+        updateQuery = updateQuery.extend(p, f, (select, body) => {
             const fields = [] as Expression[];
             switch(body.type) {
                 case "NewObjectExpression":
@@ -132,12 +141,34 @@ export default class EntityQuery<T = any>
             }
             return { ... select, fields };
         });
-        q.selectStatement.updateStatement = true;
+        // q.selectStatement.updateStatement = true;
+
+
+        updateQuery.selectStatement.updateStatement = true;
+        const lm = updateQuery.selectStatement.sourceParameter;
+        const rm = this.selectStatement.sourceParameter;
+        let where = this.selectStatement.where ? { ... this.selectStatement.where }: null;
+        for (const iterator of this.type.keys) {
+            const compare = Expression.equal(
+                Expression.member(lm, Expression.quotedIdentifier(iterator.columnName)),
+                Expression.member(rm, Expression.quotedIdentifier(iterator.columnName))
+            );
+            where = where ? Expression.logicalAnd(where, compare) : compare;
+        }
+        const fields = [NumberLiteral.one];
+        const target = {
+            ... this.selectStatement,
+            fields,
+            where,
+        };
+        updateQuery.selectStatement.where = ExistsExpression.create({
+            target
+        });
 
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query;
         try {
-            query = this.context.driver.compiler.compileExpression(q, q.selectStatement);
+            query = this.context.driver.compiler.compileExpression(updateQuery, updateQuery.selectStatement);
             this.traceQuery?.(query.text);
             const r = await this.context.connection.executeQuery(query);
             return r.updated;

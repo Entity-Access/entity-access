@@ -74,7 +74,7 @@ export default class ChangeSet {
     public getEntry<T>(entity: T, original = void 0): ChangeEntry<T> {
         let entry = this.entryMap.get(entity);
         if (entry) {
-            return entry;
+            return entry.updateValues(original);
         }
         const c = Object.getPrototypeOf(entity).constructor;
         if (c === Object) {
@@ -88,7 +88,7 @@ export default class ChangeSet {
                 entity = existing;
                 entry = this.entryMap.get(entity);
                 if (entry) {
-                    return entry;
+                    return entry.updateValues(original);
                 }
             } else {
                 this.identityMap.set(jsonKey, entity);

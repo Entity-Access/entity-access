@@ -99,9 +99,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 default:
                     throw new Error(`${s.type} Not supported`);
             }
-            return prepare `UPDATE ${this.visit(e.source)} SET
+            return prepare `UPDATE ${source}${as} SET
                 ${fields}
-            FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
+            ${where}${orderBy}${limit}${offset}`;
         }
 
         return prepare `SELECT

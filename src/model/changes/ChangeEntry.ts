@@ -131,6 +131,18 @@ export default class ChangeEntry<T = any> implements IChanges {
         }
     }
 
+    public updateValues(dbValues) {
+        if (!dbValues) {
+            return this;
+        }
+        const { entity, type } = this;
+        for (const iterator of type.columns) {
+            const dbValue = dbValues[iterator.name];
+            entity[iterator.name] = dbValue;
+        }
+        return this;
+    }
+
     public apply(dbValues) {
         // apply values to main entity
         // set status to unchanged
@@ -146,10 +158,11 @@ export default class ChangeEntry<T = any> implements IChanges {
 
         // we will only apply the columns defined
         if (dbValues !== void 0) {
-            for (const iterator of this.type.columns) {
+            const { entity, type } = this;
+            for (const iterator of type.columns) {
                 const dbValue = dbValues[iterator.columnName];
                 if (dbValue !== void 0) {
-                    this.entity[iterator.name] = dbValues[iterator.columnName];
+                    entity[iterator.name] = dbValue;
                 }
             }
         }

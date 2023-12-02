@@ -172,7 +172,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
                 default:
                     throw new Error(`${s.type} Not supported`);
             }
-            return prepare `UPDATE ${top} ${this.visit(e.source)} SET 
+            return prepare `UPDATE ${top} ${this.visit(e.sourceParameter)} SET 
             ${fields}
             FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
         }
