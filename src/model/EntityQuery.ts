@@ -112,6 +112,9 @@ export default class EntityQuery<T = any>
     }
 
     async update(p, f): Promise<number> {
+
+        let fields: Expression[];
+
         let updateQuery = new EntityQuery({ ... this, selectStatement: {
             ... this.selectStatement,
             sourceParameter: {
@@ -122,7 +125,7 @@ export default class EntityQuery<T = any>
         }});
 
         updateQuery = updateQuery.extend(p, f, (select, body) => {
-            const fields = [] as Expression[];
+            fields = [] as Expression[];
             switch(body.type) {
                 case "NewObjectExpression":
                     const noe = body as NewObjectExpression;
@@ -155,7 +158,7 @@ export default class EntityQuery<T = any>
             );
             where = where ? Expression.logicalAnd(where, compare) : compare;
         }
-        const fields = [NumberLiteral.one];
+        fields = [NumberLiteral.one];
         const target = {
             ... this.selectStatement,
             fields,
