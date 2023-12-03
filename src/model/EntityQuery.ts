@@ -1,21 +1,14 @@
 import EntityAccessError from "../common/EntityAccessError.js";
 import Logger from "../common/Logger.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
-import DbEvents from "../decorators/DbEvents.js";
-import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, CallExpression, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, ParameterExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
-import { ITextQuery } from "../query/ast/IStringTransformer.js";
+import { CallExpression, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
-import type EntityModel from "./EntityModel.js";
 import type { EntitySource } from "./EntitySource.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
-import { filteredSymbol } from "./events/FilteredExpression.js";
 import RelationMapper from "./identity/RelationMapper.js";
-
-const dbEventsLoaded = DbEvents.loaded;
 
 export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
@@ -230,10 +223,6 @@ export default class EntityQuery<T = any>
                     // set identity...
                     const entry = this.context.changeSet.getEntry(item, item);
                     relationMapper.fix(entry);
-                    const loaded = entry.entity[dbEventsLoaded]?.();
-                    if (loaded) {
-                        await loaded;
-                    }
                     yield entry.entity;
                     continue;
                 }
@@ -260,11 +249,7 @@ export default class EntityQuery<T = any>
                 const item = select.model?.map(iterator) ?? iterator;
                 const entry = this.context.changeSet.getEntry(item, item);
                 relationMapper.fix(entry);
-                const loaded = entry.entity[dbEventsLoaded]?.();
-                if (loaded) {
-                    await loaded;
-                }
-        }
+            }
         } catch (error) {
             session.error(`Failed loading ${query?.text}\n${error.stack ?? error}`);
             throw error;
