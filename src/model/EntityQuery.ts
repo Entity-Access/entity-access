@@ -1,6 +1,7 @@
 import EntityAccessError from "../common/EntityAccessError.js";
 import Logger from "../common/Logger.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
+import DbEvents from "../decorators/DbEvents.js";
 import { ServiceProvider } from "../di/di.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
@@ -13,6 +14,8 @@ import type { EntitySource } from "./EntitySource.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
 import { filteredSymbol } from "./events/FilteredExpression.js";
 import RelationMapper from "./identity/RelationMapper.js";
+
+const dbEventsLoaded = DbEvents.loaded;
 
 export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
@@ -227,6 +230,10 @@ export default class EntityQuery<T = any>
                     // set identity...
                     const entry = this.context.changeSet.getEntry(item, item);
                     relationMapper.fix(entry);
+                    const loaded = entry.entity[dbEventsLoaded]?.();
+                    if (loaded) {
+                        await loaded;
+                    }
                     yield entry.entity;
                     continue;
                 }
@@ -253,7 +260,11 @@ export default class EntityQuery<T = any>
                 const item = select.model?.map(iterator) ?? iterator;
                 const entry = this.context.changeSet.getEntry(item, item);
                 relationMapper.fix(entry);
-            }
+                const loaded = entry.entity[dbEventsLoaded]?.();
+                if (loaded) {
+                    await loaded;
+                }
+        }
         } catch (error) {
             session.error(`Failed loading ${query?.text}\n${error.stack ?? error}`);
             throw error;
