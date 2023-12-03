@@ -176,7 +176,13 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                 break;
         }
 
-        await driver.executeQuery(text);
+        try {
+            await driver.executeQuery(text);
+        } catch (error) {
+            // we will simply ignore this
+            console.warn(`Failed adding constraint ${constraint.name}`);
+            console.warn(error);
+        }
 
     }
 

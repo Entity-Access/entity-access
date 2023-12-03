@@ -181,7 +181,13 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
                 break;
         }
 
-        await driver.executeQuery(text);
+        try {
+            await driver.executeQuery(text);
+        } catch (error) {
+            // we will simply ignore this
+            console.warn(`Failed adding constraint ${constraint.name}`);
+            console.warn(error);
+        }
     }
 
 }
