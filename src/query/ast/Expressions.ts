@@ -100,7 +100,7 @@ export abstract class Expression {
     }
 
     static assign(left: Expression, right: Expression) {
-        return BinaryExpression.create({ left, right, operator: "="});
+        return BinaryExpression.create({ left, right, operator: "=", assign: true});
     }
 
     static create<T extends Expression>(this: IClassOf<T>, p: Partial<Omit<T, "type">>) {
@@ -171,6 +171,7 @@ export class BinaryExpression extends Expression {
     left: Expression;
     right: Expression;
     operator: string;
+    assign?: boolean;
 }
 
 export class CoalesceExpression extends Expression {

@@ -436,20 +436,22 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             ? prepare `(${this.visit(e.right)})`
             : this.visit(e.right);
 
-        if ((e.right as ExpressionType).type === "NullExpression") {
-            if (operator === "===" || operator === "==" || operator === "=") {
-                return prepare `${left} IS NULL`;
+        if (!e.assign) {
+            if ((e.right as ExpressionType).type === "NullExpression") {
+                if (operator === "===" || operator === "==" || operator === "=") {
+                    return prepare `${left} IS NULL`;
+                }
+                if (operator === "!==" || operator === "!=" || operator === "<>") {
+                    return prepare `${left} IS NOT NULL`;
+                }
             }
-            if (operator === "!==" || operator === "!=" || operator === "<>") {
-                return prepare `${left} IS NOT NULL`;
-            }
-        }
-        if ((e.left as ExpressionType).type === "NullExpression") {
-            if (operator === "===" || operator === "==" || operator === "=") {
-                return prepare `${right} IS NULL`;
-            }
-            if (operator === "!==" || operator === "!=" || operator === "<>") {
-                return prepare `${right} IS NOT NULL`;
+            if ((e.left as ExpressionType).type === "NullExpression") {
+                if (operator === "===" || operator === "==" || operator === "=") {
+                    return prepare `${right} IS NULL`;
+                }
+                if (operator === "!==" || operator === "!=" || operator === "<>") {
+                    return prepare `${right} IS NOT NULL`;
+                }
             }
         }
         return prepare `${left} ${operator} ${right}`;
