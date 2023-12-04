@@ -127,7 +127,7 @@ export default class EntityQuery<T = any>
                     const noe = body as NewObjectExpression;
                     for (const iterator of noe.properties) {
                         const column = this.type.getProperty(iterator.alias.value);
-                        fields.push(Expression.equal(
+                        fields.push(Expression.assign(
                             Expression.quotedIdentifier(column.field.columnName),
                             iterator.expression
                         ));
