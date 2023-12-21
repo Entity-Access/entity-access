@@ -38,6 +38,13 @@ export interface IBaseQuery<T> {
 
     update<P>(parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<number>;
 
+    /**
+     * Warning !! Be careful, this will delete rows from the database and neither soft delete nor any other events will be invoked.
+     * @param parameters parameters to supply
+     * @param fx filter expression
+     */
+    delete<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
+
     trace<DT>(this: DT, tracer: (text: string) => void): DT;
 
     /**

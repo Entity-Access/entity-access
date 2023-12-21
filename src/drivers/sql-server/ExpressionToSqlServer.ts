@@ -1,5 +1,5 @@
 import ExpressionToSql from "../../query/ast/ExpressionToSql.js";
-import { BooleanLiteral, InsertStatement, NumberLiteral, OrderByExpression, ReturnUpdated, SelectStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BooleanLiteral, DeleteStatement, InsertStatement, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import { ITextQuery, prepare, prepareJoin } from "../../query/ast/IStringTransformer.js";
 
 export default class ExpressionToSqlServer extends ExpressionToSql {
@@ -163,19 +163,6 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         // const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
         const offset = showFetch ? prepare ` OFFSET ${Number(e.offset).toString()} ROWS ` : "";
         const next = showFetch ? prepare ` FETCH NEXT ${Number(e.limit).toString()} ROWS ONLY` : "";
-        if (e.updateStatement) {
-            const s = e.source;
-            switch(s.type) {
-                case "Identifier":
-                case "TableLiteral":
-                    break;
-                default:
-                    throw new Error(`${s.type} Not supported`);
-            }
-            return prepare `UPDATE ${top} ${this.visit(e.sourceParameter)} SET 
-            ${fields}
-            FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
-        }
         return prepare `SELECT ${top}
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
@@ -189,6 +176,39 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         const fields = e.fields ? prepare ` as x11(${this.visitArray(e.fields)})` : "";
         return prepare `(VALUES ${rows}) ${fields}`;
 
+    }
+
+    visitDeleteStatement(e: DeleteStatement): ITextQuery {
+        const table = this.visit(e.table);
+        if (e.join) {
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.join.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            return prepare `WITH ${joinName} as (${join}) DELETE ${asName} FROM ${table} as ${asName} INNER JOIN ${joinName} ON ${where}`;
+        }
+
+        const where = this.visit(e.where);
+        return prepare `DELETE FROM ${table} WHERE ${where}`;
+    }
+
+    visitUpdateStatement(e: UpdateStatement): ITextQuery {
+        if (e.join) {
+            const table = this.visit(e.table);
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            const set = this.visitArray(e.set, ",");
+            return prepare `WITH ${joinName} as (${join}) UPDATE ${asName} SET ${set} FROM ${table} AS ${asName} INNER JOIN ${joinName} ON ${where}`;
+        }
+        return super.visitUpdateStatement(e);
     }
 
     visitBooleanLiteral({ value }: BooleanLiteral): ITextQuery {

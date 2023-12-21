@@ -90,20 +90,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const fields = this.visitArray(e.fields, ",\n\t\t");
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
 
-        if (e.updateStatement) {
-            const s = e.source;
-            switch(s.type) {
-                case "Identifier":
-                case "TableLiteral":
-                    break;
-                default:
-                    throw new Error(`${s.type} Not supported`);
-            }
-            return prepare `UPDATE ${source}${as} SET
-                ${fields}
-            ${where}${orderBy}${limit}${offset}`;
-        }
-
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
@@ -520,6 +506,19 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         const table = this.visit(e.table);
 
+        if (e.join) {
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            const set = this.visitArray(e.set, ",");
+            return prepare `WITH ${joinName} as (${join}) UPDATE ${table} ${asName} SET ${set} FROM ${joinName} WHERE ${where}`;
+
+        }
+
         const where = this.visit(e.where);
 
         const set = this.visitArray(e.set);
@@ -642,6 +641,17 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitDeleteStatement(e: DeleteStatement): ITextQuery {
         const table = this.visit(e.table);
+        if (e.join) {
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.join.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            return prepare `WITH ${joinName} as (${join}) DELETE FROM ${table} as ${asName} USING ${joinName} WHERE ${where}`;
+        }
+
         const where = this.visit(e.where);
         return prepare `DELETE FROM ${table} WHERE ${where}`;
     }
@@ -699,6 +709,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const target = this.resolveExpression(me.target);
         if (target.type === "ParameterExpression" && me.property.type === "Identifier") {
             const id = me.property as Identifier;
+            if (id.quoted) {
+                return;
+            }
             const pe = target as ParameterExpression;
             const scope = this.scope.get(pe);
             const peModel = scope?.model;
@@ -769,6 +782,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     private getPropertyChain(x: Expression): IPropertyChain {
 
         const resolved = this.resolveExpression(x);
+
+        if (!resolved) {
+            return;
+        }
 
         if (resolved.type === "MemberExpression") {
             x = resolved;

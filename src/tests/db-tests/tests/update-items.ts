@@ -20,11 +20,25 @@ export default async function(this: TestConfig) {
 
     await context.products
         .where(void 0, (p) => (x) => x.productID > 1)
+        // .trace(console.log)
         .update(void 0, (p) => (x) => ({
             productDescription: "updated"
         }));
 
     // we must verify that productID's description should not have changed...
-    const p1 = await context.products.where(void 0, (p) => (x) => x.productID === 1).first();
+    let p1 = await context.products.where(void 0, (p) => (x) => x.productID === 1).first();
     assert.notStrictEqual("updated", p1.productDescription);
+
+    const n = await context.products
+        .where(void 0, (p) => (x) => true === true)
+        .limit(1)
+        // .trace(console.log)
+        .update(void 0, (p) => (x) => ({
+            productDescription: "x"
+        }));
+
+    assert.equal(n, 1);
+
+    p1 = await context.products.where(void 0, (p) => (x) => x.productID === 1).first();
+    assert.strictEqual("x", p1.productDescription);
 }

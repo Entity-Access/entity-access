@@ -3,7 +3,7 @@ import Logger from "../common/Logger.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
@@ -107,67 +107,120 @@ export default class EntityQuery<T = any>
         });
     }
 
-    async update(p, f): Promise<number> {
+    async delete(p, f): Promise<number> {
+        if (p || f) {
+            return this.where(p, f).delete(void 0, void 0);
+        }
 
-        let fields: Expression[];
-
-        let updateQuery = new EntityQuery({ ... this, selectStatement: {
-            ... this.selectStatement,
-            sourceParameter: {
-                ... this.selectStatement.sourceParameter
-            },
-            where: null,
-            joins: null
-        }});
-
-        updateQuery = updateQuery.extend(p, f, (select, body) => {
-            fields = [] as Expression[];
-            switch(body.type) {
-                case "NewObjectExpression":
-                    const noe = body as NewObjectExpression;
-                    for (const iterator of noe.properties) {
-                        const column = this.type.getProperty(iterator.alias.value);
-                        fields.push(Expression.assign(
-                            Expression.quotedIdentifier(column.field.columnName),
-                            iterator.expression
-                        ));
-                    }
-                    break;
-                default:
-                    fields.push(body);
-                    break;
-
-            }
-            return { ... select, fields };
-        });
-        // q.selectStatement.updateStatement = true;
-
-
-        updateQuery.selectStatement.updateStatement = true;
-        const lm = updateQuery.selectStatement.sourceParameter;
-        const rm = this.selectStatement.sourceParameter;
-        let where = this.selectStatement.where ? { ... this.selectStatement.where }: null;
+        const source = this.selectStatement;
+        
+        const sp = Expression.parameter("d1", this.type);
+        const as = Expression.parameter("s1", this.type);
+        let where: Expression;
         for (const iterator of this.type.keys) {
             const compare = Expression.equal(
-                Expression.member(lm, Expression.quotedIdentifier(iterator.columnName)),
-                Expression.member(rm, Expression.quotedIdentifier(iterator.columnName))
+                Expression.member(sp, Expression.quotedIdentifier(iterator.columnName)),
+                Expression.member(as, Expression.quotedIdentifier(iterator.columnName))
             );
             where = where ? Expression.logicalAnd(where, compare) : compare;
         }
-        fields = [NumberLiteral.one];
-        const target = {
-            ... this.selectStatement,
-            fields,
+
+        const join = JoinExpression.create({
+            source,
+            as,
+            where
+        });
+
+        let deleteQuery = DeleteStatement.create({
+            table: this.type.fullyQualifiedName,
+            sourceParameter: sp,
+            join
+        })
+
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
+        try {
+            query = this.context.driver.compiler.compileExpression(this, deleteQuery);
+            this.traceQuery?.(query.text);
+            const r = await this.context.connection.executeQuery(query);
+            return r.updated;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
+        }
+    }
+
+    async update(p?, f?): Promise<number> {
+
+        if (p || f) {
+            return this.extend(p, f, (select, body) => {
+                const fields = [] as Expression[];
+                switch(body.type) {
+                    case "NewObjectExpression":
+                        const noe = body as NewObjectExpression;
+                        for (const iterator of noe.properties) {
+                            fields.push(ExpressionAs.create({
+                                expression: iterator.expression,
+                                alias: Expression.quotedIdentifier(iterator.alias.value)
+                            }));
+                        }
+                        break;
+                    default:
+                        fields.push(body);
+                        break;
+    
+                }
+                return { ... select, fields };
+            }).update();
+        }
+
+        const as = Expression.parameter("s1", this.type);
+        const sp = Expression.parameter("u1", this.type);
+        const join = JoinExpression.create({
+            source: this.selectStatement,
+            as
+        });
+
+        const set = [] as BinaryExpression[];
+
+        const fieldMap = new Set();
+
+        for (const iterator of this.selectStatement.fields) {
+            if(iterator.type !== "ExpressionAs") {
+                throw new Error(`Invalid expression ${iterator.type}`);
+            }
+            const eAs = iterator as ExpressionAs;
+            const { field } = this.type.getProperty(eAs.alias.value);
+            fieldMap.add(field.columnName);
+            set.push(Expression.assign( Expression.quotedIdentifier(field.columnName), Expression.member(as, Expression.quotedIdentifier(eAs.alias.value))));
+        }
+
+        let where = null as Expression;
+        for (const iterator of this.type.keys) {
+            const compare = Expression.equal(
+                Expression.member(as, Expression.quotedIdentifier(iterator.columnName)),
+                Expression.member(sp, Expression.quotedIdentifier(iterator.columnName))
+            );
+            where = where ? Expression.logicalAnd(where, compare) : compare;
+            if (fieldMap.has(iterator.columnName)) {
+                continue;
+            }
+            this.selectStatement.fields.push(Expression.quotedIdentifier(iterator.columnName));
+        }
+
+        const updateStatement = UpdateStatement.create({
+            set,
+            sourceParameter: sp,
+            table: this.type.fullyQualifiedName,
+            model: this.type,
             where,
-        };
-        updateQuery.selectStatement.where = ExistsExpression.create({
-            target
+            join
         });
 
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query;
         try {
-            query = this.context.driver.compiler.compileExpression(updateQuery, updateQuery.selectStatement);
+            query = this.context.driver.compiler.compileExpression(this, updateStatement);
             this.traceQuery?.(query.text);
             const r = await this.context.connection.executeQuery(query);
             return r.updated;
