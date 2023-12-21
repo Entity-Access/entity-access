@@ -411,13 +411,15 @@ export class UpdateStatement extends Expression {
 
     readonly type = "UpdateStatement";
 
-    table: TableLiteral | Identifier;
+    table: TableSource;
+    sourceParameter: ParameterExpression;
+    model: EntityType;
 
     set: BinaryExpression[];
 
     where: Expression;
 
-    joins: JoinExpression[];
+    join: JoinExpression;
 
 }
 
@@ -437,8 +439,12 @@ export class UnionAllStatement extends Expression {
 
 export class DeleteStatement extends Expression {
     readonly type = "DeleteStatement";
-    table: TableLiteral | Identifier;
+    table: TableSource;
+    model: EntityType;
     where: Expression;
+
+    sourceParameter: ParameterExpression;
+    join: JoinExpression;
 }
 
 export type ExpressionType =

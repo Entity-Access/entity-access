@@ -1,5 +1,5 @@
 import ExpressionToSql from "../../query/ast/ExpressionToSql.js";
-import { BooleanLiteral, InsertStatement, NumberLiteral, OrderByExpression, ReturnUpdated, SelectStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BooleanLiteral, DeleteStatement, InsertStatement, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import { ITextQuery, prepare, prepareJoin } from "../../query/ast/IStringTransformer.js";
 
 export default class ExpressionToSqlServer extends ExpressionToSql {
@@ -203,6 +203,30 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         const fields = e.fields ? prepare ` as x11(${this.visitArray(e.fields)})` : "";
         return prepare `(VALUES ${rows}) ${fields}`;
 
+    }
+
+    visitDeleteStatement(e: DeleteStatement): ITextQuery {
+        const table = this.visit(e.table);
+        if (e.join) {
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.join.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            return prepare `WITH ${joinName} as (${join}) DELETE ${asName} FROM ${table} as ${asName} INNER JOIN ${joinName} ON ${where}`;
+        }
+
+        const where = this.visit(e.where);
+        return prepare `DELETE FROM ${table} WHERE ${where}`;
+    }
+
+    visitUpdateStatement(e: UpdateStatement): ITextQuery {
+        if (e.join) {
+
+        }
+        return super.visitUpdateStatement(e);
     }
 
     visitBooleanLiteral({ value }: BooleanLiteral): ITextQuery {

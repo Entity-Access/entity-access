@@ -113,7 +113,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 default:
                     throw new Error(`${s.type} Not supported`);
             }
-            return prepare `DELETE ${source}${as} 
+            return prepare `DELETE FROM ${source}${as}
+            ${joins}
             ${where}${orderBy}${limit}${offset}`;
         }
 
@@ -655,6 +656,17 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitDeleteStatement(e: DeleteStatement): ITextQuery {
         const table = this.visit(e.table);
+        if (e.join) {
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.join.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            return prepare `WITH ${joinName} as (${join}) DELETE FROM ${table} as ${asName} USING ${joinName} WHERE ${where}`;
+        }
+
         const where = this.visit(e.where);
         return prepare `DELETE FROM ${table} WHERE ${where}`;
     }

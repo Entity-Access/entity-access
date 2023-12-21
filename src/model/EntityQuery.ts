@@ -3,7 +3,7 @@ import Logger from "../common/Logger.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
@@ -112,42 +112,35 @@ export default class EntityQuery<T = any>
             return this.where(p, f).delete(void 0, void 0);
         }
 
-        let fields: Expression[];
-
-        let updateQuery = new EntityQuery({ ... this, selectStatement: {
-            ... this.selectStatement,
-            sourceParameter: {
-                ... this.selectStatement.sourceParameter
-            },
-            where: null,
-            joins: null
-        }});
-
-        updateQuery.selectStatement.deleteStatement = true;
-        const lm = updateQuery.selectStatement.sourceParameter;
-        const rm = this.selectStatement.sourceParameter;
-        let where = this.selectStatement.where ? { ... this.selectStatement.where }: null;
+        const source = this.selectStatement;
+        
+        const sp = Expression.parameter("d1", this.type);
+        const as = Expression.parameter("s1", this.type);
+        let where: Expression;
         for (const iterator of this.type.keys) {
             const compare = Expression.equal(
-                Expression.member(lm, Expression.quotedIdentifier(iterator.columnName)),
-                Expression.member(rm, Expression.quotedIdentifier(iterator.columnName))
+                Expression.member(sp, Expression.quotedIdentifier(iterator.columnName)),
+                Expression.member(as, Expression.quotedIdentifier(iterator.columnName))
             );
             where = where ? Expression.logicalAnd(where, compare) : compare;
         }
-        fields = [NumberLiteral.one];
-        const target = {
-            ... this.selectStatement,
-            fields,
-            where,
-        };
-        updateQuery.selectStatement.where = ExistsExpression.create({
-            target
+
+        const join = JoinExpression.create({
+            source,
+            as,
+            where
         });
+
+        let deleteQuery = DeleteStatement.create({
+            table: this.type.fullyQualifiedName,
+            sourceParameter: sp,
+            join
+        })
 
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query;
         try {
-            query = this.context.driver.compiler.compileExpression(updateQuery, updateQuery.selectStatement);
+            query = this.context.driver.compiler.compileExpression(this, deleteQuery);
             this.traceQuery?.(query.text);
             const r = await this.context.connection.executeQuery(query);
             return r.updated;
@@ -167,7 +160,7 @@ export default class EntityQuery<T = any>
                 ... this.selectStatement.sourceParameter
             },
             where: null,
-            joins: null
+            joins: null,
         }});
 
         updateQuery = updateQuery.extend(p, f, (select, body) => {
@@ -193,7 +186,11 @@ export default class EntityQuery<T = any>
         // q.selectStatement.updateStatement = true;
 
 
-        updateQuery.selectStatement.updateStatement = true;
+        const { selectStatement } = updateQuery;
+        selectStatement.updateStatement = true;
+        delete selectStatement.limit;
+        delete selectStatement.offset;
+        delete selectStatement.orderBy;
         const lm = updateQuery.selectStatement.sourceParameter;
         const rm = this.selectStatement.sourceParameter;
         let where = this.selectStatement.where ? { ... this.selectStatement.where }: null;
