@@ -20,7 +20,7 @@ export default async function(this: TestConfig) {
 
     await context.products
         .where(void 0, (p) => (x) => x.productID > 1)
-        .trace(console.log)
+        // .trace(console.log)
         .update(void 0, (p) => (x) => ({
             productDescription: "updated"
         }));
@@ -32,7 +32,7 @@ export default async function(this: TestConfig) {
     const n = await context.products
         .where(void 0, (p) => (x) => true === true)
         .limit(1)
-        .trace(console.log)
+        // .trace(console.log)
         .update(void 0, (p) => (x) => ({
             productDescription: "x"
         }));

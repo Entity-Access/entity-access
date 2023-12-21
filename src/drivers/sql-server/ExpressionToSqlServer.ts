@@ -197,7 +197,16 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
     visitUpdateStatement(e: UpdateStatement): ITextQuery {
         if (e.join) {
-
+            const table = this.visit(e.table);
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            const set = this.visitArray(e.set, ",");
+            return prepare `WITH ${joinName} as (${join}) UPDATE ${asName} SET ${set} FROM ${table} AS ${asName} INNER JOIN ${joinName} ON ${where}`;
         }
         return super.visitUpdateStatement(e);
     }

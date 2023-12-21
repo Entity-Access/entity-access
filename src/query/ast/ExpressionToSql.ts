@@ -709,6 +709,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const target = this.resolveExpression(me.target);
         if (target.type === "ParameterExpression" && me.property.type === "Identifier") {
             const id = me.property as Identifier;
+            if (id.quoted) {
+                return;
+            }
             const pe = target as ParameterExpression;
             const scope = this.scope.get(pe);
             const peModel = scope?.model;
@@ -779,6 +782,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     private getPropertyChain(x: Expression): IPropertyChain {
 
         const resolved = this.resolveExpression(x);
+
+        if (!resolved) {
+            return;
+        }
 
         if (resolved.type === "MemberExpression") {
             x = resolved;
