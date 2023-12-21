@@ -259,8 +259,6 @@ export class SelectStatement extends Expression {
 
     updateStatement: boolean;
 
-    deleteStatement: boolean;
-
     source: TableSource | ValuesStatement;
 
     sourceParameter: ParameterExpression;

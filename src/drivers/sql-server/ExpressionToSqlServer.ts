@@ -177,19 +177,6 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
             FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
         }
 
-        if (e.deleteStatement) {
-            const s = e.source;
-            switch(s.type) {
-                case "Identifier":
-                case "TableLiteral":
-                    break;
-                default:
-                    throw new Error(`${s.type} Not supported`);
-            }
-            return prepare `DELETE ${top} ${this.visit(e.sourceParameter)} 
-            FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
-        }
-
         return prepare `SELECT ${top}
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;

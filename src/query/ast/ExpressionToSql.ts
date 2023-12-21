@@ -104,20 +104,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             ${where}${orderBy}${limit}${offset}`;
         }
 
-        if (e.deleteStatement) {
-            const s = e.source;
-            switch(s.type) {
-                case "Identifier":
-                case "TableLiteral":
-                    break;
-                default:
-                    throw new Error(`${s.type} Not supported`);
-            }
-            return prepare `DELETE FROM ${source}${as}
-            ${joins}
-            ${where}${orderBy}${limit}${offset}`;
-        }
-
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
