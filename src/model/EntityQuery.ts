@@ -3,7 +3,7 @@ import Logger from "../common/Logger.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { CallExpression, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
@@ -105,6 +105,56 @@ export default class EntityQuery<T = any>
             includes: this.includes ? [ ... this.includes, p] : [p]
             // selectStatement
         });
+    }
+
+    async delete(p, f): Promise<number> {
+        if (p || f) {
+            return this.where(p, f).delete(void 0, void 0);
+        }
+
+        let fields: Expression[];
+
+        let updateQuery = new EntityQuery({ ... this, selectStatement: {
+            ... this.selectStatement,
+            sourceParameter: {
+                ... this.selectStatement.sourceParameter
+            },
+            where: null,
+            joins: null
+        }});
+
+        updateQuery.selectStatement.deleteStatement = true;
+        const lm = updateQuery.selectStatement.sourceParameter;
+        const rm = this.selectStatement.sourceParameter;
+        let where = this.selectStatement.where ? { ... this.selectStatement.where }: null;
+        for (const iterator of this.type.keys) {
+            const compare = Expression.equal(
+                Expression.member(lm, Expression.quotedIdentifier(iterator.columnName)),
+                Expression.member(rm, Expression.quotedIdentifier(iterator.columnName))
+            );
+            where = where ? Expression.logicalAnd(where, compare) : compare;
+        }
+        fields = [NumberLiteral.one];
+        const target = {
+            ... this.selectStatement,
+            fields,
+            where,
+        };
+        updateQuery.selectStatement.where = ExistsExpression.create({
+            target
+        });
+
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
+        try {
+            query = this.context.driver.compiler.compileExpression(updateQuery, updateQuery.selectStatement);
+            this.traceQuery?.(query.text);
+            const r = await this.context.connection.executeQuery(query);
+            return r.updated;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
+        }
     }
 
     async update(p, f): Promise<number> {
