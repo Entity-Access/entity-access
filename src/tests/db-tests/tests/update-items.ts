@@ -20,6 +20,7 @@ export default async function(this: TestConfig) {
 
     await context.products
         .where(void 0, (p) => (x) => x.productID > 1)
+        .trace(console.log)
         .update(void 0, (p) => (x) => ({
             productDescription: "updated"
         }));

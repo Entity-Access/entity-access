@@ -257,8 +257,6 @@ export class SelectStatement extends Expression {
 
     preferLeftJoins: boolean;
 
-    updateStatement: boolean;
-
     source: TableSource | ValuesStatement;
 
     sourceParameter: ParameterExpression;

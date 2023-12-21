@@ -90,20 +90,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const fields = this.visitArray(e.fields, ",\n\t\t");
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
 
-        if (e.updateStatement) {
-            const s = e.source;
-            switch(s.type) {
-                case "Identifier":
-                case "TableLiteral":
-                    break;
-                default:
-                    throw new Error(`${s.type} Not supported`);
-            }
-            return prepare `UPDATE ${source}${as} SET
-                ${fields}
-            ${where}${orderBy}${limit}${offset}`;
-        }
-
         return prepare `SELECT
         ${fields}
         FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
@@ -519,6 +505,19 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     visitUpdateStatement(e: UpdateStatement): ITextQuery {
 
         const table = this.visit(e.table);
+
+        if (e.join) {
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            const as = e.join.as as ParameterExpression;
+            this.scope.create({ parameter: as, model: as.model })
+            const join = this.visit(e.join.source);
+            const where = this.visit(e.where);
+            const joinName = this.scope.nameOf(as);
+            const asName = this.scope.nameOf(e.sourceParameter);
+            const set = this.visitArray(e.set, ",");
+            return prepare `WITH ${joinName} as (${join}) UPDATE ${table} ${asName} SET ${set} FROM ${joinName} WHERE ${where}`;
+
+        }
 
         const where = this.visit(e.where);
 
