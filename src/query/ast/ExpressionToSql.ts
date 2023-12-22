@@ -507,9 +507,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const table = this.visit(e.table);
 
         if (e.join) {
-            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model });
             const as = e.join.as as ParameterExpression;
-            this.scope.create({ parameter: as, model: as.model })
+            this.scope.create({ parameter: as, model: as.model });
             const join = this.visit(e.join.source);
             const where = this.visit(e.where);
             const joinName = this.scope.nameOf(as);
@@ -642,9 +642,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     visitDeleteStatement(e: DeleteStatement): ITextQuery {
         const table = this.visit(e.table);
         if (e.join) {
-            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model })
+            this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model });
             const as = e.join.as as ParameterExpression;
-            this.scope.create({ parameter: as, model: as.model })
+            this.scope.create({ parameter: as, model: as.model });
             const join = this.visit(e.join.source);
             const where = this.visit(e.join.where);
             const joinName = this.scope.nameOf(as);
