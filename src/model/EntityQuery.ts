@@ -168,7 +168,6 @@ export default class EntityQuery<T = any>
                     default:
                         fields.push(body);
                         break;
-    
                 }
                 return { ... select, fields };
             }).update();
@@ -205,7 +204,7 @@ export default class EntityQuery<T = any>
             if (fieldMap.has(iterator.columnName)) {
                 continue;
             }
-            this.selectStatement.fields.push(Expression.quotedIdentifier(iterator.columnName));
+            this.selectStatement.fields.push( Expression.member( this.selectStatement.sourceParameter, Expression.quotedIdentifier(iterator.columnName)));
         }
 
         const updateStatement = UpdateStatement.create({
