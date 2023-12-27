@@ -129,6 +129,7 @@ export interface IWorkflowResult<T> {
     output: T;
     state: "done" | "failed" | "queued";
     error: string;
+    extra?: string;
 }
 
 export interface IWorkflowQueueParameter {
@@ -173,7 +174,8 @@ export default class WorkflowContext {
             return {
                 state: s.state,
                 output: s.output ? JSON.parse(s.output): null,
-                error: s.error
+                error: s.error,
+                extra: s.extra
             };
         }
         return null;

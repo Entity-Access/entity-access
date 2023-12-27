@@ -129,6 +129,7 @@ export default class WorkflowStorage {
                 error: r.error,
                 lastID: r.lastID,
                 taskGroup: r.taskGroup,
+                extra: r.extra,
                 [loadedFromDb]: true,
             };
         }
