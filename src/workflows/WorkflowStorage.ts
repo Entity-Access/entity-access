@@ -158,6 +158,19 @@ export default class WorkflowStorage {
         return null;
     }
 
+    async extra(id, text?) {
+        const db = new WorkflowContext(this.driver);
+        if (text) {
+            // save..
+            await db.workflows.where({ id }, (p) => (x) => x.id === p.id)
+                .update({ text}, (p) => (x) => ({ extra: p.text }));
+            return text;
+        }
+        const item = await db.workflows.where({ id }, (p) => (x) => x.id === p.id)
+            .select(void 0, (p) => (x) => ({ extra: x.extra}) ).first();
+        return item?.extra;
+}
+
     /**
      * Deletes given workflow and it's children
      * @param id id to delete

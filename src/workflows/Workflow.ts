@@ -61,6 +61,15 @@ export default abstract class Workflow<TIn = any, TOut = any> {
 
     public abstract run(): Promise<TOut>;
 
+    protected async extra<T extends {[key: string]: any}>() {
+        const extra = await this.context.storage.extra(this.id);
+        return JSON.parse(extra || "{}") as T;
+    }
+
+    protected setExtra<T extends {[key: string]: any}>(item: T) {
+        return this.context.storage.extra(this.id, item ? JSON.stringify(item ) : "{}");
+    }
+
     protected delay(ts: TimeSpan) {
         return Promise.resolve("");
     }
