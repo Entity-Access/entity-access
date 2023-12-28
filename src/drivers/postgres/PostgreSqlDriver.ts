@@ -25,6 +25,8 @@ export interface IPgSqlConnectionString extends IDbConnectionString {
 
 const pgID = Symbol("pgID");
 
+pg.types.setTypeParser(pg.types.builtins.INT8, (n) => n === "0" ? 0 : n);
+
 class DbReader implements IDbReader {
 
     cursor: Cursor<any>;
