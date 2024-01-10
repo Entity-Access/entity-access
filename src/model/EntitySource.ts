@@ -5,6 +5,7 @@ import EntityQuery from "./EntityQuery.js";
 import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
 import { Expression, ExpressionAs, Identifier, InsertStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
+import IdentityService from "./identity/IdentityService.js";
 
 const removeUndefined = (obj) => {
     if (!obj) {
@@ -153,6 +154,21 @@ export class EntitySource<T = any> {
             }
             throw error;
         }
+    }
+
+    public loadByKeys(keys: Partial<T>): Promise<T> {
+        const identity = IdentityService.getIdentity(this.model, keys);
+        const entry = this.context.changeSet.getByIdentity(identity);
+        if (entry) {
+            return entry.entity;
+        }
+        const filter = [];
+        for (const iterator of this.model.keys) {
+            filter.push(`x.${iterator.name} === p.${iterator.name}`);
+        }
+
+        const q = this.where(keys, `(p) => (x) => ${filter.join(" && ")}` as any);
+        return q.first();
     }
 
     public add(item: Partial<T>): T {

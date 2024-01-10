@@ -4,9 +4,8 @@ import EventSet from "../../common/EventSet.js";
 import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 import EntityContext from "../EntityContext.js";
 import IdentityService, { identityMapSymbol } from "../identity/IdentityService.js";
-import ChangeEntry from "./ChangeEntry.js";
+import ChangeEntry, { privateUpdateEntry, getContext } from "./ChangeEntry.js";
 
-export const privateUpdateEntry = Symbol("updateEntry");
 
 export default class ChangeSet {
 
@@ -14,6 +13,10 @@ export default class ChangeSet {
 
     get [identityMapSymbol]() {
         return this.identityMap;
+    }
+
+    get [getContext]() {
+        return this.context;
     }
 
     private readonly entries: ChangeEntry[] = [];
@@ -68,6 +71,13 @@ export default class ChangeSet {
                 return;
             }
             this.identityMap.set(jsonKey, entry.entity);
+        }
+    }
+
+    public getByIdentity(jsonKey) {
+        const existing = this.identityMap.get(jsonKey);
+        if (existing) {
+            return this.entryMap.get(existing);
         }
     }
 

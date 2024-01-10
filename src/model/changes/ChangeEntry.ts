@@ -1,8 +1,12 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
 import { IColumn } from "../../decorators/IColumn.js";
+import NameParser from "../../decorators/parser/NameParser.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type ChangeSet from "./ChangeSet.js";
-import { privateUpdateEntry } from "./ChangeSet.js";
+
+export const privateUpdateEntry = Symbol("updateEntry");
+
+export const getContext = Symbol("updateEntry");
 
 export interface IChanges {
     type: EntityType;
@@ -129,6 +133,49 @@ export default class ChangeEntry<T = any> implements IChanges {
         } else {
             this.status = "unchanged";
         }
+    }
+
+    public async loadNavigationAsync(property: (item: T) => any) {
+        const context = this.changeSet[getContext];
+        const name = NameParser.parseMember(property);
+        const { relation } = this.type.getProperty(name);
+        if (!relation) {
+            throw new EntityAccessError(`No relation found`);
+        }
+
+        const { relatedEntity } = relation;
+
+        if (relation.isInverseRelation) {
+
+            const inverse = this.entity[relation.name];
+
+            if (inverse && !Array.isArray(inverse)) {
+                return;
+            }
+
+            // we will just try to load all inverse items...
+            // this is tricky as we need to build inverse query...
+            const { relatedRelation } = relation;
+            const filter = [];
+            for (const iterator of this.type.keys) {
+                filter.push(`x.${relatedRelation.name}.${iterator.name} === p.${iterator.name}`);
+            }
+
+            await context.model.register(relatedEntity.typeClass)
+                .where(this.entity, `(p) => (x) => ${filter.join(" && ")}` as any)
+                .toArray();
+
+        }
+
+        if (this.entity[relation.name]) {
+            return;
+        }
+
+
+        const key = relatedEntity.keys[0];
+        const keys = {} as any;
+        keys[key.name] = this.entity[relation.fkColumn.name];
+        this.entity[relation.name] = await context.model.register(relatedEntity.typeClass).loadByKeys(keys);
     }
 
     public updateValues(dbValues) {
