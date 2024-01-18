@@ -136,7 +136,7 @@ export class ServiceProvider implements IDisposable {
             for (const [key, value] of registrations.entries()) {
                 if (key.prototype instanceof type) {
                     // we found the match..
-                    registrations.set(type, { ...value, key: type });
+                    registrations.set(type, value);
                     sd = value;
                 }
             }
