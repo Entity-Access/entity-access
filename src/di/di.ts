@@ -24,9 +24,9 @@ export class ServiceProvider implements IDisposable {
         return (owner[serviceProvider]) as ServiceProvider;
     }
 
-    public static resolve<T>(serviceOwner: any, type: IClassOf<T>): T {
+    public static resolve<T>(serviceOwner: any, type: IClassOf<T>, doNotThrow = false): T {
         const sp = serviceOwner[serviceProvider] as ServiceProvider;
-        return sp.resolve(type);
+        return sp.resolve(type, doNotThrow);
     }
 
     static create<T>(serviceOwner, type: IClassOf<T>): T {
@@ -57,7 +57,6 @@ export class ServiceProvider implements IDisposable {
         return instance;
     }
 
-
     createScope() {
         return new ServiceProvider(this);
     }
@@ -66,10 +65,12 @@ export class ServiceProvider implements IDisposable {
         return this.createFromType(type);
     }
 
-
-    resolve<T>(type: IClassOf<T>): T {
+    resolve<T>(type: IClassOf<T>, doNotThrow?: boolean): T {
         let instance;
-        const sd = this.getRegistration(type);
+        const sd = this.getRegistration(type, false, doNotThrow);
+        if (!sd) {
+            return;
+        }
         const key = sd.key;
         switch(sd.kind) {
             case "Scoped":
@@ -122,7 +123,7 @@ export class ServiceProvider implements IDisposable {
         }
     }
 
-    private getRegistration(type: any, add = false) {
+    private getRegistration(type: any, add = false, doNotThrow = false) {
         let sd = registrations.get(type);
         if (!sd) {
 
@@ -142,7 +143,9 @@ export class ServiceProvider implements IDisposable {
                 }
             }
             if (!sd) {
-                throw new Error(`No service registered for ${type?.name ?? type}`);
+                if (!doNotThrow) {
+                    throw new Error(`No service registered for ${type?.name ?? type}`);
+                }
             }
         }
         return sd;
