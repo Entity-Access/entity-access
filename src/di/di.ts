@@ -70,15 +70,16 @@ export class ServiceProvider implements IDisposable {
     resolve<T>(type: IClassOf<T>): T {
         let instance;
         const sd = this.getRegistration(type);
+        const key = sd.key;
         switch(sd.kind) {
             case "Scoped":
                 if (this[globalServiceProvider] === this) {
                     throw new Error(`Unable to create scoped service ${type?.name ?? type} in global scope.`);
                 }
-                instance = this.map.get(type);
+                instance = this.map.get(key);
                 if (!instance) {
                     instance = this.createFromDescriptor(sd);
-                    this.map.set(type, instance);
+                    this.map.set(key, instance);
                     instance[serviceProvider] = this;
                     instance[globalServiceProvider] = this[globalServiceProvider];
                     if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
@@ -88,12 +89,12 @@ export class ServiceProvider implements IDisposable {
                 return  instance;
             case "Singleton":
                 const sp = this[globalServiceProvider];
-                instance = sp.map.get(type);
+                instance = sp.map.get(key);
                 if (!instance) {
                     instance = sp.createFromDescriptor(sd);
                     instance[serviceProvider] = this;
                     instance[globalServiceProvider] = sp;
-                    sp.map.set(type, instance);
+                    sp.map.set(key, instance);
                     if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
                         (sp.disposables ??= []).push(instance);
                     }
