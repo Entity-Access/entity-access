@@ -202,7 +202,14 @@ export interface IServiceDescriptor {
 
 export const ServiceCollection = {
     register(kind: ServiceKind, key, factory?: (sp: ServiceProvider) => any) {
-        registrations.set(key, { kind, key, factory});
+        const sd = { kind, key, factory};
+        if (Array.isArray(key)) {
+            for (const iterator of key) {
+                registrations.set(iterator, sd);
+            }
+            return;
+        }
+        registrations.set(key, sd);
     },
     [registrationsSymbol]: registrations
 };
