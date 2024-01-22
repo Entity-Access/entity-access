@@ -324,6 +324,13 @@ export default class DateTime {
         return d as any;
     }
 
+    public addSeconds(m: number): DateTime {
+        const d = new Date(this.msSinceEpoch);
+        d.setSeconds(d.getSeconds() + m);
+        Object.setPrototypeOf(d, DateTime.prototype);
+        return d as any;
+    }
+
     /**
      * Returns TimeSpan from subtracting rhs from this,
      * `const ts = lhs.diff(rhs); // ts = lhs - rhs`
