@@ -42,6 +42,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         asDecimal(a) {
             return prepareAny `CAST(${a} as decimal(18,2))`;
         },
+        asBoolean(a) {
+            return prepareAny `CAST(${a} as bit)`;
+        }
     },
     date: {
         now() {

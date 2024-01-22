@@ -52,6 +52,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         asDecimal(a) {
             return prepareAny `(${a} ::decimal(18,2))`;
         },
+        asBoolean(a) {
+            return prepareAny `(${a} ::boolean)`;
+        }
     },
     date: {
         now() {

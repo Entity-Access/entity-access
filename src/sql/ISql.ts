@@ -17,6 +17,7 @@ export interface ISql {
         asDate(a: any): Date;
         asDateTime(a: any): Date;
         asDecimal(a: any): number;
+        asBoolean(a: any): boolean;
     },
     math: {
         min<T>(... a: T[]): T,
