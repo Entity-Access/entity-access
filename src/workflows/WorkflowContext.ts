@@ -383,7 +383,8 @@ export default class WorkflowContext {
                 await this.storage.save(workflow);
                 return;
             }
-            workflow.error = JSON.stringify(error.stack ?? error);
+            error = error.stack ?? error.toString();
+            workflow.error = JSON.stringify(error);
             console.error(error);
             workflow.state = "failed";
             workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
