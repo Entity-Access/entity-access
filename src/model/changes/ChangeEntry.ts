@@ -60,6 +60,17 @@ export default class ChangeEntry<T = any> implements IChanges {
     }
 
     /**
+     * Returns change made to specified field...
+     * @param field field of type
+     * @returns change or null
+     */
+    public getChange(field: keyof T) {
+        const column = this.type.getField(field as string);
+        const change = this.modified?.get(column) ?? null;
+        return change;
+    }
+
+    /**
      * Returns true if the field was updated in the database
      * @param field property of the entity
      * @returns true/false
