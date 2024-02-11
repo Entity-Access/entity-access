@@ -10,8 +10,19 @@ type IQueryFragment = string | { name?: string, value?: any };
 
 const parsedCache = new TimedCache<string, bpe.Node>();
 
+const parameterCacheSymbol = Symbol("parameterCacheSymbol");
+
+const defaultObject = {};
+
 export default class ArrowToExpression extends BabelVisitor<Expression> {
 
+    /**
+     * Parses lambda expression function or string to set simple SQL ready AST which
+     * transforms basic && to AND etc.
+     * @param fx function code (usually lambda expression)
+     * @param target parameter target
+     * @returns Parsed expression
+     */
     public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression) {
         const key = fx.toString();
         const node = parsedCache.getOrCreate(key, fx, (k, f) => {
@@ -21,41 +32,54 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
         return this.transformUncached(node, target);
     }
 
-    private static transformUncached(node: bpe.Node, target?: ParameterExpression) {
+    /**
+     * Since expression parsed as a different parameter in nested lambda (p) => (x) => x..,
+     * we need to replace x with provided target to bind x with respective ParameterExpression.
+     * As ParameterExpression contains the type and model associated with the table represented by `x`.
+     * @param node parsed node
+     * @param target parameter to replace
+     * @returns transformed node
+     */
+    private static transformUncached(node: bpe.Node, tx?: ParameterExpression) {
 
-        if (node.type !== "ArrowFunctionExpression") {
-            throw new Error("Expecting an arrow function");
-        }
+        const cache = node[parameterCacheSymbol] ??= new TimedCache<ParameterExpression,bpe.Node>();
 
-        const params = [] as ParameterExpression[];
+        return cache.getOrCreate(tx ?? defaultObject, tx, (_, target) => {
 
-        for (const iterator of node.params) {
-            if (iterator.type !== "Identifier") {
+            if (node.type !== "ArrowFunctionExpression") {
+                throw new Error("Expecting an arrow function");
+            }
+
+            const params = [] as ParameterExpression[];
+
+            for (const iterator of node.params) {
+                if (iterator.type !== "Identifier") {
+                    throw new Error("Expecting an identifier");
+                }
+                params.push(ParameterExpression.create({ name: iterator.name }));
+            }
+
+            let body = node.body;
+            if (body.type !== "ArrowFunctionExpression") {
+                throw new Error("Expecting an arrow function");
+            }
+
+            const firstTarget = body.params[0];
+            if (firstTarget.type !== "Identifier") {
                 throw new Error("Expecting an identifier");
             }
-            params.push(ParameterExpression.create({ name: iterator.name }));
-        }
 
-        let body = node.body;
-        if (body.type !== "ArrowFunctionExpression") {
-            throw new Error("Expecting an arrow function");
-        }
+            target ??= ParameterExpression.create({ name: firstTarget.name});
 
-        const firstTarget = body.params[0];
-        if (firstTarget.type !== "Identifier") {
-            throw new Error("Expecting an identifier");
-        }
+            body = body.body;
 
-        target ??= ParameterExpression.create({ name: firstTarget.name});
-
-        body = body.body;
-
-        const visitor = new this(params, target, firstTarget.name);
-        return {
-            params,
-            target,
-            body: visitor.visit(body)
-        };
+            const visitor = new this(params, target, firstTarget.name);
+            return {
+                params,
+                target,
+                body: visitor.visit(body)
+            };
+        });
     }
 
     public readonly leftJoins: string[] = [];
