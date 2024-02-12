@@ -107,15 +107,17 @@ export class QueryExpander {
             return relationSet;
         }
 
+        let where: Expression;
+
         if(relation.isInverseRelation) {
 
-            const keyColumn = model.keys[0].columnName;
-            let columnName = fk.columnName;
-            // for inverse relation, we need to
-            // use primary key of current model
-            if (!relation.isCollection) {
-                columnName = select.model.keys[0].columnName;
-            }
+            // const keyColumn = model.keys[0].columnName;
+            // let columnName = fk.columnName;
+            // // for inverse relation, we need to
+            // // use primary key of current model
+            // if (!relation.isCollection) {
+            //     columnName = select.model.keys[0].columnName;
+            // }
 
 
             const joins = (select.joins ??= []);
@@ -123,6 +125,8 @@ export class QueryExpander {
 
             // This join has to be INNER JOIN as we are only interested
             // in the results that matches parent query exactly
+
+            
 
             joins.push(JoinExpression.create({
                 joinType: "INNER",
