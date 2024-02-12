@@ -98,7 +98,7 @@ export class QueryExpander {
         // let where: Expression;
         // let joinWhere: Expression;
 
-        const fk = relation.fkColumn ?? relation.relatedRelation.fkColumn;
+        const fk = relation.fkMap ?? relation.relatedRelation.fkMap;
 
         key += "." + relation.name;
 

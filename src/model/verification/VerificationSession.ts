@@ -63,30 +63,33 @@ export default class VerificationSession {
                 continue;
             }
 
-            const fk = relation.fkColumn;
+            const fk = relation.fkMap;
             if (!fk) {
                 continue;
             }
 
-            const fkValue = entity[fk.name];
-            if (fkValue === void 0) {
-                // not set... ignore..
-                continue;
-            }
-            if (isKeyEmpty(fkValue, relation.fkColumn)) {
-                continue;
-            }
+            for (const { fkColumn , relatedKeyColumn } of fk) {
 
-            // only if it is modified...
-            if (change.status !== "inserted") {
-                if (!change.isModified(fk.name)) {
+                const fkValue = entity[fkColumn.name];
+                if (fkValue === void 0) {
+                    // not set... ignore..
                     continue;
                 }
+                if (isKeyEmpty(fkValue, fkColumn)) {
+                    continue;
+                }
+
+                // only if it is modified...
+                if (change.status !== "inserted") {
+                    if (!change.isModified(fkColumn.name)) {
+                        continue;
+                    }
+                }
+                this.queueEntityForeignKey(change, relation, fkColumn, relatedKeyColumn, fkValue);
             }
-            this.queueEntityForeignKey(change, relation, fkValue);
         }
     }
-    queueEntityForeignKey(change: ChangeEntry, relation: IEntityRelation, value) {
+    queueEntityForeignKey(change: ChangeEntry, relation: IEntityRelation, fkColumn, relatedKeyColumn, value) {
         const relatedModel = relation.relatedEntity;
         const type = relation.relatedEntity.typeClass;
         const events = this.context.eventsFor(change.type.typeClass);
@@ -97,7 +100,7 @@ export default class VerificationSession {
             events: relatedEvents,
             type: relatedModel,
             name: relation.name,
-            fkName: relation.fkColumn.name,
+            fkName: fkColumn.name,
             entity: change.entity
         });
         let query = events.onForeignKeyFilter(fk);
@@ -110,7 +113,7 @@ export default class VerificationSession {
 
         const eq = query as EntityQuery;
         const compare = Expression.equal(
-            Expression.member(eq.selectStatement.sourceParameter, relatedModel.keys[0].columnName),
+            Expression.member(eq.selectStatement.sourceParameter, relatedKeyColumn.columnName),
             Expression.constant(value)
         );
         const typeName  = TypeInfo.nameOfType(type);

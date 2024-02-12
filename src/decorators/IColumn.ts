@@ -87,13 +87,13 @@ export interface IEntityRelation {
     singleInverseRelation?
 
 
-    foreignKey: string;
+    // foreignKey: string;
 
     relatedTypeClass: IClassOf<any>;
 
     relatedTypeClassFactory?: () => IClassOf<any>;
 
-    fkColumn?: IColumn;
+    fkMap: { fkColumn: IColumn, relatedKeyColumn: IColumn }[];
 
 
     relatedName: string;

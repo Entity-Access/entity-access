@@ -225,33 +225,27 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         this.scope.create({ parameter: select.sourceParameter, model: relatedModel, selectStatement: select });
         select[filteredSymbol] = true;
-        const targetKey = MemberExpression.create({
-            target: parameter,
-            property: Identifier.create({
-                value: targetType.keys[0].columnName
-            })
-        });
-
-        const relatedKey = MemberExpression.create({
-            target: select.sourceParameter,
-            property: Identifier.create({
-                value: relation.relation.fkColumn.columnName
-            })
-        });
-
-
-        const join = Expression.equal(targetKey, relatedKey);
 
         let where = select.where;
 
-        if (where) {
-            where = BinaryExpression.create({
-                left: select.where,
-                operator: "AND",
-                right: join
+        for (const { fkColumn, relatedKeyColumn } of relation.relation.fkMap) {
+            const targetKey = MemberExpression.create({
+                target: parameter,
+                property: Identifier.create({
+                    value: relatedKeyColumn.columnName
+                })
             });
-        } else {
-            where = join;
+
+            const relatedKey = MemberExpression.create({
+                target: select.sourceParameter,
+                property: Identifier.create({
+                    value: fkColumn.columnName
+                })
+            });
+            const join = Expression.equal(targetKey, relatedKey);
+            where = where
+                ? Expression.logicalAnd(where, join)
+                : join;
         }
 
         select.where = where;
@@ -282,36 +276,33 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         this.scope.alias(param1, select.sourceParameter, select);
         select.sourceParameter = param1;
         select[filteredSymbol] = true;
-        const targetKey = MemberExpression.create({
-            target: parameter,
-            property: Identifier.create({
-                value: targetType.keys[0].columnName
-            })
-        });
-
-        const relatedKey = MemberExpression.create({
-            target: param1,
-            property: Identifier.create({
-                value: relation.relation.fkColumn.columnName
-            })
-        });
-
-
-        const join = Expression.logicalAnd(
-            Expression.equal(targetKey, relatedKey),
-            body.body
-        );
 
         let where = select.where;
+        where = where
+            ? Expression.logicalAnd(where, body.body)
+            : body.body;
 
-        if (where) {
-            where = BinaryExpression.create({
-                left: select.where,
-                operator: "AND",
-                right: join
+        for (const { fkColumn, relatedKeyColumn } of relation.relation.fkMap) {
+
+            const targetKey = MemberExpression.create({
+                target: parameter,
+                property: Identifier.create({
+                    value: relatedKeyColumn.columnName
+                })
             });
-        } else {
-            where = join;
+
+            const relatedKey = MemberExpression.create({
+                target: param1,
+                property: Identifier.create({
+                    value: fkColumn.columnName
+                })
+            });
+
+            const join = Expression.equal(targetKey, relatedKey);
+
+            where = where
+                ? Expression.logicalAnd(where, join)
+                : join;
         }
 
         select.where = where;
@@ -723,16 +714,16 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 }
                 if (relation) {
 
-                    const { fkColumn } = relation;
-
                     if (!relation.isCollection) {
 
-                        let columnName = fkColumn.columnName;
-                        // for inverse relation, we need to
-                        // use primary key of current model
-                        if (relation.isInverseRelation) {
-                            columnName = peModel.keys[0].columnName;
-                        }
+                        // let columnName = fkColumn.columnName;
+                        // // for inverse relation, we need to
+                        // // use primary key of current model
+                        // if (relation.isInverseRelation) {
+                        //     columnName = peModel.keys[0].columnName;
+                        // }
+
+                        const isNullable = relation.fkMap.some(({ fkColumn }) => fkColumn.nullable);
 
                         const select = scope?.selectStatement ?? this.source?.selectStatement;
                         if (select) {
@@ -743,20 +734,27 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 this.scope.create({ parameter: join.as as ParameterExpression, model: join.model, selectStatement: select });
                                 return join.as;
                             }
-                            const joinType = select.preferLeftJoins ? "LEFT" : (fkColumn.nullable ? "LEFT" : "INNER");
+                            const joinType = select.preferLeftJoins ? "LEFT" : (isNullable ? "LEFT" : "INNER");
                             const joinParameter = ParameterExpression.create({
                                 name: relation.relatedEntity.name[0],
                                 model: relation.relatedEntity
                             });
+                            let where: Expression;
+                            for (const {fkColumn, relatedKeyColumn} of relation.fkMap) {
+                                const column = relation.isInverseRelation ? fkColumn : relatedKeyColumn;
+                                const joinOn = Expression.equal(
+                                    Expression.member(pe, column.columnName),
+                                    Expression.member(joinParameter, relatedKeyColumn.columnName));
+                                where = where
+                                    ? Expression.logicalAnd(where, joinOn)
+                                    : joinOn;
+                            }
                             join = JoinExpression.create({
                                 as: joinParameter,
                                 joinType,
                                 model: joinParameter.model,
                                 source: Expression.identifier(relation.relatedEntity.name),
-                                where: Expression.equal(
-                                    Expression.member(pe, columnName),
-                                    Expression.member(joinParameter, relation.relatedEntity.keys[0].columnName)
-                                )
+                                where
                             });
                             select.joins.push(join);
                             this.scope.create({ parameter: joinParameter, model: relation.relatedEntity, selectStatement: select});

@@ -30,11 +30,12 @@ export default class RelationMapper {
             if (iterator.isInverseRelation) {
                 continue;
             }
-            const fkColumn = iterator.fkColumn.name;
-            const fkValue = entity[fkColumn];
-            if (fkValue === void 0) {
-                continue;
-            }
+            // const fkColumn = iterator.fkColumn.name;
+            // const fkValue = entity[fkColumn];
+            // if (fkValue === void 0) {
+            //     continue;
+            // }
+            
             // get from identity...
             const id = IdentityService.buildIdentity(iterator.relatedEntity, fkValue);
             const parent = this.identityMap.get(id);

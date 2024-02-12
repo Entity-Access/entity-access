@@ -83,7 +83,10 @@ export default class EntityType {
         const existing = this.fieldMap.get(c.name);
         if (existing) {
             c.fkRelation = existing.fkRelation;
-            c.fkRelation.fkColumn = c;
+            if (c.fkRelation?.fkMap) {
+                c.fkRelation.fkMap[0].fkColumn = c;
+            }
+            // c.fkRelation.fkColumn = c;
         }
 
         this.fieldMap.set(c.name, c);
@@ -109,24 +112,24 @@ export default class EntityType {
     }
 
 
-    addRelation(relation: IEntityRelation, getInverseModel?: (t) => EntityType) {
+    addRelation(relation: IEntityRelation & { fkName?: string }, getInverseModel?: (t) => EntityType) {
         // we will also set fk to the corresponding column
         this.relations.push(relation);
         this.relationMap.set(relation.name, relation);
 
         // find fk...
-        let fkColumn = this.fieldMap.get(relation.foreignKey);
+        let fkColumn = this.fieldMap.get(relation.fkName);
         if(!fkColumn) {
             fkColumn = {
-                name: relation.foreignKey,
+                name: relation.fkName,
                 // columnName: relation.foreignKey,
                 fkRelation: relation,
                 dataType: "BigInt"
             };
-            this.fieldMap.set(relation.foreignKey, fkColumn);
+            this.fieldMap.set(relation.fkName, fkColumn);
         }
         fkColumn.fkRelation = relation;
-        relation.fkColumn = fkColumn;
+        // relation.fkColumn = fkColumn;
         if (fkColumn.dataType === "Double") {
             fkColumn.dataType = "BigInt";
         }
@@ -140,11 +143,10 @@ export default class EntityType {
         relation.relatedEntity = relatedType;
         const inverseRelation: IEntityRelation = {
             name: relation.relatedName,
-            foreignKey: "",
             relatedName: relation.name,
             relatedTypeClass: this.typeClass,
             dotNotCreateIndex: true,
-            fkColumn,
+            fkMap: null,
             isInverseRelation: true,
             isCollection: relation.singleInverseRelation ? false : true,
             relatedRelation: relation,

@@ -51,7 +51,7 @@ export function RelateTo(c, p?): any {
 
     const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex, foreignKeyConstraint } = p;
 
-    return (target: any, foreignKey: string): any => {
+    return (target: any, fkName: string): any => {
 
         const cn = target.constructor ?? target;
         const entityType = SchemaRegistry.model(cn);
@@ -61,7 +61,8 @@ export function RelateTo(c, p?): any {
         entityType.addRelation({
             type: entityType,
             name,
-            foreignKey,
+            fkName,
+            fkMap: [],
             relatedTypeClass: c,
             relatedTypeClassFactory: p.type,
             relatedName: NameParser.parseMember(inverseProperty),
@@ -87,7 +88,7 @@ export function RelateToOne(c, p?): any {
 
     const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex } = p;
 
-    return (target: any, foreignKey: string): any => {
+    return (target: any, fkName: string): any => {
 
         const cn = target.constructor ?? target;
         const entityType = SchemaRegistry.model(cn);
@@ -97,7 +98,8 @@ export function RelateToOne(c, p?): any {
         entityType.addRelation({
             type: entityType,
             name,
-            foreignKey,
+            fkName,
+            fkMap: [],
             relatedTypeClass: c,
             relatedTypeClassFactory: p.type,
             relatedName: NameParser.parseMember(inverseProperty),
