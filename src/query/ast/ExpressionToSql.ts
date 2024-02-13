@@ -282,7 +282,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             ? Expression.logicalAnd(where, body.body)
             : body.body;
 
-        for (const { fkColumn, relatedKeyColumn } of relation.relation.fkMap) {
+        for (const { fkColumn, relatedKeyColumn } of relation.relation.relatedRelation.fkMap) {
 
             const targetKey = MemberExpression.create({
                 target: parameter,

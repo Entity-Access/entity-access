@@ -38,7 +38,7 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
         if (iterator.isInverseRelation) {
             continue;
         }
-        const relation: IEntityRelation = { ... iterator, fkMap: [], relatedEntity: void 0,type: t };
+        const relation: IEntityRelation = { ... iterator, relatedEntity: void 0,type: t };
         t.addRelation(relation, (tc) => getOrCreateModel(map, tc, namingConvention));
     }
     return t;

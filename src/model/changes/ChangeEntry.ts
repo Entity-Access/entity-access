@@ -284,7 +284,7 @@ export default class ChangeEntry<T = any> implements IChanges {
             }
 
             // if related has key defined.. set it...
-            const rKey = iterator.relatedEntity.keys[0];
+            // const rKey = iterator.relatedEntity.keys[0];
 
             // lets set the prototype...
             const prototype = iterator.relatedTypeClass.prototype;
@@ -293,38 +293,66 @@ export default class ChangeEntry<T = any> implements IChanges {
             }
             const relatedChanges = this.changeSet.getEntry(related);
 
-            const keyValue = related[rKey.name];
-            if (keyValue === void 0) {
+            for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
+                const keyValue = related[relatedKeyColumn.name];
+                if (keyValue === void 0) {
 
-                if(relatedChanges.dependents.has(this)) {
-                    continue;
-                }
-                relatedChanges.dependents.add(this);
-
-                this.order++;
-
-                for (const d of this.dependents) {
-                    d.order++;
-                }
-
-                const fk = iterator;
-                if (!fk.fkMap?.length) {
-                    throw new EntityAccessError(`Configuration error, fk not set for ${fk.name}`);
-                }
-                relatedChanges.pending.push(() => {
-                    for (const { fkColumn, relatedKeyColumn } of fk.fkMap) {
-                        this.entity[fkColumn.name] = related[relatedKeyColumn.name];
+                    if(relatedChanges.dependents.has(this)) {
+                        continue;
                     }
-                    // this.entity[fk.fkColumn.name] = related[rKey.name];
-                });
-                if (this.status !== "inserted") {
-                    for (const { fkColumn } of fk.fkMap) {
+                    relatedChanges.dependents.add(this);
+
+                    this.order++;
+
+                    for (const d of this.dependents) {
+                        d.order++;
+                    }
+
+                    if (!fkColumn.columnName) {
+                        throw new EntityAccessError(`Configuration error, fk not set for ${fkColumn.name}`);
+                    }
+                    relatedChanges.pending.push(() => {
+                        this.entity[fkColumn.name] = related[relatedKeyColumn.name];
+                    });
+                    if (this.status !== "inserted") {
                         this.modified.set(iterator, { column: fkColumn, oldValue: void 0, newValue: void 0});
                     }
-                    // this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
                 }
                 continue;
             }
+
+            // const keyValue = related[rKey.name];
+            // if (keyValue === void 0) {
+
+            //     if(relatedChanges.dependents.has(this)) {
+            //         continue;
+            //     }
+            //     relatedChanges.dependents.add(this);
+
+            //     this.order++;
+
+            //     for (const d of this.dependents) {
+            //         d.order++;
+            //     }
+
+            //     const fk = iterator;
+            //     if (!fk.fkMap?.length) {
+            //         throw new EntityAccessError(`Configuration error, fk not set for ${fk.name}`);
+            //     }
+            //     relatedChanges.pending.push(() => {
+            //         for (const { fkColumn, relatedKeyColumn } of fk.fkMap) {
+            //             this.entity[fkColumn.name] = related[relatedKeyColumn.name];
+            //         }
+            //         // this.entity[fk.fkColumn.name] = related[rKey.name];
+            //     });
+            //     if (this.status !== "inserted") {
+            //         for (const { fkColumn } of fk.fkMap) {
+            //             this.modified.set(iterator, { column: fkColumn, oldValue: void 0, newValue: void 0});
+            //         }
+            //         // this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
+            //     }
+            //     continue;
+            // }
 
             if(!relatedChanges.dependents.has(this)) {
                 relatedChanges.dependents.add(this);

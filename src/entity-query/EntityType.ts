@@ -82,14 +82,26 @@ export default class EntityType {
 
         const existing = this.fieldMap.get(c.name);
         if (existing) {
-            c.fkRelation = existing.fkRelation;
-            if (c.fkRelation?.fkMap) {
-                if (!c.fkRelation.fkMap.length) {
-                    c.fkRelation.fkMap = [{ fkColumn: c, relatedKeyColumn: null }];
-                } else {
-                    c.fkRelation.fkMap[0].fkColumn = c;
-                }
+            const fkRelation = c.fkRelation = existing.fkRelation;
+            if(fkRelation) {
+                fkRelation.fkMap = [{ fkColumn: c, relatedKeyColumn: null }];
+                // if(!fkRelation.fkMap?.length) {
+                //     fkRelation.fkMap = [{ fkColumn: c, relatedKeyColumn: null}];
+                // } else {
+                //     if(fkRelation.fkMap.length === 1) {
+                //         fkRelation.fkMap[0].fkColumn = c;
+                //     }
+                // }
             }
+            // if (fkRelation?.fkMap) {
+            //     if (!c.fkRelation.fkMap.length) {
+            //         c.fkRelation.fkMap = [{ fkColumn: c, relatedKeyColumn: null }];
+            //     } else {
+            //         c.fkRelation.fkMap[0].fkColumn = c;
+            //     }
+            // } else {
+            //     c
+            // }
             // c.fkRelation.fkColumn = c;
         }
 
@@ -131,6 +143,7 @@ export default class EntityType {
                 dataType: "BigInt"
             };
             this.fieldMap.set(relation.fkName, fkColumn);
+            relation.fkMap = [ { fkColumn, relatedKeyColumn: null} ];
         }
         fkColumn.fkRelation = relation;
         // relation.fkColumn = fkColumn;
@@ -145,7 +158,7 @@ export default class EntityType {
         // let us set inverse relations...
         const relatedType = getInverseModel(relation.relatedTypeClass);
 
-        relation.fkMap = [ { fkColumn, relatedKeyColumn: relatedType.keys[0] }];
+        relation.fkMap[0].relatedKeyColumn = relatedType.keys[0];
 
         relation.relatedEntity = relatedType;
         const inverseRelation: IEntityRelation = {

@@ -32,7 +32,8 @@
             "args": [
                 "--test-file",
                 // "./dist/tests/eternity/eternity-tests.js"
-                "${file}"
+                "${file}",
+                "--test-only-postgres"
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
