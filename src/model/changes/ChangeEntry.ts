@@ -168,13 +168,15 @@ export default class ChangeEntry<T = any> implements IChanges {
             // this is tricky as we need to build inverse query...
             const { relatedRelation } = relation;
             const filter = [];
-            for (const iterator of this.type.keys) {
-                filter.push(`x.${relatedRelation.name}.${iterator.name} === p.${iterator.name}`);
+            for (const { fkColumn, relatedKeyColumn } of relatedRelation.fkMap) {
+                filter.push(`x.${relatedRelation.name}.${fkColumn.name} === p.${relatedKeyColumn.name}`);
             }
 
             await context.model.register(relatedEntity.typeClass)
                 .where(this.entity, `(p) => (x) => ${filter.join(" && ")}` as any)
                 .toArray();
+
+            return;
 
         }
 

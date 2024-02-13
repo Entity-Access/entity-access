@@ -14,7 +14,7 @@ FROM products AS p1
 WHERE EXISTS (SELECT
 1
 FROM order_items AS o
-WHERE (p1.product_id = o.product_id) AND (o.product_id = $1))`;
+WHERE (o.product_id = $1) AND (p1.product_id = o.product_id))`;
 
 const sql2 = `SELECT
 p1.product_id,
@@ -26,10 +26,10 @@ FROM products AS p1
 WHERE EXISTS (SELECT
 1
 FROM order_items AS o
-WHERE (p1.product_id = o.product_id) AND (o.product_id = $1)) AND EXISTS (SELECT
+WHERE (o.product_id = $1) AND (p1.product_id = o.product_id)) AND EXISTS (SELECT
 1
 FROM order_items AS o1
-WHERE (p1.product_id = o1.product_id) AND (o1.amount > $2))`;
+WHERE (o1.amount > $2) AND (p1.product_id = o1.product_id))`;
 
 const sql3 = `SELECT
 p1.product_id,
@@ -41,11 +41,11 @@ FROM products AS p1
 WHERE EXISTS (SELECT
 1
 FROM order_items AS o
-WHERE (p1.product_id = o.product_id) AND (o.product_id = $1)) AND EXISTS (SELECT
+WHERE (o.product_id = $1) AND (p1.product_id = o.product_id)) AND EXISTS (SELECT
 1
 FROM order_items AS o1
  INNER JOIN orders AS o2 ON o1.order_id = o2.order_id
-WHERE (p1.product_id = o1.product_id) AND (o2.order_date > $2))`;
+WHERE (o2.order_date > $2) AND (p1.product_id = o1.product_id))`;
 
 const productJoin = `SELECT
 p1.product_id,
@@ -77,10 +77,10 @@ p1.product_description
 FROM products AS p1
 WHERE EXISTS
     (SELECT 1 FROM order_items AS o
-        WHERE (p1.product_id = o.product_id) AND (o.product_id = $1)) AND
+        WHERE (o.product_id = $1) AND (p1.product_id = o.product_id)) AND
         NOT (EXISTS (SELECT 1 FROM order_items AS o1
                 INNER JOIN orders AS o2 ON o1.order_id = o2.order_id
-                    WHERE (p1.product_id = o1.product_id) AND (o2.order_date > $2)))
+                    WHERE (o2.order_date > $2) AND (p1.product_id = o1.product_id)))
 `;
 
 export default function() {

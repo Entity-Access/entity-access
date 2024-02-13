@@ -162,7 +162,7 @@ export default class EntityType {
         relation.fkMap = [ ... relation.fkMap.map((x) => ({ ... x}))];
         for (const iterator of relation.fkMap) {
             iterator.fkColumn = this.getField(iterator.fkColumn.name);
-            iterator.fkColumn.fkRelation = relation;
+            // iterator.fkColumn.fkRelation = relation;
             iterator.relatedKeyColumn = relatedType.getField(iterator.relatedKeyColumn.name);
             iterator.relatedKeyColumn.entityType = relatedType;
         }

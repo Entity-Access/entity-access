@@ -127,10 +127,11 @@ export class QueryExpander {
             // in the results that matches parent query exactly
 
             for (const { fkColumn, relatedKeyColumn } of relation.relatedRelation.fkMap) {
-                const columnName = !relation.isCollection ? relatedKeyColumn.columnName : fkColumn.columnName;
+                const joinColumn = fkColumn.entityType === joinParameter.model ? fkColumn : relatedKeyColumn;
+                const relatedColumn = relatedKeyColumn.entityType === select.sourceParameter.model ? relatedKeyColumn : fkColumn;
                 const joinOn = Expression.equal(
-                    Expression.member(joinParameter, Expression.identifier(relatedKeyColumn.columnName)),
-                    Expression.member(select.sourceParameter, Expression.identifier(columnName))
+                    Expression.member(joinParameter, Expression.identifier(joinColumn.columnName)),
+                    Expression.member(select.sourceParameter, Expression.identifier(relatedColumn.columnName))
                 );
                 where = where ? Expression.logicalAnd(where, joinOn) : joinOn;
             }
