@@ -175,7 +175,6 @@ export default class ChangeEntry<T = any> implements IChanges {
             await context.model.register(relatedEntity.typeClass)
                 .where(this.entity, `(p) => (x) => ${filter.join(" && ")}` as any)
                 .toArray();
-            return;
 
         }
 
@@ -184,6 +183,7 @@ export default class ChangeEntry<T = any> implements IChanges {
         }
 
 
+        // need to setup inverse key check
         // const key = relatedEntity.keys[0];
         const keys = {} as any;
         // keys[key.name] = this.entity[relation.fkColumn.name];
