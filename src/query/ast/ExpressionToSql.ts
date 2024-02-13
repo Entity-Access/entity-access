@@ -1,3 +1,4 @@
+import EntityAccessError from "../../common/EntityAccessError.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType, { IEntityProperty } from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
@@ -723,7 +724,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                         //     columnName = peModel.keys[0].columnName;
                         // }
 
-                        const isNullable = relation.fkMap.some(({ fkColumn }) => fkColumn.nullable);
+                        const fkMap = relation.fkMap ?? relation.relatedRelation.fkMap;
+
+                        const isNullable = fkMap.some(({ fkColumn }) => fkColumn.nullable);
 
                         const select = scope?.selectStatement ?? this.source?.selectStatement;
                         if (select) {
@@ -740,11 +743,26 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 model: relation.relatedEntity
                             });
                             let where: Expression;
-                            for (const {fkColumn, relatedKeyColumn} of relation.fkMap) {
-                                const column = relation.isInverseRelation ? fkColumn : relatedKeyColumn;
+                            for (const {fkColumn, relatedKeyColumn} of fkMap) {
+                                let peColumn;
+                                let joinColumn;
+                                if (fkColumn.entityType === pe.model) {
+                                    peColumn = fkColumn;
+                                } else if (relatedKeyColumn.entityType === pe.model) {
+                                    peColumn = relatedKeyColumn;
+                                } else {
+                                    throw new EntityAccessError(`Invalid configuration`);
+                                }
+                                if (fkColumn.entityType === joinParameter.model) {
+                                    joinColumn = fkColumn;
+                                } else if (relatedKeyColumn.entityType === joinParameter.model) {
+                                    joinColumn = relatedKeyColumn;
+                                } else {
+                                    throw new EntityAccessError(`Invalid configuration`);
+                                }
                                 const joinOn = Expression.equal(
-                                    Expression.member(pe, column.columnName),
-                                    Expression.member(joinParameter, relatedKeyColumn.columnName));
+                                    Expression.member(pe, peColumn.columnName),
+                                    Expression.member(joinParameter, joinColumn.columnName));
                                 where = where
                                     ? Expression.logicalAnd(where, joinOn)
                                     : joinOn;

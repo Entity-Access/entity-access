@@ -159,6 +159,10 @@ export default class EntityType {
         const relatedType = getInverseModel(relation.relatedTypeClass);
 
         relation.fkMap[0].relatedKeyColumn = relatedType.keys[0];
+        for (const iterator of relation.fkMap) {
+            iterator.fkColumn = this.getField(iterator.fkColumn.name);
+            iterator.relatedKeyColumn = relatedType.getField(iterator.relatedKeyColumn.name);
+        }
 
         relation.relatedEntity = relatedType;
         const inverseRelation: IEntityRelation = {

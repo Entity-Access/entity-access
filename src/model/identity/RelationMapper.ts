@@ -68,11 +68,13 @@ export default class RelationMapper {
             }
 
             const parent = this.identityMap.searchByKeys(pairs, true);
-            if (!parent && nest) {
-                for (const { key, value } of pairs) {
-                    this.events.once(`${key.name}-${value}`, () => {
-                        this.fix(entry, false);
-                    });
+            if (!parent) {
+                if (nest) {
+                    for (const { key, value } of pairs) {
+                        this.events.once(`${key.name}-${value}`, () => {
+                            this.fix(entry, false);
+                        });
+                    }
                 }
                 continue;
             }

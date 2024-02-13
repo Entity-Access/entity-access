@@ -15,5 +15,6 @@ export default async function (this: TestConfig) {
         .first();
 
     assert.notEqual(null, order);
+    assert.notEqual(undefined, order.orderItems);
 
 }
