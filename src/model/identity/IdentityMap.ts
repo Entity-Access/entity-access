@@ -95,7 +95,7 @@ export default class IdentityMap {
                 }
             }
         }
-        return results;
+        return results[0];
     }
 
     private getAll(key: IColumn, value: any, create = true) {
@@ -127,7 +127,7 @@ export default class IdentityMap {
                 values = [];
                 keyEntry.set(value, values);
             }
-            values.push(value);
+            values.push(entry);
         }
         return keyEntry;
     }
