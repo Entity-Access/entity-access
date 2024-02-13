@@ -126,23 +126,31 @@ export class QueryExpander {
             // This join has to be INNER JOIN as we are only interested
             // in the results that matches parent query exactly
 
-            
+            for (const { fkColumn, relatedKeyColumn } of relation.relatedRelation.fkMap) {
+                const columnName = !relation.isCollection ? relatedKeyColumn.columnName : fkColumn.columnName;
+                const joinOn = Expression.equal(
+                    Expression.member(joinParameter, Expression.identifier(relatedKeyColumn.columnName)),
+                    Expression.member(select.sourceParameter, Expression.identifier(columnName))
+                );
+                where = where ? Expression.logicalAnd(where, joinOn) : joinOn;
+            }
 
             joins.push(JoinExpression.create({
                 joinType: "INNER",
                 source: { ... parent },
                 as: joinParameter,
                 model: parent.model,
-                where: Expression.equal(
-                    Expression.member(
-                        joinParameter,
-                        Expression.identifier(keyColumn)
-                    ),
-                    Expression.member(
-                        select.sourceParameter,
-                        Expression.identifier(columnName)
-                    )
-                )
+                where
+                // where: Expression.equal(
+                //     Expression.member(
+                //         joinParameter,
+                //         Expression.identifier(keyColumn)
+                //     ),
+                //     Expression.member(
+                //         select.sourceParameter,
+                //         Expression.identifier(columnName)
+                //     )
+                // )
             }));
 
             // if (parent.where) {
@@ -196,22 +204,33 @@ export class QueryExpander {
         // This join has to be INNER JOIN as we are only interested
         // in the results that matches parent query exactly
 
+        for (const { fkColumn, relatedKeyColumn } of relation.fkMap) {
+            const joinOn = Expression.equal(
+                Expression.member(selectJoinParameter,
+                    Expression.identifier(fkColumn.columnName)),
+                Expression.member(select.sourceParameter,
+                    Expression.identifier(relatedKeyColumn.columnName))
+            );
+            where = where ? Expression.logicalAnd(where, joinOn) : joinOn;
+        }
+
         selectJoins.push(JoinExpression.create({
             joinType: "INNER",
             source: { ... parent },
             as: selectJoinParameter,
             model: parent.model,
+            where
             // model,
-            where: Expression.equal(
-                Expression.member(
-                    selectJoinParameter,
-                    Expression.identifier(fk.columnName)
-                ),
-                Expression.member(
-                    select.sourceParameter,
-                    Expression.identifier(relation.relatedEntity.keys[0].columnName)
-                )
-            )
+            // where: Expression.equal(
+            //     Expression.member(
+            //         selectJoinParameter,
+            //         Expression.identifier(fk.columnName)
+            //     ),
+            //     Expression.member(
+            //         select.sourceParameter,
+            //         Expression.identifier(relation.relatedEntity.keys[0].columnName)
+            //     )
+            // )
         }));
 
         this.include.push(select);

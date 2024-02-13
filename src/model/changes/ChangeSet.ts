@@ -3,6 +3,7 @@ import EntityAccessError from "../../common/EntityAccessError.js";
 import EventSet from "../../common/EventSet.js";
 import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 import EntityContext from "../EntityContext.js";
+import IdentityMap from "../identity/IdentityMap.js";
 import IdentityService, { identityMapSymbol } from "../identity/IdentityService.js";
 import ChangeEntry, { privateUpdateEntry, getContext } from "./ChangeEntry.js";
 
@@ -26,7 +27,7 @@ export default class ChangeSet {
     /**
      * This will provide new entity for same key
      */
-    private identityMap: Map<string,any> = new Map();
+    private identityMap = new IdentityMap();
 
     private nextId = 1;
 
@@ -70,7 +71,7 @@ export default class ChangeSet {
                 this.entryMap.delete(entry.entity);
                 return;
             }
-            this.identityMap.set(jsonKey, entry.entity);
+            this.identityMap.set(jsonKey, entry.entity, entry.type);
         }
     }
 
@@ -101,7 +102,7 @@ export default class ChangeSet {
                     return entry.updateValues(original);
                 }
             } else {
-                this.identityMap.set(jsonKey, entity);
+                this.identityMap.set(jsonKey, entity, type);
             }
         }
         entry = new ChangeEntry({

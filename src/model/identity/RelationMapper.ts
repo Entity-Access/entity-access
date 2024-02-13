@@ -1,26 +1,33 @@
+import EventEmitter from "events";
 import type ChangeEntry from "../changes/ChangeEntry.js";
 import type ChangeSet from "../changes/ChangeSet.js";
 import IdentityService, { identityMapSymbol } from "./IdentityService.js";
+import { IColumn } from "../../decorators/IColumn.js";
+
+
+
 
 export default class RelationMapper {
 
-    private map: Map<string, ChangeEntry[]> = new Map();
+    // private map: Map<string, ChangeEntry[]> = new Map();
+
+    private events: EventEmitter = new EventEmitter();
 
     constructor(
         private changeSet: ChangeSet,
-        private identityMap: Map<string, ChangeEntry> = changeSet[identityMapSymbol]
+        private identityMap = changeSet[identityMapSymbol]
     ) {
 
     }
 
-    push(id: string, waiter: ChangeEntry) {
-        let queue = this.map.get(id);
-        if (!queue) {
-            queue = [];
-            this.map.set(id, queue);
-        }
-        queue.push(waiter);
-    }
+    // push(id: string, waiter: ChangeEntry) {
+    //     let queue = this.map.get(id);
+    //     if (!queue) {
+    //         queue = [];
+    //         this.map.set(id, queue);
+    //     }
+    //     queue.push(waiter);
+    // }
 
     fix(entry: ChangeEntry, nest = true) {
 
@@ -35,19 +42,41 @@ export default class RelationMapper {
             // if (fkValue === void 0) {
             //     continue;
             // }
-            
+
             // get from identity...
-            const id = IdentityService.buildIdentity(iterator.relatedEntity, fkValue);
-            const parent = this.identityMap.get(id);
-            if (!parent) {
-                let waiters = this.map.get(id);
-                if (!waiters) {
-                    waiters = [];
-                    this.map.set(id, waiters);
+            // const id = IdentityService.buildIdentity(iterator.relatedEntity, fkValue);
+            // const parent = this.identityMap.get(id);
+            // if (!parent) {
+            //     let waiters = this.map.get(id);
+            //     if (!waiters) {
+            //         waiters = [];
+            //         this.map.set(id, waiters);
+            //     }
+            //     waiters.push(entry);
+            //     continue;
+            // }
+
+            const pairs = [] as { key: IColumn, value: any}[];
+
+            for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
+                this.identityMap.build(relatedKeyColumn);
+                const fkValue = entity[fkColumn.name];
+                if (fkValue === void 0) {
+                    continue;
                 }
-                waiters.push(entry);
+                pairs.push({ key: relatedKeyColumn, value: fkValue});
+            }
+
+            const parent = this.identityMap.searchByKeys(pairs, true);
+            if (!parent && nest) {
+                for (const { key, value } of pairs) {
+                    this.events.once(`${key.name}-${value}`, () => {
+                        this.fix(entry, false);
+                    });
+                }
                 continue;
             }
+
             entity[iterator.name] = parent;
 
             if (iterator.relatedRelation.isCollection) {
@@ -65,12 +94,20 @@ export default class RelationMapper {
         }
 
         // see if anyone is waiting for us or not...
-        const identity = IdentityService.getIdentity(entry.type, entry.entity);
-        const pending = this.map.get(identity);
-        if (pending && pending.length) {
-            for (const iterator of pending) {
-                this.fix(iterator, false);
+        // const identity = IdentityService.getIdentity(entry.type, entry.entity);
+        // const pending = this.map.get(identity);
+        // if (pending && pending.length) {
+        //     for (const iterator of pending) {
+        //         this.fix(iterator, false);
+        //     }
+        // }
+
+        for (const iterator of this.identityMap.indexedColumns) {
+            const value = entry.entity[iterator.name];
+            if (value === void 0 || value === null) {
+                continue;
             }
+            this.events.emit(`${iterator.name}-${value}`);
         }
     }
 }

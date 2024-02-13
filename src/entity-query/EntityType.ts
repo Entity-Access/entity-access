@@ -84,7 +84,11 @@ export default class EntityType {
         if (existing) {
             c.fkRelation = existing.fkRelation;
             if (c.fkRelation?.fkMap) {
-                c.fkRelation.fkMap[0].fkColumn = c;
+                if (!c.fkRelation.fkMap.length) {
+                    c.fkRelation.fkMap = [{ fkColumn: c, relatedKeyColumn: null }];
+                } else {
+                    c.fkRelation.fkMap[0].fkColumn = c;
+                }
             }
             // c.fkRelation.fkColumn = c;
         }
@@ -140,6 +144,9 @@ export default class EntityType {
 
         // let us set inverse relations...
         const relatedType = getInverseModel(relation.relatedTypeClass);
+
+        relation.fkMap = [ { fkColumn, relatedKeyColumn: relatedType.keys[0] }];
+
         relation.relatedEntity = relatedType;
         const inverseRelation: IEntityRelation = {
             name: relation.relatedName,
