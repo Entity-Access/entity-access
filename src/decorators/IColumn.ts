@@ -3,6 +3,7 @@ import { IClassOf } from "./IClassOf.js";
 import { IForeignKeyConstraint } from "./IForeignKeyConstraint.js";
 import { ISqlType } from "./ISqlType.js";
 
+export type FKType = { fkColumn: IColumn, relatedKeyColumn: IColumn };
 
 export interface IColumn {
     name?: string;
@@ -93,7 +94,7 @@ export interface IEntityRelation {
 
     relatedTypeClassFactory?: () => IClassOf<any>;
 
-    fkMap: { fkColumn: IColumn, relatedKeyColumn: IColumn }[];
+    fkMap: FKType[];
 
 
     relatedName: string;
@@ -105,7 +106,7 @@ export interface IEntityRelation {
 
     relatedRelation?: IEntityRelation;
 
-    dotNotCreateIndex?: boolean;
+    doNotCreateIndex?: boolean;
 
     foreignKeyConstraint?: IForeignKeyConstraint;
 

@@ -28,8 +28,13 @@ export type ISaveDirect<T> = {
     keys: Partial<T>,
     changes: Partial<T>,
     // select?: Partial<T>,
-    mode: "selectOrInsert" | "insert",
+    mode: "selectOrInsert",
     updateAfterSelect?: never
+} | {
+    keys?: never,
+    mode: "insert",
+    changes: Partial<T>,
+    updateAfterSelect?: never,
 } | {
     keys?: Partial<T>,
     changes: Partial<T>,

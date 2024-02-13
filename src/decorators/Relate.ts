@@ -68,7 +68,7 @@ export function RelateTo(c, p?): any {
             relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             foreignKeyConstraint,
-            dotNotCreateIndex
+            doNotCreateIndex: dotNotCreateIndex
         });
 
     };
@@ -104,7 +104,7 @@ export function RelateToOne(c, p?): any {
             relatedTypeClassFactory: p.type,
             relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
-            dotNotCreateIndex,
+            doNotCreateIndex: dotNotCreateIndex,
             singleInverseRelation: true
         });
 

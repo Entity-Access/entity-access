@@ -133,22 +133,24 @@ export default class EntityType {
         this.relations.push(relation);
         this.relationMap.set(relation.name, relation);
 
-        // find fk...
-        let fkColumn = this.fieldMap.get(relation.fkName);
-        if(!fkColumn) {
-            fkColumn = {
-                name: relation.fkName,
-                // columnName: relation.foreignKey,
-                fkRelation: relation,
-                dataType: "BigInt"
-            };
-            this.fieldMap.set(relation.fkName, fkColumn);
-            relation.fkMap = [ { fkColumn, relatedKeyColumn: null} ];
-        }
-        fkColumn.fkRelation = relation;
-        // relation.fkColumn = fkColumn;
-        if (fkColumn.dataType === "Double") {
-            fkColumn.dataType = "BigInt";
+        if (!relation.fkMap) {
+            // find fk...
+            let fkColumn = this.fieldMap.get(relation.fkName);
+            if(!fkColumn) {
+                fkColumn = {
+                    name: relation.fkName,
+                    // columnName: relation.foreignKey,
+                    fkRelation: relation,
+                    dataType: "BigInt"
+                };
+                this.fieldMap.set(relation.fkName, fkColumn);
+                relation.fkMap = [ { fkColumn, relatedKeyColumn: null} ];
+            }
+            fkColumn.fkRelation = relation;
+            // relation.fkColumn = fkColumn;
+            if (fkColumn.dataType === "Double") {
+                fkColumn.dataType = "BigInt";
+            }
         }
 
         if (!getInverseModel) {
@@ -172,7 +174,7 @@ export default class EntityType {
             name: relation.relatedName,
             relatedName: relation.name,
             relatedTypeClass: this.typeClass,
-            dotNotCreateIndex: true,
+            doNotCreateIndex: true,
             fkMap: null,
             isInverseRelation: true,
             isCollection: relation.singleInverseRelation ? false : true,
@@ -187,11 +189,14 @@ export default class EntityType {
 
         let { foreignKeyConstraint } = relation;
         if(foreignKeyConstraint) {
-            foreignKeyConstraint = { ... foreignKeyConstraint};
-            relation.foreignKeyConstraint = foreignKeyConstraint;
-            foreignKeyConstraint.name ||= `FK_${this.name}_${fkColumn.name}_${this.typeClass.name}_${relatedType.keys[0].name}`;
-            foreignKeyConstraint.column = fkColumn;
-            foreignKeyConstraint.refColumns = relatedType.keys;
+            if (relation.fkMap.length === 1) {
+                const { fkColumn } = relation.fkMap[0];
+                foreignKeyConstraint = { ... foreignKeyConstraint};
+                relation.foreignKeyConstraint = foreignKeyConstraint;
+                foreignKeyConstraint.name ||= `FK_${this.name}_${fkColumn.name}_${this.typeClass.name}_${relatedType.keys[0].name}`;
+                foreignKeyConstraint.column = fkColumn;
+                foreignKeyConstraint.refColumns = relatedType.keys;
+            }
         }
         return relation;
     }

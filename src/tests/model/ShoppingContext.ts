@@ -6,6 +6,7 @@ import Index from "../../decorators/Index.js";
 import DateTime from "../../types/DateTime.js";
 import { UserFile } from "./UseFile.js";
 import Sql from "../../sql/Sql.js";
+import MultiForeignKeys from "../../decorators/ForeignKey.js";
 
 export const statusPublished = "published";
 
@@ -34,6 +35,8 @@ export class ShoppingContext extends EntityContext {
     public userFiles = this.model.register(UserFile);
 
     public emailAddresses = this.model.register(EmailAddress);
+
+    public userCategoryTags = this.model.register(UserCategoryTag);
 }
 
 @Table("Users")
@@ -191,6 +194,35 @@ export class UserCategory {
     public user: User;
 
     public category: Category;
+
+    public tags: UserCategoryTag[];
+}
+
+@Table("UserCategoryTags")
+export class UserCategoryTag {
+
+    @Column({ key: true, dataType: "BigInt", generated: "identity"})
+    tagID: number;
+
+    @Column({ dataType: "Char", length: 200 })
+    tag: string;
+
+    @Column({ dataType: "BigInt"})
+    public userID: number;
+
+    @Column({ dataType: "Char", length: 200 })
+    public categoryID: string;
+
+    @MultiForeignKeys(UserCategory, {
+            inverseProperty: (x) => x.tags,
+            foreignKeys: [
+                { foreignKey: (x) => x.userID, key: (x) => x.userID },
+                { foreignKey: (x) => x.categoryID, key: (x) => x.categoryID}
+            ]
+        }
+    )
+    public userCategory: UserCategory;
+
 }
 
 @Table("Products")
