@@ -16,7 +16,7 @@ export default class IdentityMap {
     private keys = new Map<IColumn, Map<any, any[]>>();
 
     public delete(jsonKey) {
-        const item = this.get(jsonKey);
+        const item = this.map.get(jsonKey);
         this.map.delete(jsonKey);
         if (item) {
             const type = item[entityTypeSymbol] as EntityType;
@@ -46,25 +46,7 @@ export default class IdentityMap {
     public set(jsonKey, entity, type: EntityType) {
         entity[entityTypeSymbol] = type;
         this.map.set(jsonKey, entity);
-        for (const key of this.keys.keys()) {
-            if(type.getField(key.name) !== key) {
-                continue;
-            }
-            const keyEntry = this.getKeyEntry(key, true);
-            const value = entity[key.name];
-            if (value === void 0 || value === null) {
-                continue;
-            }
-            let values = keyEntry.get(value);
-            if (!values) {
-                values = [];
-                keyEntry.set(value, values);
-            }
-            if (values.includes(entity)) {
-                continue;
-            }
-            values.push(entity);
-        }
+        this.updateSearchIndex(type, entity);
     }
 
     public clear() {
@@ -114,11 +96,18 @@ export default class IdentityMap {
         keyEntry = new Map<any, any[]>();
         this.keys.set(key, keyEntry);
         for (const entry of this.map.values()) {
-            const type = entry[entityTypeSymbol] as EntityType;
-            if(type.getField(key.name) !== key) {
+            this.updateSearchIndex(entry[entityTypeSymbol], entry);
+        }
+        return keyEntry;
+    }
+
+    private updateSearchIndex(type: EntityType, entity: any) {
+        for (const key of this.keys.keys()) {
+            if (type.getField(key.name) !== key) {
                 continue;
             }
-            const value = entry[key.name];
+            const keyEntry = this.getKeyEntry(key, true);
+            const value = entity[key.name];
             if (value === void 0 || value === null) {
                 continue;
             }
@@ -127,9 +116,11 @@ export default class IdentityMap {
                 values = [];
                 keyEntry.set(value, values);
             }
-            values.push(entry);
+            if (values.includes(entity)) {
+                continue;
+            }
+            values.push(entity);
         }
-        return keyEntry;
     }
 
 }

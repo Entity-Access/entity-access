@@ -71,7 +71,7 @@ export default class RelationMapper {
             if (!parent) {
                 if (nest) {
                     for (const { key, value } of pairs) {
-                        this.events.once(`${key.name}-${value}`, () => {
+                        this.events.once(`${key.entityType.name}-${key.name}-${value}`, (k) => {
                             this.fix(entry, false);
                         });
                     }
@@ -105,11 +105,15 @@ export default class RelationMapper {
         // }
 
         for (const iterator of this.identityMap.indexedColumns) {
+            if (iterator.entityType !== entry.type) {
+                continue;
+            }
             const value = entry.entity[iterator.name];
             if (value === void 0 || value === null) {
                 continue;
             }
-            this.events.emit(`${iterator.name}-${value}`);
+            const key = `${iterator.entityType.name}-${iterator.name}-${value}`;
+            this.events.emit(key, key);
         }
     }
 }
