@@ -84,7 +84,7 @@ export default class RelationMapper {
             //     continue;
             // }
 
-            const pairs = [] as { key: IColumn, value: any}[];
+            let pairs = null as { key: IColumn, value: any}[];
 
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
                 this.identityMap.build(relatedKeyColumn);
@@ -92,7 +92,11 @@ export default class RelationMapper {
                 if (fkValue === void 0 || fkValue === null) {
                     continue;
                 }
-                pairs.push({ key: relatedKeyColumn, value: fkValue});
+                (pairs ??=[]).push({ key: relatedKeyColumn, value: fkValue});
+            }
+
+            if(!pairs) {
+                continue;
             }
 
             const parent = this.identityMap.searchByKeys(pairs, true);
