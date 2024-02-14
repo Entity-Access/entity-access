@@ -17,7 +17,7 @@ export default class RelationMapper {
         private changeSet: ChangeSet,
         private identityMap = changeSet[identityMapSymbol]
     ) {
-
+        this.events.setMaxListeners(0);
     }
 
     // push(id: string, waiter: ChangeEntry) {
@@ -61,7 +61,7 @@ export default class RelationMapper {
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
                 this.identityMap.build(relatedKeyColumn);
                 const fkValue = entity[fkColumn.name];
-                if (fkValue === void 0) {
+                if (fkValue === void 0 || fkValue === null) {
                     continue;
                 }
                 pairs.push({ key: relatedKeyColumn, value: fkValue});
