@@ -11,13 +11,15 @@ export default class RelationMapper {
 
     // private map: Map<string, ChangeEntry[]> = new Map();
 
-    private events: EventEmitter = new EventEmitter();
+    // private events: EventEmitter = new EventEmitter();
+
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    private events: Map<string, Function[]> = new Map();
 
     constructor(
         private changeSet: ChangeSet,
         private identityMap = changeSet[identityMapSymbol]
     ) {
-        this.events.setMaxListeners(0);
     }
 
     // push(id: string, waiter: ChangeEntry) {
@@ -28,6 +30,32 @@ export default class RelationMapper {
     //     }
     //     queue.push(waiter);
     // }
+
+    push(id: string, fx: () => any) {
+        let list = this.events.get(id);
+        if(!list) {
+            list = [];
+            this.events.set(id, list);
+        }
+        const once = () => {
+            fx();
+            const i = list.indexOf(once);
+            if (i !== -1) {
+                list.splice(i, 1);
+            }
+        };
+        list.push(once);
+    }
+
+    emit(id: string) {
+        const list = this.events.get(id);
+        if(!list) {
+            return;
+        }
+        for (const iterator of list) {
+            iterator();
+        }
+    }
 
     fix(entry: ChangeEntry, nest = true) {
 
@@ -71,7 +99,7 @@ export default class RelationMapper {
             if (!parent) {
                 if (nest) {
                     for (const { key, value } of pairs) {
-                        this.events.once(`${key.entityType.name}-${key.name}-${value}`, (k) => {
+                        this.push(`${key.entityType.name}-${key.name}-${value}`, () => {
                             this.fix(entry, false);
                         });
                     }
@@ -113,7 +141,7 @@ export default class RelationMapper {
                 continue;
             }
             const key = `${iterator.entityType.name}-${iterator.name}-${value}`;
-            this.events.emit(key, key);
+            this.emit(key);
         }
     }
 }
