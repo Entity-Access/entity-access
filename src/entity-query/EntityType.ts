@@ -7,6 +7,7 @@ import { Expression, ExpressionAs, NumberLiteral, ParameterExpression, SelectSta
 import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
 import { IStringTransformer } from "../query/ast/IStringTransformer.js";
+import { EntityAccessError } from "../index.js";
 
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
@@ -165,6 +166,9 @@ export default class EntityType {
         for (const iterator of relation.fkMap) {
             iterator.fkColumn = this.getField(iterator.fkColumn.name);
             // iterator.fkColumn.fkRelation = relation;
+            if (!iterator.relatedKeyColumn) {
+                throw new EntityAccessError(`Not key set for ${iterator.fkColumn.name} with keys in ${relatedType.name} `);
+            }
             iterator.relatedKeyColumn = relatedType.getField(iterator.relatedKeyColumn.name);
             iterator.relatedKeyColumn.entityType = relatedType;
         }
