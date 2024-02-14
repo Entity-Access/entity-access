@@ -1,13 +1,10 @@
 import type { IColumn, IEntityRelation } from "../decorators/IColumn.js";
 import { IClassOf } from "../decorators/IClassOf.js";
-import { Query } from "../query/Query.js";
-import NameParser from "../decorators/parser/NameParser.js";
-import SchemaRegistry from "../decorators/SchemaRegistry.js";
-import { Expression, ExpressionAs, NumberLiteral, ParameterExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
+import { Expression, NumberLiteral, ParameterExpression, SelectStatement, TableLiteral } from "../query/ast/Expressions.js";
 import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
 import { IStringTransformer } from "../query/ast/IStringTransformer.js";
-import { EntityAccessError } from "../index.js";
+import EntityAccessError from "../common/EntityAccessError.js";
 
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
