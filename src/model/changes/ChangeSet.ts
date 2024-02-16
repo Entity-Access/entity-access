@@ -27,7 +27,7 @@ export default class ChangeSet {
     /**
      * This will provide new entity for same key
      */
-    private identityMap = new IdentityMap();
+    private readonly identityMap = new IdentityMap();
 
     private nextId = 1;
 

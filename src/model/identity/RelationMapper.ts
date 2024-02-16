@@ -52,8 +52,7 @@ export default class RelationMapper {
         if(!list) {
             return;
         }
-        const copy = [].concat(list);
-        for (const iterator of copy) {
+        for (const iterator of list) {
             iterator();
         }
     }
