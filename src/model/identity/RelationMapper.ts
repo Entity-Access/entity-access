@@ -37,14 +37,14 @@ export default class RelationMapper {
             list = [];
             this.events.set(id, list);
         }
-        const once = () => {
-            fx();
-            const i = list.indexOf(once);
-            if (i !== -1) {
-                list.splice(i, 1);
-            }
-        };
-        list.push(once);
+        // const once = () => {
+        //     fx();
+        //     const i = list.indexOf(once);
+        //     if (i !== -1) {
+        //         list.splice(i, 1);
+        //     }
+        // };
+        list.push(fx);
     }
 
     emit(id: string) {
