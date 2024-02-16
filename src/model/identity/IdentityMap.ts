@@ -103,7 +103,7 @@ export default class IdentityMap {
 
     private updateSearchIndex(type: EntityType, entity: any) {
         for (const key of this.keys.keys()) {
-            if (type.getField(key.name) !== key) {
+            if (key.entityType !== type) {
                 continue;
             }
             const keyEntry = this.getKeyEntry(key, true);

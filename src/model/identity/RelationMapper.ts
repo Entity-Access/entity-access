@@ -52,7 +52,8 @@ export default class RelationMapper {
         if(!list) {
             return;
         }
-        for (const iterator of list) {
+        const copy = [].concat(list);
+        for (const iterator of copy) {
             iterator();
         }
     }
@@ -87,11 +88,11 @@ export default class RelationMapper {
             let pairs = null as { key: IColumn, value: any}[];
 
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
-                this.identityMap.build(relatedKeyColumn);
                 const fkValue = entity[fkColumn.name];
                 if (fkValue === void 0 || fkValue === null) {
                     continue;
                 }
+                this.identityMap.build(relatedKeyColumn);
                 (pairs ??=[]).push({ key: relatedKeyColumn, value: fkValue});
             }
 
