@@ -153,7 +153,10 @@ class User {
     @Column({ length: 200 })
     userName: string;
 
-    @Column({ length: 200, computed: (x) => Sql.text.lower(x) })
+    /**
+     * Create computed column
+    */
+    @Column({ length: 200, computed: (x) => Sql.text.lower(x.userName) })
     readonly lowerCaseUserName: string;
 }
 
@@ -352,6 +355,49 @@ Just as text functions you can also use date functions as shown below.
 ### Count
 ```typescript
     const total = await q.count();
+```
+
+## Bulk Updates
+### Update
+Following query will mark all users as active if they
+logged in within 30 days.
+```typescript
+    const past30 = DateTime.now.addDays(-30);
+    db.users.asQuery()
+        .update({ past30 }, (p) => (x) => ({
+            active: Sql.cast.asBoolean(
+                x.lastLogin > p.past30
+            )
+        }))
+```
+### Delete
+Following query will delete all users who did not login
+within one year.
+```typescript
+    const past365 = DateTime.now.addYears(-1);
+    db.users.asQuery()
+        .delete({ past365 }, (p) =>
+            (x) => x.lastLogin < p.past365)
+```
+### Insert
+Following query will insert all old messages to
+archivedMessages table and delete from messages
+in a single transaction.
+
+Everything happens on database server, no entity
+is loadded in the memory.
+
+```typescript
+    const past365 = DateTime.now.addYears(-1);
+    using tx = await db.connection.createTransaction();
+    const oldMessagesQuery = db.messages
+        .where({ past365 }, (p) =>
+            (x) => x.dateCreated < p.past365 );
+
+    oldMessagesQuery.insertInto(db.archivedMessages);
+
+    oldMessagesQuery.delete(void 0, (p) => (x) => true)
+
 ```
 
 ## Provide Custom Sql Methods...
