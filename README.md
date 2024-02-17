@@ -265,6 +265,7 @@ using helper functions to convert before comparison.
         )
 
 ```
+> SQL Server does not recognize boolean field as a true/false, so to make your query compatible, you must use `(x) => x.isActive === true` to make it work correctly in sql server.
 
 #### Like
 
@@ -487,7 +488,7 @@ export class ProductEvents extends EntityEvents<Product> {
         }
 
         // anonymous users can see only active products        
-        return query.where({ userID }, (p) => p.isActive);
+        return query.where({ userID }, (p) => p.isActive === true);
     }
 
     /*
@@ -527,7 +528,7 @@ export class ProductEvents extends EntityEvents<Product> {
             // active.
 
             return query.where({ userID }, (p) =>
-                p.isActive
+                p.isActive === true
                 || x.orderItems.some((oi) =>
                     oi.order.customerID === p.userID
                 )
