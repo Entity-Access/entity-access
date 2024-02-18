@@ -58,7 +58,7 @@ class DbReader implements IDbReader {
 
     async dispose() {
         try {
-            await this.cursor.close();
+            await this.cursor?.close();
         } catch (error) {
             console.error(error.stack ?? error);
         }
