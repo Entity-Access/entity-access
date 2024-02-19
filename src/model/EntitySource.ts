@@ -6,6 +6,7 @@ import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
 import { Expression, ExpressionAs, Identifier, InsertStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 import IdentityService from "./identity/IdentityService.js";
+import sleep from "../common/sleep.js";
 
 const removeUndefined = (obj) => {
     if (!obj) {
@@ -83,7 +84,7 @@ export class EntitySource<T = any> {
         mode,
         changes,
         updateAfterSelect
-    }: ISaveDirect<T> , retry = 1): Promise<T> {
+    }: ISaveDirect<T> , retry = 2): Promise<T> {
 
         const { driver } = this.context;
 
@@ -155,6 +156,7 @@ export class EntitySource<T = any> {
             return returnEntity;
         } catch (error) {
             if (retry) {
+                await sleep(300);
                 return await this.saveDirect({ keys, mode, changes, updateAfterSelect } as any, retry -1);
             }
             throw error;
