@@ -34,7 +34,9 @@ export default class IdentityMap {
                     continue;
                 }
                 const index = entries.indexOf(item);
-                entries.splice(index, 1);
+                if (index !== -1) {
+                    entries.splice(index, 1);
+                }
             }
         }
     }
