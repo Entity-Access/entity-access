@@ -33,7 +33,7 @@ export default class IdentityMap {
                 if (!entries) {
                     continue;
                 }
-                const index = entries.findIndex(item);
+                const index = entries.indexOf(item);
                 entries.splice(index, 1);
             }
         }
