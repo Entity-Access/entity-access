@@ -203,6 +203,10 @@ export default class WorkflowContext {
             }
         }
 
+        if (id.length > 400) {
+            throw new EntityAccessError(`ID cannot be more than 400 characters`);
+        }
+
         // this will ensure even empty workflow !!
         const schema = WorkflowRegistry.register(type, void 0);
 

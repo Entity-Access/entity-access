@@ -80,10 +80,10 @@ export class WorkflowItem {
     @Column({ dataType: "Char", nullable: true})
     public extra: string;
 
-    @Column({ dataType: "Char", length: 200 , nullable: true})
+    @Column({ dataType: "Char", length: 400 , nullable: true})
     public parentID: string;
 
-    @Column({ dataType: "Char", length: 200 , nullable: true})
+    @Column({ dataType: "Char", length: 400 , nullable: true})
     public lastID: string;
 }
 
