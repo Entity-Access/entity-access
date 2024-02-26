@@ -31,7 +31,7 @@ function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, o
         const input = JSON.stringify(a);
         const ts = unique ? "0" : Math.floor(this.currentTime.msSinceEpoch);
         const params = input.length < 150 ? input : await hash(input);
-        const id = `${this.id}(${params},${ts})`;
+        const id = `${this.id}:${name}(${params},${ts})`;
 
         const clock = context.storage.clock;
 
