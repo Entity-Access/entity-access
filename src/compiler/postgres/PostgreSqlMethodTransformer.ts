@@ -195,6 +195,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         normalize(text, kind = "NFC") {
             return prepareAny `normalize(${text}, ${onlyAlphaNumeric(kind)})`;
         },
+        isNullOrEmpty(text) {
+            return prepareAny `(${text} IS NULL OR length(${text}) = 0)`;
+        },
     }
 };
 

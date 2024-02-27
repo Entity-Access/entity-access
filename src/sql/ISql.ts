@@ -68,6 +68,12 @@ export interface ISql {
          * @param length length
          */
         substring(text: string, start: number, length?: number): string;
+
+        /**
+         * Check if given string is null or empty
+         * @param text test string
+         */
+        isNullOrEmpty(text: string): boolean;
     },
 
     date: {

@@ -25,6 +25,7 @@
         "Akash",
         "bigserial",
         "bytea",
+        "DATALENGTH",
         "datname",
         "Millis",
         "nvarchar",

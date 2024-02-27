@@ -198,6 +198,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `NORMALIZE(${text},${sanitize(kind)}`;
 
         },
+        isNullOrEmpty(text) {
+            return prepareAny `(${text} IS NULL OR DATALENGTH(${text}) = 0)`;
+        },
     }
 };
 
