@@ -225,6 +225,7 @@ export default class WorkflowContext {
                 }
 
                 eta ??= now;
+                taskGroup = (type as any).taskGroup ?? taskGroup;
                 await this.storage.save({
                     id,
                     taskGroup,

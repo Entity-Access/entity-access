@@ -18,6 +18,8 @@ export function UniqueActivity(target, key) {
 
 export default abstract class Workflow<TIn = any, TOut = any> {
 
+    public static taskGroup = "default";
+
     /**
      * If specified, all workflows in same sequence
      * will executed sequentially in a single worker node
