@@ -174,6 +174,7 @@ export default class ChangeEntry<T = any> implements IChanges {
 
             await context.model.register(relatedEntity.typeClass)
                 .where(this.entity, `(p) => (x) => ${filter.join(" && ")}` as any)
+                .trace(console.log)
                 .toArray();
 
             return;

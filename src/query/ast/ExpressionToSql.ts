@@ -744,22 +744,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             });
                             let where: Expression;
                             for (const {fkColumn, relatedKeyColumn} of fkMap) {
-                                let peColumn;
-                                let joinColumn;
-                                if (fkColumn.entityType === pe.model) {
-                                    peColumn = fkColumn;
-                                } else if (relatedKeyColumn.entityType === pe.model) {
-                                    peColumn = relatedKeyColumn;
-                                } else {
-                                    throw new EntityAccessError(`Invalid configuration`);
-                                }
-                                if (fkColumn.entityType === joinParameter.model) {
-                                    joinColumn = fkColumn;
-                                } else if (relatedKeyColumn.entityType === joinParameter.model) {
-                                    joinColumn = relatedKeyColumn;
-                                } else {
-                                    throw new EntityAccessError(`Invalid configuration`);
-                                }
+                                const peColumn = fkColumn.entityType === pe.model ? fkColumn : relatedKeyColumn;
+                                const joinColumn = relatedKeyColumn.entityType === pe.model ? fkColumn : relatedKeyColumn;
                                 const joinOn = Expression.equal(
                                     Expression.member(pe, peColumn.columnName),
                                     Expression.member(joinParameter, joinColumn.columnName));
