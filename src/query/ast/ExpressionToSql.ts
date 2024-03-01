@@ -744,8 +744,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             });
                             let where: Expression;
                             for (const {fkColumn, relatedKeyColumn} of fkMap) {
-                                const peColumn = fkColumn.entityType === pe.model ? fkColumn : relatedKeyColumn;
-                                const joinColumn = relatedKeyColumn.entityType === pe.model ? fkColumn : relatedKeyColumn;
+                                const peColumn = relation.isInverseRelation ? relatedKeyColumn : fkColumn;
+                                const joinColumn = relation.isInverseRelation ? fkColumn : relatedKeyColumn;
                                 const joinOn = Expression.equal(
                                     Expression.member(pe, peColumn.columnName),
                                     Expression.member(joinParameter, joinColumn.columnName));

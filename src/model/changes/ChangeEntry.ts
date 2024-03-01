@@ -169,12 +169,15 @@ export default class ChangeEntry<T = any> implements IChanges {
             const { relatedRelation } = relation;
             const filter = [];
             for (const { fkColumn, relatedKeyColumn } of relatedRelation.fkMap) {
-                filter.push(`x.${relatedRelation.name}.${fkColumn.name} === p.${relatedKeyColumn.name}`);
+                filter.push(`x.${fkColumn.name} === p.${relatedKeyColumn.name}`);
             }
 
+            const query = `(p) => (x) => ${filter.join(" && ")}` as any;
+            // console.log(query);
+
             await context.model.register(relatedEntity.typeClass)
-                .where(this.entity, `(p) => (x) => ${filter.join(" && ")}` as any)
-                .trace(console.log)
+                .where(this.entity, query)
+                // .trace(console.log)
                 .toArray();
 
             return;
