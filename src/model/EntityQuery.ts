@@ -348,7 +348,16 @@ export default class EntityQuery<T = any>
         return new EntityQuery({ ... this, traceQuery });
     }
 
+    /**
+     * Number of items to limit the result set. Applied only if not set or less than existing limit.
+     * @param n max
+     * @returns query
+     */
     limit(n: number): any {
+        const { selectStatement : { limit: currentLimit}} = this;
+        if (currentLimit && currentLimit < n) {
+            return this;
+        }
         return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, limit: n} });
     }
 
