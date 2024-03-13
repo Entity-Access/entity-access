@@ -118,8 +118,8 @@ export default function() {
     }));
     r = query.toQuery();
     assertSqlMatch(`SELECT
-    s."product_description" AS "productDescription",
-    s."owner_id" AS "ownerID"
+    s."product_description",
+    s."owner_id"
     FROM (SELECT
     p1."product_description",
     p1."owner_id"

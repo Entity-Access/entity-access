@@ -19,7 +19,6 @@ export default class EntityQuery<T = any>
     public signal?: AbortSignal;
     public traceQuery: (text: string) => void;
     public includes: any[];
-    private doNotMapFields: boolean;
     constructor (p: Partial<EntityQuery<any>>
     ) {
         // lets clone select...
@@ -78,11 +77,9 @@ export default class EntityQuery<T = any>
                     if (column) {
                         fields.push(Expression.member(selectStatement.sourceParameter, Expression.quotedIdentifier(column.columnName)));
                         modelFields.push(
-                            Expression.as(
                             Expression.member(
                             sourceParameter,
-                            Expression.quotedIdentifier(column.columnName)),
-                            Expression.quotedIdentifier(propertyName))
+                            Expression.quotedIdentifier(column.columnName))
                         );
                         continue;
                     }
@@ -121,7 +118,6 @@ export default class EntityQuery<T = any>
         delete (newSelect as any).debugView;
         return new EntityQuery({
             ... this,
-            doNotMapFields: true,
             selectStatement: newSelect,
         });
     }
@@ -331,8 +327,28 @@ export default class EntityQuery<T = any>
             signal?.throwIfAborted();
             let select = this.selectStatement;
 
-            if (type && select.model && !this.doNotMapFields) {
-                select = { ... select, fields: select.model.getFieldMap(select.sourceParameter) };
+            if (type && select.model) {
+                // we will filter the fields requested...
+                const fields = [] as Expression[];
+                for (const iterator of select.fields) {
+                    switch(iterator.type) {
+                        case "ExpressionAs":
+                            fields.push(iterator);
+                            continue;
+                        case "MemberExpression":
+                            const me = iterator as MemberExpression;
+                            const column = type.getColumn((me.property as Identifier).value);
+                            if (column) {
+                                fields.push(Expression.as(
+                                    Expression.member(select.sourceParameter, column.columnName)
+                                    , Expression.quotedIdentifier(column.name)));
+                                continue;
+                            }
+                    }
+                    fields.push(iterator);
+                }
+                select = { ... select, fields };
+                // select = { ... select, fields: select.model.getFieldMap(select.sourceParameter) };
             }
 
             query = this.context.driver.compiler.compileExpression(this, select);
