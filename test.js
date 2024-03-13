@@ -36,57 +36,53 @@ const results = [];
 let start = Date.now();
 
 const onlyPostGres = process.argv.some((x) => x === "--test-only-postgres");
+const onlySqlServer = process.argv.some((x) => x === "--test-only-sql-server");
 
 export default class TestRunner {
 
     static get drivers() {
         const database = "D" + (start++);
 
+        const pg = new PostgreSqlDriver({
+            database,
+            host,
+            user: "postgres",
+            password: "abcd123",
+            port: postGresPort,
+            // deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
+        });
+
+        const sqlServer = new SqlServerDriver({
+            database,
+            host,
+            user: "sa",
+            password: "$EntityAccess2023",
+            port: 1433,
+            options: {
+                encrypt: true, // for azure
+                trustServerCertificate: true // change to true for local dev / self-signed certs
+            },
+            // deleteDatabase: async (driver) => {
+            //     try {
+            //         driver.config.database = "master";
+            //         await driver.executeQuery(`USE master;
+            //         ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+            //         DROP DATABASE ${database}`);
+            //     } catch {
+
+            //     }
+            // }
+        })
+
         if (onlyPostGres) {
-            return [
-                new PostgreSqlDriver({
-                    database,
-                    host,
-                    user: "postgres",
-                    password: "abcd123",
-                    port: postGresPort,
-                    // deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
-                })
-            ];
-    
+            return [pg];    
         }
 
-        return [
-            new PostgreSqlDriver({
-                database,
-                host,
-                user: "postgres",
-                password: "abcd123",
-                port: postGresPort,
-                // deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
-            }),
-            new SqlServerDriver({
-                database,
-                host,
-                user: "sa",
-                password: "$EntityAccess2023",
-                port: 1433,
-                options: {
-                    encrypt: true, // for azure
-                    trustServerCertificate: true // change to true for local dev / self-signed certs
-                },
-                // deleteDatabase: async (driver) => {
-                //     try {
-                //         driver.config.database = "master";
-                //         await driver.executeQuery(`USE master;
-                //         ALTER DATABASE ${database} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                //         DROP DATABASE ${database}`);
-                //     } catch {
+        if (onlySqlServer) {
+            return [sqlServer];
+        }
 
-                //     }
-                // }
-            })
-        ];
+        return [ pg, sqlServer ];
     }
 
     /**
