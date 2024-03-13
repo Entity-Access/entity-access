@@ -19,6 +19,7 @@ export default class EntityQuery<T = any>
     public signal?: AbortSignal;
     public traceQuery: (text: string) => void;
     public includes: any[];
+    private doNotMapFields: boolean;
     constructor (p: Partial<EntityQuery<any>>
     ) {
         // lets clone select...
@@ -120,6 +121,7 @@ export default class EntityQuery<T = any>
         delete (newSelect as any).debugView;
         return new EntityQuery({
             ... this,
+            doNotMapFields: true,
             selectStatement: newSelect,
         });
     }
@@ -329,7 +331,7 @@ export default class EntityQuery<T = any>
             signal?.throwIfAborted();
             let select = this.selectStatement;
 
-            if (type && select.model) {
+            if (type && select.model && !this.doNotMapFields) {
                 select = { ... select, fields: select.model.getFieldMap(select.sourceParameter) };
             }
 
