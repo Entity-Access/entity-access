@@ -112,4 +112,9 @@ export default function() {
     r = query.toQuery();
     assertSqlMatch(notExp, r.text);
 
+    query = old.selectView(void 0, (p) => (x) => ({
+        ownerID: 0,
+    }));
+    r = query.toQuery();
+    assertSqlMatch(notExp, r.text);
 }

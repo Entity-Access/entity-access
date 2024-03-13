@@ -3,7 +3,7 @@ import Logger from "../common/Logger.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
@@ -54,6 +54,58 @@ export default class EntityQuery<T = any>
         const { driver } = this.context;
         const insert = driver.compiler.compileExpression(null, query);
         return this.context.connection.executeQuery(insert, this.signal);
+    }
+
+    selectView(parameters: any, fx: any): any {
+        const exp = this.context.driver.compiler.compile(this, fx);
+        const p1 = exp.params[0];
+        if (p1) {
+            p1.value = parameters;
+        }
+        const { selectStatement } = this;
+        const fields = [] as Expression[];
+        const modelFields = [] as Expression[];
+        const { body } = exp;
+        const sourceParameter = Expression.parameter("s", this.type);
+        switch(body.type) {
+            case "NewObjectExpression":
+                const noe = body as NewObjectExpression;
+                for (const iterator of noe.properties) {
+                    const { expression } = iterator;
+                    fields.push(ExpressionAs.create({
+                        expression,
+                        alias: Expression.quotedIdentifier(iterator.alias.value)
+                    }));
+                    modelFields.push(Expression.as(
+                            Expression.member(sourceParameter, Expression.quotedIdentifier(iterator.alias.value)),
+                            iterator.alias.value
+                        ));
+                }
+                break;
+            default:
+                fields.push(body);
+                break;
+
+        }
+        const source = selectStatement;
+        source.fields = fields;
+
+        const newSelect = {
+            ... selectStatement,
+            source,
+            fields: modelFields,
+            joins: void 0,
+            limit: void 0,
+            offset: void 0,
+            orderBy: void 0,
+            preferLeftJoins: void 0,
+            sourceParameter
+        };
+        delete (newSelect as any).debugView;
+        return new EntityQuery({
+            ... this,
+            selectStatement: newSelect,
+        });
     }
 
     map(parameters: any, fx: any): any {
@@ -113,7 +165,7 @@ export default class EntityQuery<T = any>
         }
 
         const source = this.selectStatement;
-        
+
         const sp = Expression.parameter("d1", this.type);
         const as = Expression.parameter("s1", this.type);
         let where: Expression;
@@ -131,11 +183,11 @@ export default class EntityQuery<T = any>
             where
         });
 
-        let deleteQuery = DeleteStatement.create({
+        const deleteQuery = DeleteStatement.create({
             table: this.type.fullyQualifiedName,
             sourceParameter: sp,
             join
-        })
+        });
 
         const session = this.context.logger?.newSession() ?? Logger.nullLogger;
         let query;

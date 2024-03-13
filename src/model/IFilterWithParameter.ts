@@ -25,12 +25,14 @@ export interface IBaseQuery<T> {
     limit<DT>(this: DT, limit: number): DT;
     offset<DT>(this: DT, offset: number): DT;
     where<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
+    selectView<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => Partial<T>): DT;
 
     count(): Promise<number>;
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 
     sum(): Promise<number>;
     sum<P>(parameters: P, fx: (p: P) => (x: T) => number): Promise<number>;
+
 
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
 
