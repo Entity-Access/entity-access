@@ -84,7 +84,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const limit = e.limit > 0 ? prepare ` LIMIT ${Number(e.limit).toString()}` : "";
         const offset = e.offset > 0 ? prepare ` OFFSET ${Number(e.offset).toString()}` : "";
-        const source = e.source.type === "ValuesStatement"
+        const source = /^(Values|Select)Statement/.test(e.source.type)
             ? prepare `(${this.visit(e.source)})`
             : this.visit(e.source);
         const as = e.sourceParameter ? prepare ` AS ${this.scope.nameOf(e.sourceParameter)}` : "";
@@ -100,6 +100,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (e.sourceParameter && e.model) {
             this.scope.create({ parameter: e.sourceParameter, selectStatement: e });
             // list.push(e.sourceParameter);
+        }
+
+        if (e.source?.type === "SelectStatement") {
+            this.prepareStatement(e.source);
         }
 
         const joins = e.joins;

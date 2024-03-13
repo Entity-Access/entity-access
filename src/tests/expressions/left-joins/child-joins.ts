@@ -113,8 +113,19 @@ export default function() {
     assertSqlMatch(notExp, r.text);
 
     query = old.selectView(void 0, (p) => (x) => ({
+        productDescription: x.productDescription,
         ownerID: 0,
     }));
     r = query.toQuery();
-    assertSqlMatch(notExp, r.text);
+    assertSqlMatch(`SELECT
+    s."product_description" AS "productDescription",
+    s."owner_id" AS "ownerID"
+    FROM (SELECT
+    p1."product_description",
+    p1."owner_id"
+    FROM products AS p1
+WHERE EXISTS (SELECT
+    1
+    FROM order_items AS o
+WHERE (o.product_id = $1) AND (p1.product_id = o.product_id))) AS s`, r.text);
 }

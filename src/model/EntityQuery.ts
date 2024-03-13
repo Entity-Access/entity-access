@@ -62,15 +62,30 @@ export default class EntityQuery<T = any>
         if (p1) {
             p1.value = parameters;
         }
-        const { selectStatement } = this;
+        const { selectStatement, type } = this;
         const fields = [] as Expression[];
         const modelFields = [] as Expression[];
         const { body } = exp;
-        const sourceParameter = Expression.parameter("s", this.type);
+        const sourceParameter = Expression.parameter("s", type);
         switch(body.type) {
             case "NewObjectExpression":
                 const noe = body as NewObjectExpression;
                 for (const iterator of noe.properties) {
+
+                    const propertyName = iterator.alias.value;
+                    const column = type.getField(propertyName);
+                    if (column) {
+                        fields.push(Expression.member(selectStatement.sourceParameter, Expression.quotedIdentifier(column.columnName)));
+                        modelFields.push(
+                            Expression.as(
+                            Expression.member(
+                            sourceParameter,
+                            Expression.quotedIdentifier(column.columnName)),
+                            Expression.quotedIdentifier(propertyName))
+                        );
+                        continue;
+                    }
+
                     const { expression } = iterator;
                     fields.push(ExpressionAs.create({
                         expression,
@@ -78,7 +93,7 @@ export default class EntityQuery<T = any>
                     }));
                     modelFields.push(Expression.as(
                             Expression.member(sourceParameter, Expression.quotedIdentifier(iterator.alias.value)),
-                            iterator.alias.value
+                            Expression.quotedIdentifier(iterator.alias.value)
                         ));
                 }
                 break;
@@ -98,6 +113,7 @@ export default class EntityQuery<T = any>
             limit: void 0,
             offset: void 0,
             orderBy: void 0,
+            where: void 0,
             preferLeftJoins: void 0,
             sourceParameter
         };
