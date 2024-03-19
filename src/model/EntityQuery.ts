@@ -108,14 +108,16 @@ export default class EntityQuery<T = any>
             source,
             fields: modelFields,
             joins: void 0,
-            limit: void 0,
-            offset: void 0,
+            limit: selectStatement.limit,
+            offset: selectStatement.offset,
             orderBy: void 0,
             where: void 0,
             preferLeftJoins: void 0,
             sourceParameter
         };
         delete (newSelect as any).debugView;
+        delete source.limit;
+        delete source.offset;
         return new EntityQuery({
             ... this,
             selectStatement: newSelect,
