@@ -8,6 +8,8 @@ import ChangeEntry from "../changes/ChangeEntry.js";
 
 const done = Promise.resolve() as Promise<void>;
 
+export const entityNameSymbol = Symbol("Entity Name");
+
 export class ForeignKeyFilter<T = any, TE = any> {
 
     public readonly type: EntityType;
@@ -48,6 +50,9 @@ export default class EntityEvents<T> {
 
     public get verify() {
         return true;
+    }
+
+    constructor(public readonly entityName = new.target[entityNameSymbol]) {
     }
 
     filter(query: IEntityQuery<T>) {

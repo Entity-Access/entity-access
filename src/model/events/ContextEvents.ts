@@ -4,6 +4,7 @@ import { ServiceProvider } from "../../di/di.js";
 import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import type EntityContext from "../EntityContext.js";
 import type EntityEvents from "./EntityEvents.js";
+import { entityNameSymbol } from "./EntityEvents.js";
 
 export default class ContextEvents {
 
@@ -21,11 +22,13 @@ export default class ContextEvents {
     }
 
     public register<T>(type: IClassOf<T>, events: IClassOf<EntityEvents<T>>) {
+        (events as any)[entityNameSymbol] = type.name;
         this.map.set(type, events);
     }
 
     public registerAll<T>(types: (IClassOf<EntityEvents<T>> & { typeClass: IClassOf<T>})[]) {
         for (const iterator of types) {
+            (iterator as any)[entityNameSymbol] = iterator.typeClass.name;
             this.map.set(iterator.typeClass, iterator);
         }
     }
