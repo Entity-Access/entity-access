@@ -298,17 +298,7 @@ export default class WorkflowStorage {
             try {
                 const r = await q.invoke(db.connection, iterator);
                 if (r.updated > 0) {
-                    const item = await db.workflows.saveDirect({
-                        mode: "selectOrInsert",
-                        keys: {
-                            id: iterator.id
-                        },
-                        changes: {
-                            id: iterator.id
-                        }});
-                    if (item.lockToken === uuid) {
-                        list.push(iterator);
-                    }
+                    list.push(iterator);
                 }
             } catch (error) {
                 console.error(error);
