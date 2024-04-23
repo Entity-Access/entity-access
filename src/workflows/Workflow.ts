@@ -18,7 +18,7 @@ export function UniqueActivity(target, key) {
 
 export default abstract class Workflow<TIn = any, TOut = any> {
 
-    public static taskGroup = "default";
+    public static taskGroup = null;
 
     /**
      * If specified, all workflows in same sequence
