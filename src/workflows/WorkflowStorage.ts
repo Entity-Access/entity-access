@@ -179,18 +179,14 @@ export default class WorkflowStorage {
      */
     async delete(id) {
         const db = new WorkflowContext(this.driver);
-        const children = await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
+        await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
             .limit(100)
-            .select(void 0, () => (x) => ({ id: x.id }))
-            .toArray();
-        for (const keys of children) {
-            await db.workflows.saveDirect({ keys, mode: "delete"});
+            .delete({ id }, (p) => (x) => x.parentID === p.id);
+        if (await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id).some()) {
+            return;
         }
-        if (children.length === 100) {
-            return false;
-        }
-
-        await db.workflows.saveDirect({ keys: { id }, mode: "delete"});
+        await db.workflows.asQuery()
+            .delete({ id}, (p) => (x) => x.id === p.id);
         return true;
     }
 
