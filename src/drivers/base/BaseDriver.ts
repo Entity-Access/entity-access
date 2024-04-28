@@ -70,17 +70,17 @@ export class EntityTransaction {
     }
 
     async dispose() {
-        if(!this.committedOrRolledBack) {
-            await this.tx.commit();
-        }
         await this.tx.dispose();
+        if(!this.committedOrRolledBack) {
+            throw new EntityAccessError("Transaction was not committed/rolled back");
+        }
     }
 
     async [Symbol.asyncDispose]() {
-        if(!this.committedOrRolledBack) {
-            await this.tx.commit();
-        }
         await this.tx.dispose();
+        if(!this.committedOrRolledBack) {
+            throw new EntityAccessError("Transaction was not committed/rolled back");
+        }
     }
 }
 
