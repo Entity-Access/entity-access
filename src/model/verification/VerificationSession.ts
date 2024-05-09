@@ -164,7 +164,7 @@ export default class VerificationSession {
         using session = logger.newSession();
         const { rows: [ { error }]} = await this.context.connection.executeQuery(query);
         if (error) {
-            session.error(`Failed executing ${query.text}\n[${query.values.join(",")}]\n${error?.stack ?? error}`);
+            session.error(`Failed executing \n${query.text}\n[\n${query.values.join(",")}]\n${error?.stack ?? error}`);
             EntityAccessError.throw(error);
         }
     }
