@@ -138,6 +138,10 @@ export interface IWorkflowQueueParameter {
     eta?: DateTime;
     parentID?: string;
     taskGroup?: string;
+    throttle?: {
+        group: string;
+        maxPerSecond: number;
+    }
 }
 
 export interface IWorkflowStartParams {
@@ -189,7 +193,8 @@ export default class WorkflowContext {
             throwIfExists,
             eta,
             parentID,
-            taskGroup = "default"
+            taskGroup = "default",
+            throttle
         }: IWorkflowQueueParameter = {}) {
         const clock = this.storage.clock;
         let tries = 1;
@@ -207,10 +212,21 @@ export default class WorkflowContext {
             throw new EntityAccessError(`ID cannot be more than 400 characters`);
         }
 
+        const now = align(clock.utcNow);
+
+        let queued = now;
+
+        let throttleGroup = null;
+
+        if (throttle) {
+            eta = await this.storage.getNextEta(throttle);
+            queued = eta;
+            throttleGroup = throttle.group;
+        }
+
         // this will ensure even empty workflow !!
         const schema = WorkflowRegistry.register(type, void 0);
 
-        const now = align(clock.utcNow);
 
         let lastError = null;
         while(tries--) {
@@ -229,10 +245,11 @@ export default class WorkflowContext {
                 await this.storage.save({
                     id,
                     taskGroup,
+                    throttleGroup,
                     name: schema.name,
                     input: JSON.stringify(input),
                     isWorkflow: true,
-                    queued: now,
+                    queued,
                     updated: now,
                     parentID,
                     eta
