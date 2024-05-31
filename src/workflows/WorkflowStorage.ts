@@ -27,6 +27,14 @@ const loadedFromDb = Symbol("loadedFromDB");
     ],
     filter: (x) => x.isWorkflow === true
 })
+@Index({
+    name: "IX_Workflows_Throttle_Group",
+    columns: [
+        { name: (x) => x.throttleGroup, descending: false },
+        { name: (x) => x.queued, descending: false }
+    ],
+    filter: (x) => x.isWorkflow === true && x.throttleGroup !== null
+})
 export class WorkflowItem {
 
     @Column({ dataType: "Char", length: 400, key: true })
@@ -61,6 +69,11 @@ export class WorkflowItem {
         default: () => `default`
     })
     public taskGroup: string;
+
+    @Column({
+        dataType: "Char", length: 200, nullable: true
+    })
+    public throttleGroup: string;
 
     @Column({ dataType: "Int", default: () => 0})
     public priority: number;
@@ -110,6 +123,24 @@ export default class WorkflowStorage {
         public readonly clock: WorkflowClock
     ) {
 
+    }
+
+    async getNextEta(throttle: { group: string, maxPerSecond: number }) {
+
+        const db = new WorkflowContext(this.driver);
+        const last = await db.workflows.where(throttle, (p) => (x) => x.throttleGroup === p.group
+            && x.isWorkflow === true)
+            .orderByDescending(void 0, (p) => (x) => x.queued)
+            .first();
+
+        if (last) {
+            if (throttle.maxPerSecond <= 0) {
+                throttle.maxPerSecond = 1;
+            }
+            return DateTime.from(last.queued).addSeconds(1 / throttle.maxPerSecond);
+        }
+
+        return DateTime.now;
     }
 
     async getWorkflow(id: string) {

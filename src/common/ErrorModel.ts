@@ -7,7 +7,7 @@ export default class ErrorModel {
 
     public paramErrors: IFieldError[] = [];
 
-    public get detail() {
+    public get details() {
         return this.paramErrors.map((x) => x.name ? `${x.name}: ${x.reason}` : x.reason).join("\r\n");
     }
 
@@ -19,6 +19,6 @@ export default class ErrorModel {
     }
 
     public toString() {
-        return `${this.title}\r\n${this.detail}`;
+        return `${this.title}\r\n${this.details}`;
     }
 }
