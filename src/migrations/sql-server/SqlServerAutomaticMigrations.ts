@@ -142,8 +142,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         let text = `SELECT COUNT(*) 
         FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
         WHERE TABLE_NAME='${type.name}' 
-        AND CONSTRAINT_NAME='${name}' 
-        AND CONSTRAINT_TYPE='FOREIGN KEY'`;
+        AND CONSTRAINT_NAME='${name}'`;
 
         if(schema) {
             text += ` and schema_name = ${schema}`;
