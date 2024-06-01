@@ -1,5 +1,6 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
+import ICheckConstraint from "../decorators/ICheckConstraint.js";
 import type { IForeignKeyConstraint } from "../decorators/IForeignKeyConstraint.js";
 import type { IIndex } from "../decorators/IIndex.js";
 import type EntityType from "../entity-query/EntityType.js";
@@ -38,6 +39,15 @@ export default abstract class Migrations {
             }
 
             await this.migrateTable(context, type);
+
+            // create constraints
+            for (const iterator of type.checkConstraints) {
+                const source = context.query(type.typeClass) as EntityQuery<any>;
+                const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${iterator.filter}` as any);
+                const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
+                iterator.filter = textQuery.join("").replace(r, "") as any;
+                await this.migrateCheckConstraint(context, iterator, type);
+            }
 
             for (const index of type.indexes) {
                 await this.migrateIndexInternal(context, index, type);
@@ -101,5 +111,6 @@ export default abstract class Migrations {
 
     abstract migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint);
 
+    abstract migrateCheckConstraint(context: EntityContext, checkConstraint: ICheckConstraint, type: EntityType);
 
 }

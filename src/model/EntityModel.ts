@@ -27,6 +27,7 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
         t.addColumn(column);
     }
     t.indexes.push(... original.indexes.map((i) => ({ ... i, columns: [ ... i.columns.map((c) => ( { ... c}))] })));
+    t.checkConstraints.push(... original.checkConstraints.map((i) => ({ ... i})));
     // sort keys...
     if (t.keys.length > 1) {
         t.keys.sort((a, b) => a.order - b.order);

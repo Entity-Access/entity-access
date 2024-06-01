@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import ICheckConstraint from "../../decorators/ICheckConstraint.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
@@ -131,31 +132,41 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         await driver.executeQuery(query);
     }
 
-    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
-        const { type } = constraint;
-        const name = type.schema
-        ? type.schema + "." + type.name
-        : type.name;
+    async constraintExists(context: EntityContext, name: string, schema: string) {
 
         let text = `SELECT * FROM information_schema.referential_constraints
         WHERE lower(constraint_name)=lower($1)
         `;
 
-        const values = [constraint.name];
+        const values = [name];
 
-        if(type.schema) {
+        if(schema) {
             text += " and constraint_schema = $2";
-            values.push(type.schema);
+            values.push(schema);
         }
 
         const driver = context.connection;
 
         const r = await driver.executeQuery({ text, values });
         if (r.rows?.length) {
+            return true;
+        }
+        return false;
+    }
+
+    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
+        const { type } = constraint;
+        const name = type.schema
+        ? type.schema + "." + type.name
+        : type.name;
+
+        if (await this.constraintExists(context, constraint.name, type.schema)) {
             return;
         }
 
-        text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
+        const driver = context.connection;
+
+        let text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
             foreign key (${constraint.column.columnName})
             references ${constraint.refColumns[0].entityType.name}(
                 ${constraint.refColumns.map((x) => x.columnName).join(",")}
@@ -184,6 +195,29 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             console.warn(error);
         }
 
+    }
+
+    async migrateCheckConstraint(context: EntityContext, constraint: ICheckConstraint<any>, type: EntityType) {
+        if (await this.constraintExists(context, constraint.name, type.schema)) {
+            return;
+        }
+
+        const name = type.schema
+        ? type.schema + "." + type.name
+        : type.name;
+
+
+        const driver = context.connection;
+
+        const text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} CHECK (${constraint.filter})`;
+
+        try {
+            await driver.executeQuery(text);
+        } catch (error) {
+            // we will simply ignore this
+            console.warn(`Failed adding constraint ${constraint.name}`);
+            console.warn(error);
+        }
     }
 
 

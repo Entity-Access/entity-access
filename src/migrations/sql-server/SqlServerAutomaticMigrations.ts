@@ -1,3 +1,4 @@
+import ICheckConstraint from "../../decorators/ICheckConstraint.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
@@ -137,30 +138,39 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         await driver.executeQuery(query);
     }
 
-    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
-        const { type } = constraint;
-        const name = type.schema
-        ? type.schema + "." + type.name
-        : type.name;
-
+    async constraintExists(context: EntityContext, name: string, schema: string, type: EntityType) {
         let text = `SELECT COUNT(*) 
         FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
         WHERE TABLE_NAME='${type.name}' 
-        AND CONSTRAINT_NAME='${constraint.name}' 
+        AND CONSTRAINT_NAME='${name}' 
         AND CONSTRAINT_TYPE='FOREIGN KEY'`;
 
-        if(type.schema) {
-            text += ` and schema_name = ${type.schema}`;
+        if(schema) {
+            text += ` and schema_name = ${schema}`;
         }
 
         const driver = context.connection;
 
         const r = await driver.executeQuery(text);
         if (r.rows?.length) {
+            return true;
+        }
+
+    }
+
+    async migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint) {
+        const { type } = constraint;
+        const name = type.schema
+        ? type.schema + "." + type.name
+        : type.name;
+
+        if (await this.constraintExists(context, name, type.schema, type)) {
             return;
         }
 
-        text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
+        const driver = context.connection;
+
+        let text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
             foreign key (${constraint.column.columnName})
             references ${constraint.refColumns[0].entityType.name}(
                 ${constraint.refColumns.map((x) => x.columnName).join(",")}
@@ -180,6 +190,29 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
                 text += " ON DELETE RESTRICT";
                 break;
         }
+
+        try {
+            await driver.executeQuery(text);
+        } catch (error) {
+            // we will simply ignore this
+            console.warn(`Failed adding constraint ${constraint.name}`);
+            console.warn(error);
+        }
+    }
+
+    async migrateCheckConstraint(context: EntityContext, constraint: ICheckConstraint<any>, type: EntityType) {
+        if (await this.constraintExists(context, constraint.name, type.schema, type)) {
+            return;
+        }
+
+        const name = type.schema
+        ? type.schema + "." + type.name
+        : type.name;
+
+
+        const driver = context.connection;
+
+        const text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} CHECK (${constraint.filter})`;
 
         try {
             await driver.executeQuery(text);

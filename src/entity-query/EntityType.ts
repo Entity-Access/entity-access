@@ -5,6 +5,7 @@ import InstanceCache from "../common/cache/InstanceCache.js";
 import { IIndex } from "../decorators/IIndex.js";
 import { IStringTransformer } from "../query/ast/IStringTransformer.js";
 import EntityAccessError from "../common/EntityAccessError.js";
+import ICheckConstraint from "../decorators/ICheckConstraint.js";
 
 export const addOrCreateColumnSymbol = Symbol("addOrCreateColumn");
 export const addColumnSymbol = Symbol("addOrCreateColumn");
@@ -33,6 +34,8 @@ export default class EntityType {
     public readonly relations: IEntityRelation[] = [];
 
     public readonly indexes: IIndex[] = [];
+
+    public readonly checkConstraints: ICheckConstraint[] = [];
 
     public readonly keys: IColumn[] = [];
 

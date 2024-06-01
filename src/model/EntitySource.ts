@@ -155,7 +155,7 @@ export class EntitySource<T = any> {
             }
             return returnEntity;
         } catch (error) {
-            if (retry) {
+            if (retry > 0) {
                 await sleep(300);
                 return await this.saveDirect({ keys, mode, changes, updateAfterSelect } as any, retry -1);
             }

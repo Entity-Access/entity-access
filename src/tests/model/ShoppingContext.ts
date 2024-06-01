@@ -7,6 +7,7 @@ import DateTime from "../../types/DateTime.js";
 import { UserFile } from "./UseFile.js";
 import Sql from "../../sql/Sql.js";
 import MultiForeignKeys from "../../decorators/ForeignKey.js";
+import CheckConstraint from "../../decorators/CheckConstraint.js";
 
 export const statusPublished = "published";
 
@@ -285,6 +286,10 @@ export class ProductCategory {
 }
 
 @Table("ProductPrices")
+@CheckConstraint({
+    name: "CX_ProductPrices_PositivePrice",
+    filter: (x) => x.amount > 0
+})
 export class ProductPrice {
 
     @Column({ key: true, generated: "identity", dataType: "BigInt"})
