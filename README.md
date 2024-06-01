@@ -161,6 +161,10 @@ class User {
 }
 
 @Table("Products")
+@CheckConstraint({
+    name: "CX_Products_PositivePrice",
+    filter: (x) => x.price > 0
+})
 class Product {
 
     @Column({ key: true, generated: "identity"})
@@ -186,6 +190,9 @@ class Product {
         computed: (p) => Sql.text.concatImmutable(Sql.cast.asText(p.productID), p.productCode)
     })
     readonly slug: string;
+
+    @Column({ dataType: "Decimal" })
+    price: number;
 
     orderItems: OrderItem[];
 }
