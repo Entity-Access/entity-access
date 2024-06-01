@@ -34,6 +34,7 @@
                 // "./dist/tests/eternity/eternity-tests.js"
                 "${file}",
                 "--test-only-postgres"
+                // "--test-only-sql-server"
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"

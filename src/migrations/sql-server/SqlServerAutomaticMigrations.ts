@@ -139,7 +139,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
     }
 
     async constraintExists(context: EntityContext, name: string, schema: string, type: EntityType) {
-        let text = `SELECT COUNT(*) 
+        let text = `SELECT COUNT(*) as c1
         FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
         WHERE TABLE_NAME='${type.name}' 
         AND CONSTRAINT_NAME='${name}'`;
@@ -151,8 +151,10 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const driver = context.connection;
 
         const r = await driver.executeQuery(text);
-        if (r.rows?.length) {
-            return true;
+        if (r.rows?.length === 0) {
+            if (r.rows["c1"] > 0) {
+                return true;
+            }
         }
 
     }
