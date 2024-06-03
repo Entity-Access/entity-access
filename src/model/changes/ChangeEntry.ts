@@ -131,6 +131,9 @@ export default class ChangeEntry<T = any> implements IChanges {
                 if (!modifiedEntry) {
                     modifiedEntry = { column: iterator, oldValue, newValue };
                     this.modified.set(iterator, modifiedEntry);
+                } else {
+                    modifiedEntry.oldValue = oldValue;
+                    modifiedEntry.newValue = newValue;
                 }
             }
         }
