@@ -15,6 +15,13 @@ import { FilteredExpression } from "./events/FilteredExpression.js";
 
 const isChanging = Symbol("isChanging");
 
+const empty = {};
+
+export interface ISaveOptions {
+    trace?: (text: string) => void;
+    signal?: AbortSignal;
+};
+
 export default class EntityContext {
 
     public readonly model = new EntityModel(this);
@@ -90,27 +97,27 @@ export default class EntityContext {
         return FilteredExpression.markAsFiltered(query);
     }
 
-    public async saveChangesWithoutEvents(signal?: AbortSignal) {
+    public async saveChangesWithoutEvents(options?: ISaveOptions) {
         const raiseEvents = this.raiseEvents;
         const verifyFilters = this.verifyFilters;
         try {
             this.raiseEvents = false;
             this.verifyFilters = false;
-            return await this.saveChanges(signal);
+            return await this.saveChanges(options);
         } finally {
             this.verifyFilters = verifyFilters;
             this.raiseEvents = raiseEvents;
         }
     }
 
-    public async saveChanges(signal?: AbortSignal) {
+    public async saveChanges(options?: ISaveOptions) {
 
         if (this[isChanging]) {
             if (!this.raiseEvents) {
-                this.queuePostSaveTask(() => this.saveChangesInternalWithoutEvents(signal));
+                this.queuePostSaveTask(() => this.saveChangesInternalWithoutEvents(options));
                 return 0;
             }
-            this.queuePostSaveTask(() => this.saveChanges(signal));
+            this.queuePostSaveTask(() => this.saveChanges(options));
             return 0;
         }
 
@@ -118,11 +125,11 @@ export default class EntityContext {
             try {
 
                 if(!this.raiseEvents) {
-                    return await this.saveChangesInternalWithoutEvents(signal);
+                    return await this.saveChangesInternalWithoutEvents(options);
                 }
 
                 this[isChanging] = true;
-                const r = await this.saveChangesInternal(signal);
+                const r = await this.saveChangesInternal(options);
                 const postSaveChanges = this.postSaveChangesQueue;
                 this.postSaveChangesQueue = void 0;
                 this[isChanging] = false;
@@ -147,7 +154,7 @@ export default class EntityContext {
         this.postSaveChangesQueue.push({ task, order });
     }
 
-    private async saveChangesInternal(signal?: AbortSignal) {
+    private async saveChangesInternal(options: ISaveOptions) {
 
         const verificationSession = new VerificationSession(this);
 
@@ -194,7 +201,7 @@ export default class EntityContext {
             await verificationSession.verifyAsync();
         }
 
-        await this.saveChangesInternalWithoutEvents(signal);
+        await this.saveChangesInternalWithoutEvents(options);
 
         if (pending.length > 0) {
 
@@ -216,13 +223,13 @@ export default class EntityContext {
 
     }
 
-    private async saveChangesInternalWithoutEvents(signal: AbortSignal) {
+    private async saveChangesInternalWithoutEvents(options?: ISaveOptions) {
         const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
         for (const iterator of copy) {
             switch (iterator.status) {
                 case "inserted":
                     const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
-                    const r = await this.executeExpression(insert, signal);
+                    const r = await this.executeExpression(insert, options);
                     iterator.apply(r);
                     break;
                 case "modified":
@@ -230,14 +237,14 @@ export default class EntityContext {
                     iterator.detect();
                     if (iterator.modified.size > 0) {
                         const update = this.driver.createUpdateExpression(iterator);
-                        const r1 = await this.executeExpression(update, signal);
+                        const r1 = await this.executeExpression(update, options);
                         iterator.apply(r1 ?? {});
                     }
                     break;
                 case "deleted":
                     const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
                     if (deleteQuery) {
-                        await this.executeExpression(deleteQuery, signal);
+                        await this.executeExpression(deleteQuery, options);
                     }
                     iterator.apply({});
                     break;
@@ -245,8 +252,11 @@ export default class EntityContext {
         }
     }
 
-    private async executeExpression(expression: Expression, signal: AbortSignal) {
+    private async executeExpression(expression: Expression, { signal , trace }: ISaveOptions = empty) {
         const { text, values } = this.driver.compiler.compileExpression(null, expression);
+        if (trace) {
+            trace(text);
+        }
         const r = await this.connection.executeQuery({ text, values }, signal);
         return r.rows?.[0];
     }
