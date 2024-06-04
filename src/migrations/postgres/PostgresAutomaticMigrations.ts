@@ -132,14 +132,10 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         await driver.executeQuery(query);
     }
 
-    async constraintExists(context: EntityContext, name: string, schema: string) {
+    async constraintExists(context: EntityContext, name: string, schema: string, table = "referential_constraints") {
 
-        let text = `SELECT 1 as c1 FROM information_schema.referential_constraints
-        WHERE lower(constraint_name)=lower($1)
-        UNION 
-        SELECT 1 as c1 FROM information_schema.check_constraints
-        WHERE lower(constraint_name)=lower($1)
-        `;
+        let text = `SELECT * FROM information_schema.${table}
+        WHERE lower(constraint_name)=lower($1)`;
 
         const values = [name];
 
@@ -201,7 +197,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
     }
 
     async migrateCheckConstraint(context: EntityContext, constraint: ICheckConstraint<any>, type: EntityType) {
-        if (await this.constraintExists(context, constraint.name, type.schema)) {
+        if (await this.constraintExists(context, constraint.name, type.schema, "check_constraints")) {
             return;
         }
 
