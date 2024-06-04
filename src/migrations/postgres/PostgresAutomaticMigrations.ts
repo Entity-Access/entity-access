@@ -134,7 +134,10 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
     async constraintExists(context: EntityContext, name: string, schema: string) {
 
-        let text = `SELECT * FROM information_schema.referential_constraints
+        let text = `SELECT 1 as c1 FROM information_schema.referential_constraints
+        WHERE lower(constraint_name)=lower($1)
+        UNION 
+        SELECT 1 as c1 FROM information_schema.check_constraints
         WHERE lower(constraint_name)=lower($1)
         `;
 
