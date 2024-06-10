@@ -196,7 +196,7 @@ export default class EntityType {
             foreignKeyConstraint = {
                 ... foreignKeyConstraint,
                 fkMap: relation.fkMap,
-                name: foreignKeyConstraint.name || `FK_${relation.type.name}_${relation.fkMap.map((r) => `${r.fkColumn.name}_${r.relatedKeyColumn.name}`).join("_")}`
+                name: foreignKeyConstraint.name || `FK_${relation.type.name}_${relation.fkMap.map((r) => r.fkColumn.name).join("_")}`
             };
             foreignKeyConstraint.fkMap = relation.fkMap;
             relation.foreignKeyConstraint = foreignKeyConstraint;
