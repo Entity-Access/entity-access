@@ -61,15 +61,16 @@ export default abstract class Migrations {
                     continue;
                 }
 
-                const relatedEntity = model.register(relatedTypeClass)[modelSymbol] as EntityType;
+                // const relatedEntity = model.register(relatedTypeClass)[modelSymbol] as EntityType;
 
                 foreignKeyConstraint.type = type;
-                foreignKeyConstraint.column = type.getProperty(foreignKeyConstraint.column.name).field;
-                const refColumns = foreignKeyConstraint.refColumns;
-                foreignKeyConstraint.refColumns = [];
-                for (const iterator of refColumns) {
-                    foreignKeyConstraint.refColumns.push(relatedEntity.getProperty(iterator.name).field);
-                }
+                // foreignKeyConstraint.fkMap
+                // foreignKeyConstraint.column = type.getProperty(foreignKeyConstraint.column.name).field;
+                // const refColumns = foreignKeyConstraint.refColumns;
+                // foreignKeyConstraint.refColumns = [];
+                // for (const iterator of refColumns) {
+                //     foreignKeyConstraint.refColumns.push(relatedEntity.getProperty(iterator.name).field);
+                // }
 
                 postMigration.push(() => this.migrateForeignKey(context, foreignKeyConstraint));
             }

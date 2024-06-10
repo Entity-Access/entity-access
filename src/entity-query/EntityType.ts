@@ -193,14 +193,21 @@ export default class EntityType {
 
         let { foreignKeyConstraint } = relation;
         if(foreignKeyConstraint) {
-            if (relation.fkMap.length === 1) {
-                const { fkColumn } = relation.fkMap[0];
-                foreignKeyConstraint = { ... foreignKeyConstraint};
-                relation.foreignKeyConstraint = foreignKeyConstraint;
-                foreignKeyConstraint.name ||= `FK_${this.name}_${fkColumn.name}_${this.typeClass.name}_${relatedType.keys[0].name}`;
-                foreignKeyConstraint.column = fkColumn;
-                foreignKeyConstraint.refColumns = relatedType.keys;
-            }
+            foreignKeyConstraint = {
+                ... foreignKeyConstraint,
+                fkMap: relation.fkMap,
+                name: foreignKeyConstraint.name || `FK_${relation.type.name}_${relation.fkMap.map((r) => `${r.fkColumn.name}_${r.relatedKeyColumn.name}`).join("_")}`
+            };
+            foreignKeyConstraint.fkMap = relation.fkMap;
+            relation.foreignKeyConstraint = foreignKeyConstraint;
+            // if (relation.fkMap.length === 1) {
+            //     const { fkColumn } = relation.fkMap[0];
+            //     foreignKeyConstraint = { ... foreignKeyConstraint};
+            //     relation.foreignKeyConstraint = foreignKeyConstraint;
+            //     foreignKeyConstraint.name ||= `FK_${this.name}_${fkColumn.name}`;
+            //     foreignKeyConstraint.column = fkColumn;
+            //     foreignKeyConstraint.refColumns = relatedType.keys;
+            // }
         }
         return relation;
     }

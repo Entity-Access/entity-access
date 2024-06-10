@@ -172,9 +172,9 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const driver = context.connection;
 
         let text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
-            foreign key (${constraint.column.columnName})
-            references ${constraint.refColumns[0].entityType.name}(
-                ${constraint.refColumns.map((x) => x.columnName).join(",")}
+            foreign key (${constraint.fkMap.map((x) => x.fkColumn.columnName).join(",")})
+            references ${constraint.fkMap[0].relatedKeyColumn.entityType.name}(
+                ${constraint.fkMap.map((x) => x.relatedKeyColumn.columnName).join(",")}
             ) `;
 
         switch(constraint.cascade) {
