@@ -315,7 +315,7 @@ export default class ChangeEntry<T = any> implements IChanges {
                     this.order++;
 
                     for (const d of this.dependents) {
-                        d.order++;
+                        d.order += this.order + 1;
                     }
 
                     if (!fkColumn.columnName) {
@@ -331,42 +331,12 @@ export default class ChangeEntry<T = any> implements IChanges {
                 continue;
             }
 
-            // const keyValue = related[rKey.name];
-            // if (keyValue === void 0) {
-
-            //     if(relatedChanges.dependents.has(this)) {
-            //         continue;
-            //     }
-            //     relatedChanges.dependents.add(this);
-
-            //     this.order++;
-
-            //     for (const d of this.dependents) {
-            //         d.order++;
-            //     }
-
-            //     const fk = iterator;
-            //     if (!fk.fkMap?.length) {
-            //         throw new EntityAccessError(`Configuration error, fk not set for ${fk.name}`);
-            //     }
-            //     relatedChanges.pending.push(() => {
-            //         for (const { fkColumn, relatedKeyColumn } of fk.fkMap) {
-            //             this.entity[fkColumn.name] = related[relatedKeyColumn.name];
-            //         }
-            //         // this.entity[fk.fkColumn.name] = related[rKey.name];
-            //     });
-            //     if (this.status !== "inserted") {
-            //         for (const { fkColumn } of fk.fkMap) {
-            //             this.modified.set(iterator, { column: fkColumn, oldValue: void 0, newValue: void 0});
-            //         }
-            //         // this.modified.set(iterator, { column: iterator.fkColumn, oldValue: void 0, newValue: void 0});
-            //     }
-            //     continue;
-            // }
-
             if(!relatedChanges.dependents.has(this)) {
                 relatedChanges.dependents.add(this);
-                this.order += relatedChanges.order;
+                this.order += relatedChanges.order + 1;
+                for (const d of this.dependents) {
+                    d.order += this.order + 1;
+                }
             }
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
                 this.entity[fkColumn.name] = related[relatedKeyColumn.name];
