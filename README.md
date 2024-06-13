@@ -213,14 +213,22 @@ class OrderItem {
     */
     @RelateTo(Product, {
         property: (orderItem) => orderItem.product,
-        inverseProperty: (product) => product.orderItems
+        inverseProperty: (product) => product.orderItems,
+        foreignKeyContraint: {
+                name: "FK_OrderItems_ProductID",
+                cascade: "restrict"
+        }
     })
     productID: number;
 
     @Column({})
     @RelateTo(Order, {
         property: (orderItem) => orderItem.order,
-        inverseProperty: (order) => order.orderItems
+        inverseProperty: (order) => order.orderItems,
+        foreignKeyContraint: {
+                name: "FK_OrderItems_OrderID",
+                cascade: "delete"
+        }
     })
     orderID: number;
 
@@ -397,14 +405,18 @@ is loadded in the memory.
 
 ```typescript
     const past365 = DateTime.now.addYears(-1);
+
     using tx = await db.connection.createTransaction();
+
     const oldMessagesQuery = db.messages
         .where({ past365 }, (p) =>
             (x) => x.dateCreated < p.past365 );
 
     oldMessagesQuery.insertInto(db.archivedMessages);
 
-    oldMessagesQuery.delete(void 0, (p) => (x) => true)
+    oldMessagesQuery.delete(void 0, (p) => (x) => true);
+
+    await tx.commit();
 
 ```
 
