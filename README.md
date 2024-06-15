@@ -48,7 +48,6 @@ db.orders.add({
 // save all in single transaction
 await db.saveChanges();
 
-
 const existingOrderItem1: OrderItem;
 const existingOrderItem2: OrderItem;
 
@@ -281,6 +280,37 @@ using helper functions to convert before comparison.
 
 ```
 > SQL Server does not recognize boolean field as a true/false, so to make your query compatible, you must use `(x) => x.isActive === true` to make it work correctly in sql server.
+
+#### IN
+
+To use `IN` operator, you can simply use javascript's `in` keyword.
+```typescript
+let all = await db.products.where(void 0, (p) => (x) =>
+        x.productType in ["mobile", "laptop"]
+    ).toArray();
+```
+
+Above query will result in following expression.
+
+```sql
+SELECT ... FROM products as p1 WHERE p1.productType in ('mobile', 'laptop')
+```
+
+However, you can also send `in` parameters as parameters as shown below.
+
+```typescript
+const productTypes = ["mobile", "laptop"];
+all = await db.products.where({ productTypes }, (p) => (x) =>
+        x.productType in p.productTypes
+    ).toArray();
+```
+
+Above query will result in following expression.
+
+```sql
+SELECT ... FROM products as p1 WHERE p1.productType in ($1, $2)
+```
+
 
 #### Like
 
