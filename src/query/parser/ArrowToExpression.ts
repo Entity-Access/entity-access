@@ -199,6 +199,9 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             case "===":
                 operator = "=";
                 break;
+            case "in":
+                operator = "in";
+                break;
             default:
                 throw new NotSupportedError(`Operator ${operator}`);
         }

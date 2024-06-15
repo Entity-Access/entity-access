@@ -11,6 +11,12 @@ export default function () {
     let r = compiler.execute({ names }, (p) => (x) => Sql.in(x.firstName, p.names));
     assert.equal("x.firstName IN ($1,$2)", r.text);
 
+    r = compiler.execute({ names }, (p) => (x) => x.firstName in p.names);
+    assert.equal("x.firstName IN ($1,$2)", r.text);
+
+    r = compiler.execute({ names }, (p) => (x) => x.firstName in ["a", "b"]);
+    assert.equal("x.firstName IN ('a','b')", r.text);
+
     // r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
 
     r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));

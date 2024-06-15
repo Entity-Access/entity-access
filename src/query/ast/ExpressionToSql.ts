@@ -4,8 +4,8 @@ import EntityType, { IEntityProperty } from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { FilteredExpression, filteredSymbol } from "../../model/events/FilteredExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement, NotExpression } from "./Expressions.js";
-import { ITextQuery, QueryParameter, prepare, prepareJoin } from "./IStringTransformer.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement, NotExpression, ArrayExpression } from "./Expressions.js";
+import { ITextQuery, QueryParameter, joinMap, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
 
@@ -414,6 +414,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const left = e.left.type === "BinaryExpression"
             ? prepare `(${this.visit(e.left)})`
             : this.visit(e.left);
+
+        if (operator === "in") {
+            operator = "IN";
+            if (e.right.type === "ArrayExpression") {
+                const ae = e.right as ArrayExpression;
+                const rightExpressions = this.visitArray(ae.elements, ",");
+                return prepare `${left} IN (${rightExpressions})`;
+            }
+            const rightExpression = this.visit(e.right);
+            return prepare `${left} IN (${(x)=> joinMap(",", x, rightExpression) })`;
+        }
+
         const right = e.right.type === "BinaryExpression"
             ? prepare `(${this.visit(e.right)})`
             : this.visit(e.right);
