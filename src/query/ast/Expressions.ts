@@ -110,7 +110,7 @@ export abstract class Expression {
             get() {
                 return DebugStringVisitor.expressionToString(this);
             },
-            enumerable: true,
+            // enumerable: true,
             configurable: true
         });
         return p as T;

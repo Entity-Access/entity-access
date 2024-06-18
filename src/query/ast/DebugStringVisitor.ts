@@ -1,4 +1,4 @@
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 const isBinary = (type) => /^(BinaryExpression|CoalesceExpression)$/.test(type);
@@ -12,6 +12,10 @@ export default class DebugStringVisitor extends Visitor<string> {
 
     visitArrowFunctionExpression(e: ArrowFunctionExpression) {
         return `(${this.visitArray(e.params)}) => ${this.visit(e.body)}`;
+    }
+
+    visitArrayExpression(e: ArrayExpression): string {
+        return `[${e.elements.map((x) => this.visit(x)).join(",")}]`;
     }
 
     visitBigIntLiteral(e: BigIntLiteral): string {
