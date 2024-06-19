@@ -49,6 +49,7 @@ export default class TestRunner {
             user: "postgres",
             password: "abcd123",
             port: postGresPort,
+            ssl: null
             // deleteDatabase: async (driver) => [driver.config.database = "postgres", await driver.executeQuery(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`)]
         });
 

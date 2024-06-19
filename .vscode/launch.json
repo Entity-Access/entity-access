@@ -13,6 +13,7 @@
             ],
             "program": "${workspaceFolder}/test.js",
             "args": [
+                "--test-only-postgres"
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
