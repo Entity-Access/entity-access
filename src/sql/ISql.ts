@@ -90,6 +90,7 @@ export interface ISql {
         addHours(d: Date|DateTime, n: number): Date;
         addMinutes(d: Date|DateTime, n: number): Date;
         addSeconds(d: Date|DateTime, n: number): Date;
+        epoch(d: DateTime);
     }
 
 }

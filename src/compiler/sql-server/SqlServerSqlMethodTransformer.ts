@@ -86,6 +86,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         yearOf(d) {
             return prepareAny `DATE_PART(year, ${d})`;
         },
+        epoch(d) {
+            return prepareAny `DATEDIFF(ss, '1970-01-01 00:00:00', ${d}))`;
+        },
     },
     math: {
         min(...p) {

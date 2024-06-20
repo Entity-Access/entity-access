@@ -96,6 +96,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         yearOf(d) {
             return prepareAny `DATE_PART('year', ${d})`;
         },
+        epoch(d) {
+            return prepareAny `EXTRACT(EPOCH FROM ${d})`;
+        },
     },
     text: {
         collate(text, collation) {
