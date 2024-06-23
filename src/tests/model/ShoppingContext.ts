@@ -8,6 +8,7 @@ import { UserFile } from "./UseFile.js";
 import Sql from "../../sql/Sql.js";
 import MultiForeignKeys from "../../decorators/ForeignKey.js";
 import CheckConstraint from "../../decorators/CheckConstraint.js";
+import Trigger from "../../decorators/Trigger.js";
 
 export const statusPublished = "published";
 
@@ -98,6 +99,19 @@ export class EmailAddress {
 }
 
 @Table("Categories")
+@Trigger<ShoppingContext, Category>({
+    name: "Category_Insert_Trigger",
+    afterInsert(inserted) {
+        void this.categories
+            .where(inserted, (p) => (x) => x.categoryID === p.categoryID
+                && x.parentID !== null
+                && x.path !== `${x.parent.path}/${x.categoryID}` /** Extremly important to prevent recursion */
+            )
+            .update(inserted, (p) => (x) => ({
+                path: `${x.parent.path}/${x.categoryID}`
+            }));
+    }
+})
 export class Category {
 
     @Column({ key: true, dataType: "Char", length: 200 })
@@ -124,6 +138,9 @@ export class Category {
         computed: (x) => x.parentID === null ? null : Sql.text.concatImmutable(Sql.cast.asText(x.parentID), '/', Sql.text.lower(x.name))
     })
     public path: string;
+
+    @Column({ dataType: "Int", default: () => 0})
+    public count: number;
 
     public productCategories: ProductCategory[];
 
@@ -261,6 +278,15 @@ export class Product {
 
 
 @Table("ProductCategories")
+@Trigger<ShoppingContext, ProductCategory>({
+    name: "Trigger_After_Product_Inserted",
+    afterInsert(inserted) {
+        void this.categories.where(inserted, (p) => (x) => x.categoryID === p.categoryID)
+            .update(inserted, (p) => (x) => ({
+                count: Sql.coll.count(x.productCategories)
+            }));
+    },
+})
 export class ProductCategory {
 
     @Column({ key: true, dataType: "BigInt", generated: "identity" })
