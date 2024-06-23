@@ -15,6 +15,12 @@ interface IPropertyChain {
     chain: string[]
 }
 
+interface IPropertyMethods {
+    identifier?: Identifier;
+    parameter?: ParameterExpression;
+    
+}
+
 export interface IMappingModel {
     parameter: ParameterExpression;
     model?: EntityType;
@@ -162,6 +168,27 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         // .some alias .any
         // .find alias .firstOrDefault
 
+        let filter: CallExpression;
+
+        // if (e.callee.type === "MemberExpression") {
+        //     const me = e.callee as MemberExpression;
+        //     if (me.target.type === "CallExpression") {
+        //         // nested...
+        //         const ce = me.target as CallExpression;
+        //         const cme = ce.callee as MemberExpression;
+        //         if(cme.property.type !== "Identifier") {
+        //             throw new EntityAccessError("Invalid expression");
+        //         }
+        //         const property = cme.property as Identifier;
+        //         if(property.value !== "filter") {
+        //             throw new EntityAccessError("Invalid expression");
+        //         }
+
+        //         filter = e;
+        //         e = cme.target as CallExpression;
+        //     }
+        // }
+
         const targetProperty = this.getPropertyChain(e.callee as ExpressionType);
         if (targetProperty) {
             const { parameter , identifier, chain } = targetProperty;
@@ -183,12 +210,25 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                         }
                         if (/^(map|select)$/.test(chain[1])) {
                             const select = this.expandCollection(relation, e, parameter, targetType);
+                            const p1 = body.params[0];
+                            this.scope.alias(select.sourceParameter, p1, select);
                             if (body.body.type === "NewObjectExpression") {
                                 const noe = body.body as NewObjectExpression;
-                                const p1 = body.params[0];
-                                this.scope.alias(select.sourceParameter, p1, select);
                                 const fields = noe.properties as ExpressionAs[];
-                                return this.visit({ ... select, fields } as SelectStatement);
+
+                                let where = select.where;
+
+                                if (filter) {
+                                    const filterArrow = filter.arguments[0] as ArrowFunctionExpression;
+                                    this.scope.alias(select.sourceParameter, filterArrow.params[0], select);
+                                    if (where) {
+                                        where = Expression.logicalAnd(where, filterArrow.body);
+                                    } else {
+                                        where = filterArrow.body;
+                                    }
+                                }
+
+                                return this.visit({ ... select, where, fields } as SelectStatement);
                             }
                             return this.visit({ ... select, fields: [body.body] } as SelectStatement);
                         }
@@ -233,7 +273,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         let where = select.where;
 
-        for (const { fkColumn, relatedKeyColumn } of relation.relation.fkMap) {
+        for (const { fkColumn, relatedKeyColumn } of relation.relation.relatedRelation.fkMap) {
             const targetKey = MemberExpression.create({
                 target: parameter,
                 property: Identifier.create({
@@ -821,6 +861,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 const me = x as MemberExpression;
                 x = me.target;
                 chain.unshift((me.property as Identifier).value);
+            }
+            if (x.type === "CallExpression") {
+                throw new EntityAccessError("Invalid call expression");
             }
         }
 

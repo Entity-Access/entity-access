@@ -215,6 +215,8 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
         // we need to sanitize callee
         this.sanitize(callee);
 
+        // change Sql.coll. with arrow functions to move it inside
+
         return CallExpression.create({
             callee: callee ? this.visit(callee) : void 0,
             arguments: args ? args.map((x) => this.visit(x)) : []
@@ -300,6 +302,11 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 const scopedName = this.targetStack.get(name);
                 if (scopedName === null || scopedName === void 0) {
                     throw new Error(`Unknown identifier ${name}`);
+                }
+                return;
+            case "CallExpression":
+                for (const iterator of node.arguments) {
+                    this.visit(iterator as bpe.Expression);
                 }
                 return;
             case "MemberExpression":

@@ -13,7 +13,7 @@ export const PostgreSqlHelper: ISqlHelpers = {
     },
     coll: {
         sum(a) {
-            return prepareAny `COALESCE(SUM(${a}), 0.0)`;
+            return prepareAny `COALESCE(SUM((${a})), 0.0)`;
         },
         count(a) {
             return prepareAny `COUNT(${a})`;

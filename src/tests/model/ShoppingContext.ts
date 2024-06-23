@@ -342,6 +342,9 @@ export class Order {
     @Column({ dataType: "Char", length: 200, nullable: true})
     public purchaseOrder: string;
 
+    @Column({ dataType: "Char", length: 20, default: () => "pending"})
+    public status: string;
+
     public orderItems: OrderItem[];
 
     public customer: User;
