@@ -12,6 +12,14 @@ export default async function(this: TestConfig) {
     const context = await createContext(this.driver);
 
     let report;
+
+    // const user = await context.users.all()
+    // .where({}, (p) => (x) => x.orders.some((oi) => oi.customerID  > 0))
+    // .trace(console.log)
+    // .first();
+
+    // assert.notEqual(null, user);
+
     // report  = await context.users.all()
     //     .where({}, (p) => (x) => x.orders.some((oi) => oi.customerID  > 0))
     //     .map({}, (p) => (x) => ({

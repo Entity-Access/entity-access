@@ -172,6 +172,7 @@ class SqlReader implements IDbReader {
     private count: number = 0;
     private ended = false;
     private processPendingRows: (... a: any[]) => any;
+    private errorHandler: (e: any) => any;
 
     constructor(
         private rq: sql.Request,
@@ -194,7 +195,8 @@ class SqlReader implements IDbReader {
 
         rq.on("error", (e) => {
             this.error = new Error(`Failed executing ${command.text}\r\n${e.stack ?? e}`);
-            this.processPendingRows();
+            this.errorHandler?.(this.error);
+            // this.processPendingRows();
         });
 
         rq.on("done", () => {
@@ -215,6 +217,7 @@ class SqlReader implements IDbReader {
             }
             await new Promise<any>((resolve, reject) => {
                 this.processPendingRows = resolve;
+                this.errorHandler = reject;
             });
         }  while(true);
     }

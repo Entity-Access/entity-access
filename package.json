@@ -7,6 +7,7 @@
     "test-plain": "node --enable-source-maps ./test.js no-db",
     "test": "node --enable-source-maps ./test.js",
     "test-postgres": "node --enable-source-maps ./test.js --test-only-postgres",
+    "test-sql": "node --enable-source-maps ./test.js --test-only-sql-server",
     "postversion": "git push --follow-tags"
   },
   "type": "module",

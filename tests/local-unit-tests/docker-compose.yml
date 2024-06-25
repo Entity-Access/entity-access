@@ -1,0 +1,32 @@
+version: '3.4'
+name: local-pg-test
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sql-server
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=$$EntityAccess2023
+      - MSSQL_PID=Express
+    ports:
+      - 1433:1433
+  postgresdb:
+    image: postgres:alpine
+    container_name: pg-test
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=abcd123
+    ports:
+      - 5432:5432
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pg-admin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_DEFAULT_EMAIL=x@x.com
+      - PGADMIN_DEFAULT_PASSWORD=x
+      - PGADMIN_DISABLE_POSTFIX=True
+    ports:
+      - 9999:80
+
