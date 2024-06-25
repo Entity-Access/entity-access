@@ -214,6 +214,11 @@ export class CallExpression extends Expression {
     arguments: Expression[];
 }
 
+export class BracketExpression extends Expression {
+    readonly type = "BracketExpression";
+    target: Expression;
+}
+
 export class ParameterExpression extends Expression {
     readonly type = "ParameterExpression";
     name: string;
@@ -239,6 +244,7 @@ export class MemberExpression extends Expression {
     target: Expression;
     property: Expression;
     computed: boolean;
+    isCollectionMethod: boolean;
 }
 
 export class ArrowFunctionExpression extends Expression {
@@ -477,5 +483,6 @@ export type ExpressionType =
     NotExits |
     UnionAllStatement |
     NotExpression |
+    BracketExpression |
     TemplateElement
 ;

@@ -4,7 +4,7 @@ import EntityType, { IEntityProperty } from "../../entity-query/EntityType.js";
 import EntityQuery from "../../model/EntityQuery.js";
 import { FilteredExpression, filteredSymbol } from "../../model/events/FilteredExpression.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement, NotExpression, ArrayExpression } from "./Expressions.js";
+import { ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement, NotExpression, ArrayExpression, BracketExpression } from "./Expressions.js";
 import { ITextQuery, QueryParameter, joinMap, prepare, prepareJoin } from "./IStringTransformer.js";
 import ParameterScope from "./ParameterScope.js";
 import Visitor from "./Visitor.js";
@@ -12,7 +12,7 @@ import Visitor from "./Visitor.js";
 interface IPropertyChain {
     identifier?: Identifier,
     parameter?: ParameterExpression,
-    chain: { member: string, args?: Expression[] }[]
+    chain: { member: string, args?: Expression[], isCollectionMethod?: boolean }[]
 }
 
 interface IPropertyMethods {
@@ -163,6 +163,10 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         return prepare `CONCAT(${args})`;
     }
 
+    visitBracketExpression(e: BracketExpression): ITextQuery {
+        return prepare `(${this.visit(e.target)})`;
+    }
+
     visitCallExpression(e: CallExpression): ITextQuery {
         // let us check if we are using any of array extension methods...
         // .some alias .any
@@ -209,33 +213,45 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                         if (/^(some|any)$/.test(lastMethod.member)) {
                             return this.visit(exists);
                         }
-                        if (/^(map|select)$/.test(lastMethod.member)) {
+                        if (/^(map|select)$/.test(lastMethod.member) || lastMethod.isCollectionMethod ) {
                             const select = this.expandCollection(relation, e, parameter, targetType);
                             const p1 = body.params[0];
                             this.scope.alias(select.sourceParameter, p1, select);
 
                             let where = select.where;
 
-                                while(methods.length) {
-                                    const last = methods.pop();
-                                    if (last.member !== "filter") {
-                                        throw new EntityAccessError(`Invalid method ${last.member}`);
-                                    }
-                                    const filterArrow = last.args[0] as ArrowFunctionExpression;
-                                    this.scope.alias(select.sourceParameter, filterArrow.params[0], select);
-                                    if (where) {
-                                        where = Expression.logicalAnd(where, filterArrow.body);
-                                    } else {
-                                        where = filterArrow.body;
-                                    }
+                            while(methods.length) {
+                                const last = methods.pop();
+                                if (last.member !== "filter") {
+                                    throw new EntityAccessError(`Invalid method ${last.member}`);
                                 }
+                                const filterArrow = last.args[0] as ArrowFunctionExpression;
+                                this.scope.alias(select.sourceParameter, filterArrow.params[0], select);
+                                if (where) {
+                                    where = Expression.logicalAnd(where, filterArrow.body);
+                                } else {
+                                    where = filterArrow.body;
+                                }
+                            }
 
                             if (body.body.type === "NewObjectExpression") {
                                 const noe = body.body as NewObjectExpression;
                                 const fields = noe.properties as ExpressionAs[];
                                 return this.visit({ ... select, where, fields } as SelectStatement);
                             }
-                            return this.visit({ ... select, where, fields: [body.body] } as SelectStatement);
+
+                            if (lastMethod.isCollectionMethod) {
+                                return this.visit({ ... select, where, fields: [
+                                        CallExpression.create({
+                                            callee: Expression.member(Expression.member(Expression.identifier("Sql"), "coll"), lastMethod.member),
+                                            arguments: [body.body]
+                                        })
+                                    ] } as SelectStatement);
+                                }
+
+                            return this.visit({ ... select, where, fields: [
+                                body.body
+                            ] } as SelectStatement);
                         }
                     }
 
@@ -854,7 +870,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             x = resolved;
         }
 
-        const chain = [] as { member: string, args?: Expression[]}[];
+        const chain = [] as { member: string, args?: Expression[], isCollectionMethod?: boolean}[];
         while (x) {
             if (x.type === "ParameterExpression") {
                 return { parameter: x as ParameterExpression, chain };
@@ -865,7 +881,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             if (x.type === "MemberExpression") {
                 const me = x as MemberExpression;
                 x = me.target;
-                chain.unshift({ member: (me.property as Identifier).value });
+                chain.unshift({ member: (me.property as Identifier).value , isCollectionMethod: me.isCollectionMethod });
                 continue;
             }
             if (x.type === "CallExpression") {

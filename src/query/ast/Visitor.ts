@@ -1,5 +1,5 @@
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement, NotExpression } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement, NotExpression, BracketExpression } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -75,9 +75,14 @@ export default abstract class Visitor<T = any> {
                 return this.visitUpsertStatement(e);
             case "NotExpression":
                 return this.visitNotExpression(e);
+            case "BracketExpression":
+                return this.visitBracketExpression(e);
         }
         const c: never = e;
         throw new Error(`${e1.type} Not implemented`);
+    }
+    visitBracketExpression(e: BracketExpression): T {
+        throw new Error("Method not implemented.");
     }
     visitNotExpression(e: NotExpression): T {
         throw new Error("Method not implemented.");

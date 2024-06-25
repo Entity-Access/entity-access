@@ -11,13 +11,13 @@ export const SqlServerSqlHelper: ISqlHelpers = {
     },
     coll: {
         sum(a) {
-            return prepareAny `COALESCE(SUM((${a})), 0.0)`;
+            return prepareAny `SUM(${a})`;
         },
         count(a) {
             return prepareAny `COUNT(${a})`;
         },
         avg(a) {
-            return prepareAny `COALESCE(AVG((${a}), 0.0)`;
+            return prepareAny `AVG(${a})`;
         },
     },
     cast: {

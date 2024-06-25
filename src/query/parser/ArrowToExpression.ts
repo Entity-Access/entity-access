@@ -1,5 +1,5 @@
 import { parseExpression } from "@babel/parser";
-import { ArrowFunctionExpression, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NotExpression, NullExpression, NumberLiteral, ParameterExpression, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, BinaryExpression, BooleanLiteral, BracketExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NotExpression, NullExpression, NumberLiteral, ParameterExpression, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import Restructure from "./Restructure.js";
@@ -217,10 +217,74 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
         // change Sql.coll. with arrow functions to move it inside
 
-        return CallExpression.create({
+        const ce = CallExpression.create({
             callee: callee ? this.visit(callee) : void 0,
             arguments: args ? args.map((x) => this.visit(x)) : []
         });
+
+        // for Sql.Coll. , change it to coalesce
+        // and move Sql.Coll. inside the first map..
+        return this.reAssignCollectionMethods(ce);
+    }
+
+    /**
+     * We need to change Sql.coll.sum(p.orders.map((o) => o.total)
+     * to
+     * p.orders.sum((o) => o.total) ?? 0
+     * @param ce
+     * @returns
+     */
+    reAssignCollectionMethods(ce: CallExpression) {
+
+        if (ce.callee.type !== "MemberExpression") {
+            return ce;
+        }
+
+        const firstArg = ce.arguments[0] as CallExpression;
+        if (firstArg?.type !== "CallExpression") {
+            return ce;
+        }
+
+        const mapCallee = firstArg.callee as MemberExpression;
+        if (mapCallee?.type !== "MemberExpression") {
+            return ce;
+        }
+
+        const me = ce.callee as MemberExpression;
+        const method = (me.property as Identifier).value;
+
+        if (me.type !== "MemberExpression") {
+            return ce;
+        }
+
+        if(me.target.type !== "MemberExpression") {
+            return ce;
+        }
+
+        const collMember = me.target as MemberExpression;
+        if((collMember.property as Identifier).value !== "coll") {
+            return ce;
+        }
+
+        if((collMember.target as Identifier)?.value !== "Sql") {
+            return ce;
+        }
+
+        const left = CallExpression.create({
+            callee: MemberExpression.create({
+                target: mapCallee.target,
+                property: Expression.identifier(method),
+                isCollectionMethod: true
+            }),
+            arguments: firstArg.arguments
+        });
+
+        // move it inside...
+        const rewritten = CoalesceExpression.create({
+            left: BracketExpression.create({ target: left }) ,
+            right: NumberLiteral.zero
+        });
+        return rewritten;
     }
 
     visitIdentifier({ name: value }: bpe.Identifier): Expression {
