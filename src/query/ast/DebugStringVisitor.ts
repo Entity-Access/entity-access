@@ -1,4 +1,4 @@
-import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, BracketExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 const isBinary = (type) => /^(BinaryExpression|CoalesceExpression)$/.test(type);
@@ -56,6 +56,10 @@ export default class DebugStringVisitor extends Visitor<string> {
 
     visitConstant(e: Constant): string {
         return `"Constant:${e.value}"`;
+    }
+
+    visitBracketExpression(e: BracketExpression): string {
+        return `(${this.visit(e.target)})`;
     }
 
     visitExpressionAs(e: ExpressionAs): string {

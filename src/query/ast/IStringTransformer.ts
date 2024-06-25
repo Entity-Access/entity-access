@@ -5,7 +5,7 @@ export type ITextQuery = ITextQueryFragment[];
 
 export type IStringTransformer = (s: string) => string;
 
-export type ISqlMethodTransformer = (compiler: QueryCompiler, callee: string[], args: string[]) => string;
+export type ISqlMethodTransformer = (compiler: QueryCompiler, method: string, args: string[]) => string;
 
 export class QueryParameter {
 

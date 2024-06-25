@@ -240,34 +240,49 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             return ce;
         }
 
+        let callee = ce.callee as MemberExpression;
+        const name = [];
+        while(callee) {
+            name.splice(0, 0, (callee.property as Identifier)?.value);
+            const target = callee.target;
+            switch(target.type) {
+                case "MemberExpression":
+                    callee = target as MemberExpression;
+                    continue;
+                case "Identifier":
+                    name.splice(0, 0, (target as Identifier).value);
+                    callee = null;
+                    break;
+                default:
+                    return ce;
+            }
+        }
+
+        if (name[0] !== "Sql") {
+            return ce;
+        }
+
+        const method = name[2];
+
+        const reWrittenCe = CallExpression.create({
+            callee: Expression.identifier(name.join(".")),
+            arguments: ce.arguments
+        });
+
+
+        if (name[1] !== "coll") {
+            // rewrite...
+            return reWrittenCe;
+        }
+
         const firstArg = ce.arguments[0] as CallExpression;
         if (firstArg?.type !== "CallExpression") {
-            return ce;
+            return reWrittenCe;
         }
 
         const mapCallee = firstArg.callee as MemberExpression;
         if (mapCallee?.type !== "MemberExpression") {
-            return ce;
-        }
-
-        const me = ce.callee as MemberExpression;
-        const method = (me.property as Identifier).value;
-
-        if (me.type !== "MemberExpression") {
-            return ce;
-        }
-
-        if(me.target.type !== "MemberExpression") {
-            return ce;
-        }
-
-        const collMember = me.target as MemberExpression;
-        if((collMember.property as Identifier).value !== "coll") {
-            return ce;
-        }
-
-        if((collMember.target as Identifier)?.value !== "Sql") {
-            return ce;
+            return reWrittenCe;
         }
 
         const left = CallExpression.create({

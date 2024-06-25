@@ -1,7 +1,7 @@
 import { joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import Sql from "../../sql/Sql.js";
-import { ISqlHelpers } from "../ISqlHelpers.js";
+import { ISqlHelpers, flattenMethods } from "../ISqlHelpers.js";
 import type QueryCompiler from "../QueryCompiler.js";
 
 const onlyAlphaNumeric = (x: string) => x.replace(/\W/g, "");
@@ -204,18 +204,20 @@ export const PostgreSqlHelper: ISqlHelpers = {
     }
 };
 
-export default function PostgreSqlMethodTransformer(compiler: QueryCompiler, callee: string[], args: any[]): string {
+export const PostgreSqlMethodTransformer = flattenMethods(PostgreSqlHelper);
 
-    let start = PostgreSqlHelper;
-    for (const iterator of callee) {
-        start = start[iterator];
-        if (!start) {
-            return;
-        }
-    }
-    if (!start) {
-        return;
-    }
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    return (start as unknown as Function).apply(compiler, args);
-}
+// export default function PostgreSqlMethodTransformer(compiler: QueryCompiler, method: string, args: any[]): string {
+
+//     let start = PostgreSqlHelper;
+//     for (const iterator of callee) {
+//         start = start[iterator];
+//         if (!start) {
+//             return;
+//         }
+//     }
+//     if (!start) {
+//         return;
+//     }
+//     // eslint-disable-next-line @typescript-eslint/ban-types
+//     return (start as unknown as Function).apply(compiler, args);
+// }

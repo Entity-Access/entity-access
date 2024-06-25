@@ -243,7 +243,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             if (lastMethod.isCollectionMethod) {
                                 return this.visit({ ... select, where, fields: [
                                         CallExpression.create({
-                                            callee: Expression.member(Expression.member(Expression.identifier("Sql"), "coll"), lastMethod.member),
+                                            callee: Expression.identifier("Sql.coll." + lastMethod.member),
                                             arguments: [body.body]
                                         })
                                     ] } as SelectStatement);
@@ -259,9 +259,11 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 }
             }
 
-            if (identifier?.value === "Sql") {
+            const identifierValue = identifier?.value;
+
+            if (identifierValue?.startsWith("Sql")) {
                 const argList = e.arguments?.map((x) => this.visit(x)) ?? [];
-                const transformedCallee = this.compiler.sqlMethodTransformer(this.compiler, chain.map((x) => x.member), argList.map((al) => al.flat(2)) as any[]);
+                const transformedCallee = this.compiler.sqlMethodTransformer(this.compiler, identifierValue, argList.map((al) => al.flat(2)) as any[]);
                 if (transformedCallee) {
                     return prepare `${transformedCallee}`;
                 }

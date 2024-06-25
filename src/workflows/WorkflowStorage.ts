@@ -274,9 +274,9 @@ export default class WorkflowStorage {
                     Expression.assign(
                         Expression.identifier(lockTTLField),
                         CallExpression.create({
-                            callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "addMinutes"),
+                            callee: Expression.identifier("Sql.date.addMinutes"),
                             arguments: [CallExpression.create({
-                                callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "now")
+                                callee: Expression.identifier("Sql.date.now")
                             }),
                             NumberLiteral.create({ value: 15 })
                         ]
@@ -294,7 +294,7 @@ export default class WorkflowStorage {
                     Expression.lessOrEqual(
                         Expression.identifier(lockTTLField),
                         CallExpression.create({
-                            callee: Expression.member(Expression.member(Expression.identifier("Sql"), "date"), "now")
+                            callee: Expression.identifier("Sql.date.now")
                         })
                     )
                 ))

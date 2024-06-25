@@ -3,7 +3,7 @@ import { ISqlMethodTransformer, IStringTransformer, ITextQuery } from "../query/
 import { Expression, ParameterExpression, SelectStatement } from "../query/ast/Expressions.js";
 import SqlLiteral from "../query/ast/SqlLiteral.js";
 import ArrowToExpression from "../query/parser/ArrowToExpression.js";
-import PostgreSqlMethodTransformer from "./postgres/PostgreSqlMethodTransformer.js";
+import { PostgreSqlMethodTransformer } from "./postgres/PostgreSqlMethodTransformer.js";
 import EntityQuery from "../model/EntityQuery.js";
 import { NamingConventions } from "./NamingConventions.js";
 import RawQuery from "./RawQuery.js";

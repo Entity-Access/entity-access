@@ -1,7 +1,7 @@
 
 import { joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import Sql from "../../sql/Sql.js";
-import { ISqlHelpers } from "../ISqlHelpers.js";
+import { ISqlHelpers, flattenMethods } from "../ISqlHelpers.js";
 import type QueryCompiler from "../QueryCompiler.js";
 
 export const SqlServerSqlHelper: ISqlHelpers = {
@@ -207,18 +207,20 @@ export const SqlServerSqlHelper: ISqlHelpers = {
     }
 };
 
-export default function SqlServerSqlMethodTransformer(compiler: QueryCompiler, callee: string[], args: any[]): string {
+export const SqlServerSqlMethodTransformer = flattenMethods(SqlServerSqlHelper);
 
-    let start = SqlServerSqlHelper;
-    for (const iterator of callee) {
-        start = start[iterator];
-        if (!start) {
-            return;
-        }
-    }
-    if (!start) {
-        return;
-    }
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    return (start as unknown as Function).apply(compiler, args);
-}
+// export default function SqlServerSqlMethodTransformer(compiler: QueryCompiler, method: string, args: any[]): string {
+
+//     let start = SqlServerSqlHelper;
+//     for (const iterator of callee) {
+//         start = start[iterator];
+//         if (!start) {
+//             return;
+//         }
+//     }
+//     if (!start) {
+//         return;
+//     }
+//     // eslint-disable-next-line @typescript-eslint/ban-types
+//     return (start as unknown as Function).apply(compiler, args);
+// }
