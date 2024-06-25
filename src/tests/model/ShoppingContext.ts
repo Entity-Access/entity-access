@@ -345,6 +345,9 @@ export class Order {
     @Column({ dataType: "Char", length: 20, default: () => "pending"})
     public status: string;
 
+    @Column({ dataType: "Decimal", default: () => 0})
+    public total: number;
+
     public orderItems: OrderItem[];
 
     public customer: User;

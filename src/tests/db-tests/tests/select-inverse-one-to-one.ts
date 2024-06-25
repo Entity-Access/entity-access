@@ -19,14 +19,14 @@ export default async function(this: TestConfig) {
 
     // include inverse...
     let all = await context.users.all()
-        .where({} , (p) => (x) => x.profile.photos.some((a) => true) || x.profile.photos.some((a) => true))
+        .where({} , (p) => (x) => x.profile.photos.some((a) => a.photoID > 0) || x.profile.photos.some((a) => a.photoID > 0))
         .include((x) => x.profile.photos)
         .first();
 
     assert.equal(null, all);
 
     all = await context.users.all()
-        .where({} , (p) => (x) => x.files.some((a) => true))
+        .where({} , (p) => (x) => x.files.some((a) => a.fileID > 0))
         .include((x) => x.files)
         .first();
 

@@ -444,7 +444,7 @@ is loadded in the memory.
 
     oldMessagesQuery.insertInto(db.archivedMessages);
 
-    oldMessagesQuery.delete(void 0, (p) => (x) => true);
+    oldMessagesQuery.delete(void 0, (p) => (x) => x.messageID !== null);
 
     await tx.commit();
 
