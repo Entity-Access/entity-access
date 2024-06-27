@@ -893,6 +893,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     throw new EntityAccessError("Invalid call expression");
                 }
                 x = me.target;
+                if (x.type === "MemberExpression") {
+                    x = this.resolveExpression(x) ?? x;
+                }
                 chain.splice(0, 0, { member: (me.property as Identifier).value, args: ce.arguments });
                 continue;
             }
