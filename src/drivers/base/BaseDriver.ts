@@ -54,8 +54,10 @@ export abstract class EntityTransaction {
     private committedOrRolledBack = false;
 
     private disposed = false;
+    private old: EntityTransaction;
 
     constructor(protected conn: BaseConnection) {
+        this.old = conn[currentTransaction];
         conn[currentTransaction] = this;
     }
 
@@ -73,10 +75,19 @@ export abstract class EntityTransaction {
         return this.rollbackTransaction();
     }
 
+    save(id) {
+        return this.saveTransaction(id);
+    }
+
+    rollbackTo(id) {
+        return this.rollbackToTransaction(id);
+    }
+
     async dispose() {
         if (this.disposed) {
             return;
         }
+        this.conn[currentTransaction] = this.old;
         this.disposed = true;
         if(!this.committedOrRolledBack) {
             await this.rollbackTransaction();
@@ -87,6 +98,10 @@ export abstract class EntityTransaction {
     [Symbol.asyncDispose]() {
         return this.dispose();
     }
+
+    protected abstract saveTransaction(id): Promise<void>;
+
+    protected abstract rollbackToTransaction(id): Promise<void>;
 
     protected abstract disposeTransaction(): Promise<void>;
 
@@ -101,6 +116,17 @@ export abstract class EntityTransaction {
 const emptyResolve = Promise.resolve();
 
 class EmptyTransaction extends EntityTransaction {
+
+    constructor(a, private parent: EntityTransaction) {
+        super(a);
+    }
+
+    protected saveTransaction(id: any): Promise<void> {
+        return this.parent?.save(id);
+    }
+    protected rollbackToTransaction(id: any): Promise<void> {
+        return this.parent?.rollbackTo(id);
+    }
 
     protected disposeTransaction() {
         return emptyResolve;
@@ -119,6 +145,10 @@ class EmptyTransaction extends EntityTransaction {
 }
 
 export abstract class BaseConnection {
+
+    public get currentTransaction() {
+        return this[currentTransaction];
+    }
 
     protected compiler: QueryCompiler;
 
@@ -153,11 +183,12 @@ export abstract class BaseConnection {
     public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
 
     public async createTransaction() {
-        if (this[currentTransaction]) {
+        const ctx = this[currentTransaction];
+        if (ctx) {
             // return fake one...
-            return new EmptyTransaction(this);
+            return new EmptyTransaction(this, ctx);
         }
-        const tx = this[currentTransaction] = await this.createDbTransaction();
+        const tx = await this.createDbTransaction();
         await tx.begin();
         return tx;
     }

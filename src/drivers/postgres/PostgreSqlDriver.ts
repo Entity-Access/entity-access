@@ -138,6 +138,13 @@ class PostgresTransaction extends EntityTransaction {
         return this.tx.query("BEGIN") as any;
     }
 
+    protected saveTransaction(id: any) {
+        return this.tx.query(`SAVEPOINT ${id}`) as any;
+    }
+    protected rollbackToTransaction(id: any) {
+        return this.tx.query(`ROLLBACK TO ${id}`) as any;
+    }
+
 }
 
 class PostgreSqlConnection extends BaseConnection {

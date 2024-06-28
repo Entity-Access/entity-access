@@ -47,6 +47,13 @@ class SqlEntityTransaction extends EntityTransaction {
         });
     }
 
+    protected saveTransaction(id: any) {
+        return this.tx.request().query(`SAVE TRANSACTION ${id}`) as any;
+    }
+    protected rollbackToTransaction(id: any): Promise<void> {
+        return this.tx.request().query(`ROLLBACK TRANSACTION ${id}`) as any;
+    }
+
     protected async beginTransaction() {
         this.tx = await this.tx.begin();
     }
@@ -118,7 +125,7 @@ export class SqlServerConnection extends BaseConnection {
             }
             return { rows, updated: r.rowsAffected [0]};
         } catch (error) {
-            error = `Failed executing ${command.text}\r\n${error.stack ?? error}`;
+            error = `Failed executing query ${command.text}\r\n${error.stack ?? error}`;
             console.error(error);
             throw new Error(error);
         }
@@ -198,7 +205,6 @@ class SqlReader implements IDbReader {
     private count: number = 0;
     private ended = false;
     private processPendingRows: (... a: any[]) => any;
-    private errorHandler: (e: any) => any;
 
     constructor(
         private rq: sql.Request,
@@ -221,8 +227,7 @@ class SqlReader implements IDbReader {
 
         rq.on("error", (e) => {
             this.error = new Error(`Failed executing ${command.text}\r\n${e.stack ?? e}`);
-            this.errorHandler?.(this.error);
-            // this.processPendingRows();
+            this.processPendingRows();
         });
 
         rq.on("done", () => {
@@ -230,9 +235,12 @@ class SqlReader implements IDbReader {
             this.processPendingRows();
         });
 
-        void rq.query((command as any).text);
+        await rq.query((command as any).text);
 
         do {
+            if (this.error) {
+                throw this.error;
+            }
             if (this.pending.length > 0){
                 const copy = this.pending;
                 this.pending = [];
@@ -243,7 +251,6 @@ class SqlReader implements IDbReader {
             }
             await new Promise<any>((resolve, reject) => {
                 this.processPendingRows = resolve;
-                this.errorHandler = reject;
             });
         }  while(true);
     }

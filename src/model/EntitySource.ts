@@ -140,6 +140,12 @@ export class EntitySource<T = any> {
         if (!expression) {
             return changes as any;
         }
+        const tx = this.context.connection.currentTransaction;
+        let tid: string;
+        if (tx) {
+            tid = `txp_${Date.now()}`;
+            await tx.save(tid);
+        }
         try {
             const { text, values } = driver.compiler.compileExpression(null, expression);
             const r = await this.context.connection.executeQuery({ text, values });
@@ -156,6 +162,9 @@ export class EntitySource<T = any> {
             return returnEntity;
         } catch (error) {
             if (retry > 0) {
+                if (tid) {
+                    await tx.rollbackTo(tid);
+                }
                 await sleep(300);
                 return await this.saveDirect({ keys, mode, changes, updateAfterSelect } as any, retry -1);
             }
