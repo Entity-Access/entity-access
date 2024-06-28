@@ -235,7 +235,7 @@ class SqlReader implements IDbReader {
             this.processPendingRows();
         });
 
-        await rq.query((command as any).text);
+        void rq.query((command as any).text);
 
         do {
             if (this.error) {
