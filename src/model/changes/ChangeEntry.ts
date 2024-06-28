@@ -305,7 +305,7 @@ export default class ChangeEntry<T = any> implements IChanges {
 
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
                 const keyValue = related[relatedKeyColumn.name];
-                if (keyValue === void 0) {
+                if (keyValue === void 0 || keyValue === null) {
 
                     if(relatedChanges.dependents.has(this)) {
                         continue;
