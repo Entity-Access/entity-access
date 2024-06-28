@@ -3,7 +3,7 @@ import ObjectPool, { IPooledObject } from "../../common/ObjectPool.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
-import { BaseConnection, BaseDriver, EntityTransaction, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
 export interface IPgSqlConnectionString extends IDbConnectionString {
@@ -118,6 +118,28 @@ export default class PostgreSqlDriver extends BaseDriver {
     }
 }
 
+class PostgresTransaction extends EntityTransaction {
+
+    constructor(conn: PostgreSqlConnection, private tx: IPooledObject<pg.Client>) {
+        super(conn);
+    }
+
+    protected disposeTransaction() {
+        (this.conn as any).transaction = null;
+        return this.tx[Symbol.asyncDispose]();
+    }
+    protected commitTransaction() {
+        return this.tx.query("COMMIT") as any;
+    }
+    protected rollbackTransaction() {
+        return this.tx.query("ROLLBACK") as any;
+    }
+    protected beginTransaction() {
+        return this.tx.query("BEGIN") as any;
+    }
+
+}
+
 class PostgreSqlConnection extends BaseConnection {
 
     public get isInTransaction() {
@@ -215,16 +237,8 @@ class PostgreSqlConnection extends BaseConnection {
     }
 
     protected async createDbTransaction(): Promise<EntityTransaction> {
-        const tx = await this.getConnection();
-        await tx.query("BEGIN");
-        return new EntityTransaction({
-            commit: () => tx.query("COMMIT"),
-            rollback: () => tx.query("ROLLBACK"),
-            dispose: () => {
-                this.transaction = null;
-                return tx[Symbol.asyncDispose]();
-            }
-        });
+        const tx = this.transaction = await this.getConnection();
+        return new PostgresTransaction(this, tx);
     }
 
     private async kill(id) {

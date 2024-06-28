@@ -40,14 +40,18 @@ class SqlEntityTransaction extends EntityTransaction {
 
     rolledBack: any;
 
-    constructor(private conn: SqlServerConnection, private tx: sql.Transaction) {
-        super();
+    constructor(conn: SqlServerConnection, private tx: sql.Transaction) {
+        super(conn);
         tx.on("rollback", (aborted) => {
             this.rolledBack = aborted;
         });
     }
 
-    protected dispose(): Promise<void> {
+    protected async beginTransaction() {
+        this.tx = await this.tx.begin();
+    }
+
+    protected disposeTransaction(): Promise<void> {
         (this.conn as any).transaction = null;
         return emptyResolve;
     }
@@ -148,11 +152,8 @@ export class SqlServerConnection extends BaseConnection {
     }
 
     protected async createDbTransaction(): Promise<EntityTransaction> {
-        this.transaction = new sql.Transaction(await this.newConnection());
-        // let rolledBack = false;
-        // this.transaction.on("rollback", (aborted) => rolledBack = aborted);
-        await this.transaction.begin();
-        return new SqlEntityTransaction(this, this.transaction);
+        const tx = this.transaction = new sql.Transaction(await this.newConnection());
+        return new SqlEntityTransaction(this, tx);
     }
 
     protected async newRequest(signal: AbortSignal) {

@@ -47,10 +47,21 @@ export interface IQueryResult {
     updated?: number;
 }
 
+const currentTransaction = Symbol("currentTrnsaction");
 
 export abstract class EntityTransaction {
 
     private committedOrRolledBack = false;
+
+    private disposed = false;
+
+    constructor(protected conn: BaseConnection) {
+        conn[currentTransaction] = this;
+    }
+
+    begin() {
+        return this.beginTransaction();
+    }
 
     commit() {
         this.committedOrRolledBack = true;
@@ -62,25 +73,36 @@ export abstract class EntityTransaction {
         return this.rollbackTransaction();
     }
 
-    async [Symbol.asyncDispose]() {
+    async dispose() {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
         if(!this.committedOrRolledBack) {
             await this.rollbackTransaction();
         }
-        await this.dispose();
+        await this.disposeTransaction();
     }
 
-    protected abstract dispose(): Promise<void>;
+    [Symbol.asyncDispose]() {
+        return this.dispose();
+    }
+
+    protected abstract disposeTransaction(): Promise<void>;
 
     protected abstract commitTransaction(): Promise<void>;
 
     protected abstract rollbackTransaction(): Promise<void>;
+
+    protected abstract beginTransaction(): Promise<void>;
 
 }
 
 const emptyResolve = Promise.resolve();
 
 class EmptyTransaction extends EntityTransaction {
-    protected dispose() {
+
+    protected disposeTransaction() {
         return emptyResolve;
     }
     protected commitTransaction() {
@@ -90,9 +112,11 @@ class EmptyTransaction extends EntityTransaction {
         return emptyResolve;
     }
 
-}
+    protected beginTransaction() {
+        return emptyResolve;
+    }
 
-const currentTransaction = Symbol("currentTrnsaction");
+}
 
 export abstract class BaseConnection {
 
@@ -116,6 +140,13 @@ export abstract class BaseConnection {
      */
     public abstract automaticMigrations(): Migrations;
 
+    public async runInTransaction<T = any>(fx?: () => Promise<T>) {
+        await using tx = await this.createTransaction();
+        const result = await fx();
+        await tx.commit();
+        return result;
+    }
+
 
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
@@ -124,35 +155,15 @@ export abstract class BaseConnection {
     public async createTransaction() {
         if (this[currentTransaction]) {
             // return fake one...
-            return new EmptyTransaction();
+            return new EmptyTransaction(this);
         }
-        return this[currentTransaction] = await this.createDbTransaction();
+        const tx = this[currentTransaction] = await this.createDbTransaction();
+        await tx.begin();
+        return tx;
     }
 
     protected abstract createDbTransaction(): Promise<EntityTransaction>;
 
-    // public async runInTransaction<T = any>(fx?: () => Promise<T>) {
-    //     if(this.currentTransaction) {
-    //         // nested transactions... do not worry
-    //         // just pass through
-    //         return await fx();
-    //     }
-    //     let failed = true;
-    //     let tx: EntityTransaction;
-    //     try {
-    //         tx = this.currentTransaction = await this.createTransaction();
-    //         const result = await fx();
-    //         await tx.commit();
-    //         failed = false;
-    //         return result;
-    //     } finally {
-    //         if (failed) {
-    //             await tx?.rollback();
-    //         }
-    //         await tx?.[Symbol.asyncDispose]();
-    //         this.currentTransaction = null;
-    //     }
-    // }
 }
 
 export type DirectSaveType =
