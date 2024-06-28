@@ -242,7 +242,7 @@ export class EntitySource<T = any> {
         selectStatement.model = model;
         return new EntityQuery<T>({
             context,
-            trace: context[traceSymbol],
+            traceQuery: context[traceSymbol],
             type: model,
             selectStatement
         }) as any as IEntityQuery<T>;
