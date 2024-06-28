@@ -224,32 +224,17 @@ export default class WorkflowStorage {
     async save(state: Partial<WorkflowItem>) {
         const db = new WorkflowContext(this.driver);
         const connection = db.connection;
-        await connection.runInTransaction(async () => {
-            // let w = await db.workflows.where(state, (p) => (x) => x.id === p.id).first();
-            // if (!w) {
-            //     w = db.workflows.add(state);
-            //     w.taskGroup ||= "default";
-            // }
-
-            // for (const key in state) {
-            //     if (Object.prototype.hasOwnProperty.call(state, key)) {
-            //         const element = state[key];
-            //         w[key] = element;
-            //     }
-            // }
-
-            // w.state ||= "queued";
-            // w.updated ??= DateTime.now;
-            state.state ||= "queued";
-            state.updated ??= DateTime.now;
-            state.taskGroup ||= "default";
-            // await db.saveChanges();
-            if(state[loadedFromDb]) {
-                await db.workflows.saveDirect({ mode: "update", changes: state });
-            } else {
-                await db.workflows.saveDirect({ mode: "upsert", changes: state });
-            }
-        });
+        await using tx = await connection.createTransaction();
+        state.state ||= "queued";
+        state.updated ??= DateTime.now;
+        state.taskGroup ||= "default";
+        // await db.saveChanges();
+        if(state[loadedFromDb]) {
+            await db.workflows.saveDirect({ mode: "update", changes: state });
+        } else {
+            await db.workflows.saveDirect({ mode: "upsert", changes: state });
+        }
+        await tx.commit();
     }
 
     async dequeue(taskGroup: string, signal?: AbortSignal) {

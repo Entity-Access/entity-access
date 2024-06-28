@@ -47,42 +47,52 @@ export interface IQueryResult {
     updated?: number;
 }
 
-export interface IBaseTransaction {
-    commit(): Promise<any>;
-    rollback(): Promise<any>;
-    dispose(): Promise<void>;
-}
 
-export class EntityTransaction {
+export abstract class EntityTransaction {
 
-    committedOrRolledBack = false;
-
-    constructor(private tx: IBaseTransaction) {}
+    private committedOrRolledBack = false;
 
     commit() {
         this.committedOrRolledBack = true;
-        return this.tx.commit();
+        return this.commitTransaction();
     }
 
     rollback() {
         this.committedOrRolledBack = true;
-        return this.tx.rollback();
-    }
-
-    async dispose() {
-        if(!this.committedOrRolledBack) {
-            await this.tx.rollback();
-        }
-        await this.tx.dispose();
+        return this.rollbackTransaction();
     }
 
     async [Symbol.asyncDispose]() {
         if(!this.committedOrRolledBack) {
-            await this.tx.rollback();
+            await this.rollbackTransaction();
         }
-        await this.tx.dispose();
+        await this.dispose();
     }
+
+    protected abstract dispose(): Promise<void>;
+
+    protected abstract commitTransaction(): Promise<void>;
+
+    protected abstract rollbackTransaction(): Promise<void>;
+
 }
+
+const emptyResolve = Promise.resolve();
+
+class EmptyTransaction extends EntityTransaction {
+    protected dispose() {
+        return emptyResolve;
+    }
+    protected commitTransaction() {
+        return emptyResolve;
+    }
+    protected rollbackTransaction() {
+        return emptyResolve;
+    }
+
+}
+
+const currentTransaction = Symbol("currentTrnsaction");
 
 export abstract class BaseConnection {
 
@@ -90,7 +100,7 @@ export abstract class BaseConnection {
 
     protected connectionString: IDbConnectionString;
 
-    private currentTransaction: EntityTransaction;
+    private [currentTransaction]: EntityTransaction;
 
 
     constructor(public driver: BaseDriver) {
@@ -111,30 +121,38 @@ export abstract class BaseConnection {
 
     public abstract executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult>;
 
-    public abstract createTransaction(): Promise<EntityTransaction>;
-
-    public async runInTransaction<T = any>(fx?: () => Promise<T>) {
-        if(this.currentTransaction) {
-            // nested transactions... do not worry
-            // just pass through
-            return await fx();
+    public async createTransaction() {
+        if (this[currentTransaction]) {
+            // return fake one...
+            return new EmptyTransaction();
         }
-        let failed = true;
-        let tx: EntityTransaction;
-        try {
-            tx = this.currentTransaction = await this.createTransaction();
-            const result = await fx();
-            await tx.commit();
-            failed = false;
-            return result;
-        } finally {
-            if (failed) {
-                await tx?.rollback();
-            }
-            await tx?.[Symbol.asyncDispose]();
-            this.currentTransaction = null;
-        }
+        return this[currentTransaction] = await this.createDbTransaction();
     }
+
+    protected abstract createDbTransaction(): Promise<EntityTransaction>;
+
+    // public async runInTransaction<T = any>(fx?: () => Promise<T>) {
+    //     if(this.currentTransaction) {
+    //         // nested transactions... do not worry
+    //         // just pass through
+    //         return await fx();
+    //     }
+    //     let failed = true;
+    //     let tx: EntityTransaction;
+    //     try {
+    //         tx = this.currentTransaction = await this.createTransaction();
+    //         const result = await fx();
+    //         await tx.commit();
+    //         failed = false;
+    //         return result;
+    //     } finally {
+    //         if (failed) {
+    //             await tx?.rollback();
+    //         }
+    //         await tx?.[Symbol.asyncDispose]();
+    //         this.currentTransaction = null;
+    //     }
+    // }
 }
 
 export type DirectSaveType =

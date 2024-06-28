@@ -121,32 +121,34 @@ export default class EntityContext {
             return 0;
         }
 
-        return this.connection.runInTransaction(async () => {
-            try {
+        await using tx = await this.connection.createTransaction();
+        try {
 
-                if(!this.raiseEvents) {
-                    return await this.saveChangesInternalWithoutEvents(options);
-                }
+            if(!this.raiseEvents) {
+                const rx = await this.saveChangesInternalWithoutEvents(options);
+                await tx.commit();
+                return rx;
+            }
 
-                this[isChanging] = true;
-                const r = await this.saveChangesInternal(options);
-                const postSaveChanges = this.postSaveChangesQueue;
-                this.postSaveChangesQueue = void 0;
-                this[isChanging] = false;
-                if (postSaveChanges?.length) {
-                    postSaveChanges.sort((a, b) => a.order - b.order);
-                    for (const { task } of postSaveChanges) {
-                        const p = task();
-                        if (p?.then) {
-                            await p;
-                        }
+            this[isChanging] = true;
+            const r = await this.saveChangesInternal(options);
+            const postSaveChanges = this.postSaveChangesQueue;
+            this.postSaveChangesQueue = void 0;
+            this[isChanging] = false;
+            if (postSaveChanges?.length) {
+                postSaveChanges.sort((a, b) => a.order - b.order);
+                for (const { task } of postSaveChanges) {
+                    const p = task();
+                    if (p?.then) {
+                        await p;
                     }
                 }
-                return r;
-            } finally {
-                this[isChanging] = false;
             }
-        });
+            await tx.commit();
+            return r;
+        } finally {
+            this[isChanging] = false;
+        }
     }
 
     public queuePostSaveTask(task: () => any, order = Number.MAX_SAFE_INTEGER) {

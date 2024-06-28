@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import Migrations from "../../migrations/Migrations.js";
-import { BaseConnection, BaseDriver, EntityTransaction, IBaseTransaction, IDbConnectionString, IDbReader, IQuery, IRecord, toQuery } from "../base/BaseDriver.js";
+import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import sql from "mssql";
 import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
@@ -32,6 +32,35 @@ export default class SqlServerDriver extends BaseDriver {
     newConnection(): BaseConnection {
         return new SqlServerConnection(this, this.config);
     }
+}
+
+const emptyResolve = Promise.resolve();
+
+class SqlEntityTransaction extends EntityTransaction {
+
+    rolledBack: any;
+
+    constructor(private conn: SqlServerConnection, private tx: sql.Transaction) {
+        super();
+        tx.on("rollback", (aborted) => {
+            this.rolledBack = aborted;
+        });
+    }
+
+    protected dispose(): Promise<void> {
+        (this.conn as any).transaction = null;
+        return emptyResolve;
+    }
+    protected async commitTransaction() {
+        return this.tx.commit();
+    }
+    protected async rollbackTransaction() {
+        if(this.rolledBack) {
+            return;
+        }
+        await this.tx.rollback();
+    }
+
 }
 
 export class SqlServerConnection extends BaseConnection {
@@ -114,20 +143,16 @@ export class SqlServerConnection extends BaseConnection {
         return value;
     }
 
-    public async createTransaction(): Promise<EntityTransaction> {
-        this.transaction = new sql.Transaction(await this.newConnection());
-        let rolledBack = false;
-        this.transaction.on("rollback", (aborted) => rolledBack = aborted);
-        await this.transaction.begin();
-        return new EntityTransaction({
-            commit: () => this.transaction.commit(),
-            rollback: async () => !rolledBack && await this.transaction.rollback(),
-            dispose: () => this.transaction = void 0
-        });
-    }
-
     public automaticMigrations(): Migrations {
         return new SqlServerAutomaticMigrations(this.sqlQueryCompiler);
+    }
+
+    protected async createDbTransaction(): Promise<EntityTransaction> {
+        this.transaction = new sql.Transaction(await this.newConnection());
+        // let rolledBack = false;
+        // this.transaction.on("rollback", (aborted) => rolledBack = aborted);
+        await this.transaction.begin();
+        return new SqlEntityTransaction(this, this.transaction);
     }
 
     protected async newRequest(signal: AbortSignal) {

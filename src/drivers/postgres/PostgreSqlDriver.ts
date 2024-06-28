@@ -134,18 +134,6 @@ class PostgreSqlConnection extends BaseConnection {
         super(driver);
     }
 
-    public async createTransaction(): Promise<EntityTransaction> {
-        const tx = await this.getConnection();
-        await tx.query("BEGIN");
-        return new EntityTransaction({
-            commit: () => tx.query("COMMIT"),
-            rollback: () => tx.query("ROLLBACK"),
-            dispose: () => {
-                this.transaction = null;
-                return tx[Symbol.asyncDispose]();
-            }
-        });
-    }
 
     public automaticMigrations(): Migrations {
         return new PostgresAutomaticMigrations(this.compiler);
@@ -224,6 +212,19 @@ class PostgreSqlConnection extends BaseConnection {
             signal.addEventListener("abort", () => this.kill(client[pgID]).catch((error) => console.error(error)));
         }
         return client;
+    }
+
+    protected async createDbTransaction(): Promise<EntityTransaction> {
+        const tx = await this.getConnection();
+        await tx.query("BEGIN");
+        return new EntityTransaction({
+            commit: () => tx.query("COMMIT"),
+            rollback: () => tx.query("ROLLBACK"),
+            dispose: () => {
+                this.transaction = null;
+                return tx[Symbol.asyncDispose]();
+            }
+        });
     }
 
     private async kill(id) {
