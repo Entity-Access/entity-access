@@ -12,6 +12,7 @@ import Inject, { ServiceProvider } from "../di/di.js";
 import EntityAccessError from "../common/EntityAccessError.js";
 import Logger from "../common/Logger.js";
 import { FilteredExpression } from "./events/FilteredExpression.js";
+import { traceSymbol } from "../common/symbols/symbols.js";
 
 const isChanging = Symbol("isChanging");
 
@@ -122,6 +123,8 @@ export default class EntityContext {
         }
 
         await using tx = await this.connection.createTransaction();
+        const oldTraceSymbol = this[traceSymbol];
+        this[traceSymbol] = options?.trace;
         try {
 
             if(!this.raiseEvents) {
@@ -148,6 +151,7 @@ export default class EntityContext {
             return r;
         } finally {
             this[isChanging] = false;
+            this[traceSymbol] = oldTraceSymbol;
         }
     }
 

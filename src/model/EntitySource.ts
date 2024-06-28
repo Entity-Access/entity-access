@@ -2,7 +2,7 @@ import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type { IBaseQuery, IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
 import EntityQuery from "./EntityQuery.js";
-import { contextSymbol, modelSymbol } from "../common/symbols/symbols.js";
+import { contextSymbol, modelSymbol, traceSymbol } from "../common/symbols/symbols.js";
 import { Expression, ExpressionAs, Identifier, InsertStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 import IdentityService from "./identity/IdentityService.js";
@@ -233,6 +233,7 @@ export class EntitySource<T = any> {
         selectStatement.model = model;
         return new EntityQuery<T>({
             context,
+            trace: context[traceSymbol],
             type: model,
             selectStatement
         }) as any as IEntityQuery<T>;
