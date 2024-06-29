@@ -19,8 +19,13 @@ export default function () {
 
     // r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
 
-    r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
-    assert.equal("((x.firstName like $1) OR (x.firstName like $2))", r.text);
+    // r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
+    // assert.equal("((x.firstName like $1) OR (x.firstName like $2))", r.text);
 
+    r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
+    assert.equal("(x.firstName LIKE ANY (ARRAY[$1,$2]))", r.text);
+
+    r = compiler.execute({ names }, (p) => (x) => Sql.text.iLikeAny(x.firstName, p.names));
+    assert.equal("(x.firstName iLIKE ANY (ARRAY[$1,$2]))", r.text);
 }
 
