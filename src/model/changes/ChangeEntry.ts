@@ -2,6 +2,7 @@ import EntityAccessError from "../../common/EntityAccessError.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import NameParser from "../../decorators/parser/NameParser.js";
 import EntityType from "../../entity-query/EntityType.js";
+import DateTime from "../../types/DateTime.js";
 import type ChangeSet from "./ChangeSet.js";
 
 export const privateUpdateEntry = Symbol("updateEntry");
@@ -123,9 +124,16 @@ export default class ChangeEntry<T = any> implements IChanges {
         for (const iterator of columns) {
             const oldValue = original[iterator.name];
             const newValue = entity[iterator.name];
-            if (entity[iterator.name] !== original[iterator.name]) {
+            if (newValue !== oldValue) {
                 if (!iterator.columnName) {
                     throw new EntityAccessError(`Column name for ${iterator.name} not set`);
+                }
+                if (newValue && oldValue && /^DateTime/.test(iterator.dataType)) {
+                    const newValueDT = DateTime.from(newValue);
+                    const oldValueDT = DateTime.from(oldValue);
+                    if (newValueDT.msSinceEpoch === oldValueDT.msSinceEpoch) {
+                        continue;
+                    }
                 }
                 let modifiedEntry = this.modified.get(iterator);
                 if (!modifiedEntry) {
