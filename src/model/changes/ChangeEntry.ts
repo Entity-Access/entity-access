@@ -128,6 +128,7 @@ export default class ChangeEntry<T = any> implements IChanges {
                 if (!iterator.columnName) {
                     throw new EntityAccessError(`Column name for ${iterator.name} not set`);
                 }
+                // we need to fix date comparison issue
                 if (newValue && oldValue && /^DateTime/.test(iterator.dataType)) {
                     const newValueDT = DateTime.from(newValue);
                     const oldValueDT = DateTime.from(oldValue);

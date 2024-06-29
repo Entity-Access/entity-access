@@ -209,8 +209,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
                     const body = e.arguments?.[0] as ExpressionType;
                     if (body?.type === "ArrowFunctionExpression") {
-                        const exists = this.expandSome(body, relation, e, parameter, targetType) as ExistsExpression;
                         if (/^(some|any)$/.test(lastMethod.member)) {
+                            const exists = this.expandSome(body, relation, e, parameter, targetType) as ExistsExpression;
                             return this.visit(exists);
                         }
                         if (/^(map|select)$/.test(lastMethod.member) || lastMethod.isCollectionMethod ) {
@@ -241,12 +241,13 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                             }
 
                             if (lastMethod.isCollectionMethod) {
-                                return this.visit({ ... select, where, fields: [
-                                        CallExpression.create({
-                                            callee: Expression.identifier("Sql.coll." + lastMethod.member),
-                                            arguments: [body.body]
-                                        })
-                                    ] } as SelectStatement);
+                                const fields = [
+                                    CallExpression.create({
+                                        callee: Expression.identifier("Sql.coll." + lastMethod.member),
+                                        arguments: [body.body]
+                                    })
+                                ];
+                                return this.visit({ ... select, where, fields } as SelectStatement);
                                 }
 
                             return this.visit({ ... select, where, fields: [
@@ -850,7 +851,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         }
         if (target !== me.target) {
             // parameter is replaced...
-            return MemberExpression.create({ target, property: me.property });
+            return MemberExpression.create({ target, property: me.property, isCollectionMethod: me.isCollectionMethod });
         }
         return x;
     }
@@ -896,7 +897,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 if (x.type === "MemberExpression") {
                     x = this.resolveExpression(x) ?? x;
                 }
-                chain.splice(0, 0, { member: (me.property as Identifier).value, args: ce.arguments });
+                chain.splice(0, 0, { member: (me.property as Identifier).value, isCollectionMethod: me.isCollectionMethod, args: ce.arguments });
                 continue;
             }
             throw new EntityAccessError(`Invalid expression expression ${x.type}`);
