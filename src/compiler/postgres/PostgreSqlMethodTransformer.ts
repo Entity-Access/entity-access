@@ -165,6 +165,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
         left(text, length) {
             return prepareAny `left(${text}, ${length})`;
         },
+        length(text) {
+            return prepareAny `char_length(${text})`;
+        },
         like(text, test) {
             return prepareAny `(${text} LIKE ${test})`;
         },

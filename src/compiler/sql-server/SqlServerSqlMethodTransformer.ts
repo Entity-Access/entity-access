@@ -152,6 +152,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         includes(text, test) {
             return prepareAny `(CHARINDEX(${text}, ${test}) > 0)`;
         },
+        length(text) {
+            return prepareAny `LEN(${text})`;
+        },
         iLike(text, test) {
             return prepareAny `(${text} like ${test})`;
         },

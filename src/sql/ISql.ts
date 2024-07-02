@@ -39,6 +39,7 @@ export interface ISql {
         likeAny(text: string, test: string[]): boolean;
         iLikeAny(text: string, test: string[]): boolean;
         left(text: string, length: number): string;
+        length(text: string): number;
         right(text: string, length: number): string;
         startsWith(text: string, test: string): boolean;
         endsWith(text: string, test: string): boolean;
