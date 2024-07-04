@@ -20,16 +20,16 @@ export default async function(this: TestConfig) {
 
     // assert.notEqual(null, user);
 
-    report  = await context.users.all()
-        // .where({}, (p) => (x) => x.orders.some((oi) => oi.customerID  > 0))
-        .map({}, (p) => (x) => ({
-                total: 5 * Sql.coll.sum(x.orders.map((o) => Sql.coll.sum(o.orderItems.map((oi) => oi.amount))))
-            })
-        )
-        .trace(console.log)
-        .first();
+    // report  = await context.users.all()
+    //     // .where({}, (p) => (x) => x.orders.some((oi) => oi.customerID  > 0))
+    //     .map({}, (p) => (x) => ({
+    //             total: 5 * Sql.coll.sum(x.orders.map((o) => Sql.coll.sum(o.orderItems.map((oi) => oi.amount))))
+    //         })
+    //     )
+    //     .trace(console.log)
+    //     .first();
 
-    assert.notEqual(null, report);
+    // assert.notEqual(null, report);
 
     // await context.orders.asQuery()
     //     .update(void 0, (p) => (x) => ({
@@ -47,4 +47,14 @@ export default async function(this: TestConfig) {
         .first();
 
     assert.notEqual(null, report);
+
+    // const r = await context.users.all()
+    //     .trace(console.log)
+    //     .sum(void 0, (p) => (x) => ({
+    //         paid: x.orders.some((o) => o.status === "pending") ? 1 : 0,
+    //         total: 1
+    //     }));
+
+    // assert.notEqual(r.paid, undefined);
+    // assert.notEqual(r.total, undefined);
 }

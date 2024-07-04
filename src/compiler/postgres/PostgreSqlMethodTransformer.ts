@@ -44,7 +44,7 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return prepareAny `(${a} ::int)`;
         },
         asNumber(a) {
-            return prepareAny `(${a} ::double)`;
+            return prepareAny `(${a} ::numeric)`;
         },
         asText(a) {
             return prepareAny `(${a} ::text)`;

@@ -176,7 +176,7 @@ export default class EntityQuery<T = any>
     }
 
     async delete(p, f): Promise<number> {
-        if (p || f) {
+        if (f) {
             return this.where(p, f).delete(void 0, void 0);
         }
 
@@ -271,7 +271,7 @@ export default class EntityQuery<T = any>
 
     getUpdateStatement(p?, f?, returnEntity = false) {
 
-        if (p || f) {
+        if (f) {
             return this.extend(p, f, (select, body) => {
                 const fields = [] as Expression[];
                 switch(body.type) {
@@ -505,20 +505,35 @@ export default class EntityQuery<T = any>
         return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, offset: n} });
     }
 
-    async sum(parameters?:any, fx?: any): Promise<number> {
-        if (parameters !== void 0) {
+    async sum(parameters?:any, fx?: any): Promise<any> {
+        if (fx !== void 0) {
             return this.map(parameters, fx).sum();
         }
-        const field = this.selectStatement.fields[0];
-        const select = { ... this.selectStatement, fields: [
-            ExpressionAs.create({
+
+        const fields = [];
+
+        let fieldName;
+
+        for (const field of this.selectStatement.fields) {
+            let expression = field;
+            if (field.type === "ExpressionAs") {
+                const fe = field as ExpressionAs;
+                expression = fe.expression;
+                fieldName = fe.alias.value;
+            } else {
+                fieldName = "c1";
+            }
+
+            fields.push(ExpressionAs.create({
                 expression: Expression.callExpression(
                     "COALESCE",
-                    Expression.callExpression("SUM", field),
+                    Expression.callExpression("SUM", expression),
                     NumberLiteral.zero),
-                alias: Expression.identifier("c1")
-            })
-            ],
+                alias: Expression.quotedIdentifier(fieldName)
+            }));
+        }
+
+        const select = { ... this.selectStatement, fields,
             orderBy: void 0
         };
 
@@ -529,9 +544,13 @@ export default class EntityQuery<T = any>
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(nq, select);
+            this.traceQuery?.(query.text);
             const reader = await this.context.connection.executeReader(query);
             scope.register(reader);
             for await (const iterator of reader.next()) {
+                if (fields.length > 1) {
+                    return iterator as any;
+                }
                 return iterator.c1 as number;
             }
             // this is special case when database does not return any count

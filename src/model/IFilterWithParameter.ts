@@ -7,6 +7,8 @@ export type ILambdaExpression<P = any, T = any, TR = any> = [input: P, x: (p: P)
 
 export type IFilterExpression<P = any, T = any> = [input: P, x: (p: P) => (s: T) => boolean];
 
+export type IFieldsAsNumbers<T> = { [P in keyof T]: number };
+
 export interface IBaseQuery<T> {
     enumerate(): AsyncGenerator<T>;
 
@@ -32,6 +34,7 @@ export interface IBaseQuery<T> {
 
     sum(): Promise<number>;
     sum<P>(parameters: P, fx: (p: P) => (x: T) => number): Promise<number>;
+    sum<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): Promise<IFieldsAsNumbers<TR>>;
 
 
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
