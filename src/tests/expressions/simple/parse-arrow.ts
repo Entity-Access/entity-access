@@ -52,7 +52,7 @@ export default function () {
         (p) => (x: KeyCode) =>
             x.code === Sql.cast.asNumber(p.code) && x.key === Sql.cast.asText(p.key) );
 
-    assert.equal(`(x.code = ($1 ::double)) AND (x.key = ($2 ::text))`, r.text);
+    assert.equal(`(x.code = ($1 ::numeric)) AND (x.key = ($2 ::text))`, r.text);
 
 
     r = compiler.execute({}, (p) => (x) => `a`);
