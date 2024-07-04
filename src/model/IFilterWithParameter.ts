@@ -39,6 +39,7 @@ export interface IBaseQuery<T> {
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
 
     update<P>(parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<number>;
+    updateSelect<P>(parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<T[]>;
 
     /**
      * Warning !! Be careful, this will delete rows from the database and neither soft delete nor any other events will be invoked.

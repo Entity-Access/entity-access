@@ -587,7 +587,11 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             const joinName = this.scope.nameOf(as);
             const asName = this.scope.nameOf(e.sourceParameter);
             const set = this.visitArray(e.set, ",");
-            return prepare `WITH ${joinName} as (${join}) UPDATE ${table} ${asName} SET ${set} FROM ${joinName} WHERE ${where}`;
+            const returning = e.returnUpdated ? [ ` RETURNING `, ... e.returnUpdated.map((r, i) => i
+                ? [ `, ${asName}.`, this.visit(r.expression), ` as ${this.visit(r.alias)}`]
+                : [ `${asName}.`, this.visit(r.expression), ` as ${this.visit(r.alias)}`]
+            ) ] : [];
+            return prepare `WITH ${joinName} as (${join}) UPDATE ${table} ${asName} SET ${set} FROM ${joinName} WHERE ${where} ${returning}`;
 
         }
 

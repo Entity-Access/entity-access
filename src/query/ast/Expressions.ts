@@ -423,6 +423,8 @@ export class UpdateStatement extends Expression {
 
     join: JoinExpression;
 
+    returnUpdated: ExpressionAs[];
+
 }
 
 export class UpsertStatement extends Expression {

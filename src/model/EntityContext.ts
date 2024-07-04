@@ -234,6 +234,10 @@ export default class EntityContext {
         for (const iterator of copy) {
             switch (iterator.status) {
                 case "inserted":
+                    // const insert = iterator.type.getInsertStatement();
+                    // we are choosing not to create one complicated SQL as generation
+                    // of insert requires checking if value is supplied or not, if not, we have to choose
+                    // default value
                     const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
                     const r = await this.executeExpression(insert, options);
                     iterator.apply(r);

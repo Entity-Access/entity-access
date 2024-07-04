@@ -218,7 +218,58 @@ export default class EntityQuery<T = any>
         }
     }
 
+    async updateSelect(p?, f?): Promise<T[]> {
+        const updateStatement = this.getUpdateStatement(p, f, true);
+
+        await using scope = new AsyncDisposableScope();
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query: { text: string, values: any[]};
+        try {
+            scope.register(session);
+            const type = this.type;
+            const signal = this.signal;
+
+            const relationMapper = new RelationMapper(this.context.changeSet);
+
+            signal?.throwIfAborted();
+
+            query = this.context.driver.compiler.compileExpression(this, updateStatement);
+            this.traceQuery?.(query.text);
+            const reader = await this.context.connection.executeReader(query, signal);
+            scope.register(reader);
+            const results = [] as T[];
+            for await (const iterator of reader.next(10, signal)) {
+                const item = type.map(iterator) as any;
+                // set identity...
+                const entry = this.context.changeSet.getEntry(item, item);
+                relationMapper.fix(entry);
+                results.push(entry.entity);
+            }
+            return results;
+        } catch(error) {
+            session.error(`Failed executing ${query?.text}\n${error.stack ?? error}`);
+            throw error;
+        }
+    }
+
     async update(p?, f?): Promise<number> {
+
+        const updateStatement = this.getUpdateStatement(p, f);
+
+        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        let query;
+        try {
+            query = this.context.driver.compiler.compileExpression(this, updateStatement);
+            this.traceQuery?.(query.text);
+            const r = await this.context.connection.executeQuery(query);
+            return r.updated;
+        } catch (error) {
+            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
+            throw error;
+        }
+    }
+
+    getUpdateStatement(p?, f?, returnEntity = false) {
 
         if (p || f) {
             return this.extend(p, f, (select, body) => {
@@ -238,7 +289,7 @@ export default class EntityQuery<T = any>
                         break;
                 }
                 return { ... select, fields };
-            }).update();
+            }).getUpdateStatement(void 0, void 0, returnEntity);
         }
 
         const as = Expression.parameter("s1", this.type);
@@ -253,13 +304,13 @@ export default class EntityQuery<T = any>
         const fieldMap = new Set();
 
         for (const iterator of this.selectStatement.fields) {
-            if(iterator.type !== "ExpressionAs") {
+            if (iterator.type !== "ExpressionAs") {
                 throw new Error(`Invalid expression ${iterator.type}`);
             }
             const eAs = iterator as ExpressionAs;
             const { field } = this.type.getProperty(eAs.alias.value);
             fieldMap.add(field.columnName);
-            set.push(Expression.assign( Expression.quotedIdentifier(field.columnName), Expression.member(as, Expression.quotedIdentifier(eAs.alias.value))));
+            set.push(Expression.assign(Expression.quotedIdentifier(field.columnName), Expression.member(as, Expression.quotedIdentifier(eAs.alias.value))));
         }
 
         let where = null as Expression;
@@ -272,7 +323,18 @@ export default class EntityQuery<T = any>
             if (fieldMap.has(iterator.columnName)) {
                 continue;
             }
-            this.selectStatement.fields.push( Expression.member( this.selectStatement.sourceParameter, Expression.quotedIdentifier(iterator.columnName)));
+            this.selectStatement.fields.push(Expression.member(this.selectStatement.sourceParameter, Expression.quotedIdentifier(iterator.columnName)));
+        }
+
+        let returnUpdated = null as ExpressionAs[];
+        if(returnEntity) {
+            returnUpdated = [];
+            for (const iterator of this.type.columns) {
+                returnUpdated.push(Expression.as(
+                    Expression.identifier(iterator.columnName),
+                    Expression.quotedIdentifier(iterator.name)
+                ));
+            }
         }
 
         const updateStatement = UpdateStatement.create({
@@ -281,20 +343,10 @@ export default class EntityQuery<T = any>
             table: this.type.fullyQualifiedName,
             model: this.type,
             where,
-            join
+            join,
+            returnUpdated
         });
-
-        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
-        let query;
-        try {
-            query = this.context.driver.compiler.compileExpression(this, updateStatement);
-            this.traceQuery?.(query.text);
-            const r = await this.context.connection.executeQuery(query);
-            return r.updated;
-        } catch (error) {
-            session.error(`Failed executing ${query?.text}\r\n${error.stack ?? error}`);
-            throw error;
-        }
+        return updateStatement;
     }
 
     async toArray(): Promise<T[]> {

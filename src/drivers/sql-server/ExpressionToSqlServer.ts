@@ -209,7 +209,12 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
             const joinName = this.scope.nameOf(as);
             const asName = this.scope.nameOf(e.sourceParameter);
             const set = this.visitArray(e.set, ",");
-            return prepare `WITH ${joinName} as (${join}) UPDATE ${asName} SET ${set} FROM ${table} AS ${asName} INNER JOIN ${joinName} ON ${where}`;
+            // const output = e.returnUpdated ? " OUTPUT INSERTED.* ": "";
+            const output = e.returnUpdated ? [ ` OUTPUT `, ... e.returnUpdated.map((r, i) => i
+                ? [ `, INSERTED.`, this.visit(r.expression), ` as ${this.visit(r.alias)}`]
+                : [ `INSERTED.`, this.visit(r.expression), ` as ${this.visit(r.alias)}`]
+            ) ] : [];
+            return prepare `WITH ${joinName} as (${join}) UPDATE ${asName} SET ${set} ${output} FROM ${table} AS ${asName} INNER JOIN ${joinName} ON ${where}`;
         }
         return super.visitUpdateStatement(e);
     }
