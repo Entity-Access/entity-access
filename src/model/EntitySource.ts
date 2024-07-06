@@ -7,6 +7,7 @@ import { Expression, ExpressionAs, Identifier, InsertStatement, TableLiteral } f
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 import IdentityService from "./identity/IdentityService.js";
 import sleep from "../common/sleep.js";
+import EntityAccessError from "../common/EntityAccessError.js";
 
 const removeUndefined = (obj) => {
     if (!obj) {
@@ -194,6 +195,19 @@ export class EntityStatements<T = any> {
             }
             throw error;
         }
+    }
+
+    async delete(entity: Partial<T>) {
+        // check if we have keys...
+        for(const key of this.model.keys) {
+            const keyValue = entity[key.name];
+            if (keyValue === void 0 || keyValue === null) {
+                throw new EntityAccessError(`All keys must be present to delete the entity`);
+            }
+        }
+        const q = this.context.driver.deleteQuery(this.model, entity);
+        const r = await this.context.connection.executeQuery(q);
+        return r.updated;
     }
 }
 
