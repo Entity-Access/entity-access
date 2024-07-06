@@ -65,7 +65,7 @@ export class EntityStatements<T = any> {
         this.context = source[contextSymbol];
     }
 
-    async select(keys: Partial<T>, loadChangeEntry = false) {
+    async select(keys: Partial<T>, loadChangeEntry = false): Promise<T> {
         const q = this.context.driver.selectQueryWithKeys(this.model, keys);
         const r = await this.context.connection.executeQuery(q);
         const result = r.rows[0];
@@ -77,7 +77,7 @@ export class EntityStatements<T = any> {
         return result;
     }
 
-    async insert(entity: Partial<T>, loadChangeEntry = false) {
+    async insert(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
         const q = this.context.driver.insertQuery(this.model, entity);
         const r = await this.context.connection.executeQuery(q);
         const result = r.rows[0];
@@ -89,7 +89,7 @@ export class EntityStatements<T = any> {
         return r.rows[0];
     }
 
-    async update(entity: Partial<T>, loadChangeEntry = false) {
+    async update(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
         const q = this.context.driver.updateQuery(this.model, entity);
         const r = await this.context.connection.executeQuery(q);
         const result = r.rows?.[0];
@@ -101,7 +101,7 @@ export class EntityStatements<T = any> {
         return r.rows[0];
     }
 
-    async selectOrInsert(entity: Partial<T>, retry = 3) {
+    async selectOrInsert(entity: Partial<T>, retry = 3): Promise<T> {
         const tx = this.context.connection.currentTransaction;
         let tid: string;
         if (tx) {
@@ -128,7 +128,7 @@ export class EntityStatements<T = any> {
         }
     }
 
-    async upsert(entity: Partial<T>, updateAfterSelect: (x:T) => T, retry = 3) {
+    async upsert(entity: Partial<T>, updateAfterSelect: (x:T) => T, retry = 3): Promise<T> {
 
         const tx = this.context.connection.currentTransaction;
         let tid: string;
