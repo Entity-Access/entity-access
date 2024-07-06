@@ -239,12 +239,19 @@ export default class ChangeEntry<T = any> implements IChanges {
         // we will only apply the columns defined
         if (dbValues !== void 0) {
             const { entity, type } = this;
-            for (const iterator of type.columns) {
-                const dbValue = dbValues[iterator.columnName];
-                if (dbValue !== void 0) {
-                    entity[iterator.name] = dbValue;
+            for (const key in dbValues) {
+                if (Object.prototype.hasOwnProperty.call(dbValues, key)) {
+                    const element = dbValues[key];
+                    entity[key] = element;
                 }
             }
+            // const { entity, type } = this;
+            // for (const iterator of type.columns) {
+            //     const dbValue = dbValues[iterator.columnName];
+            //     if (dbValue !== void 0) {
+            //         entity[iterator.name] = dbValue;
+            //     }
+            // }
         }
 
         // we will set the identity key

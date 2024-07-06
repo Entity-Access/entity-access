@@ -20,7 +20,7 @@ services:
       - 5432:5432
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pg-admin
+    container_name: pg-admin-test
     restart: unless-stopped
     environment:
       - PGADMIN_CONFIG_SERVER_MODE=False

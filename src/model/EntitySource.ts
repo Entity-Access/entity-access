@@ -55,11 +55,111 @@ export type ISaveDirect<T> = {
     changes?: never
 };
 
+export class EntityStatements<T = any> {
+
+    private readonly model: EntityType;
+    private readonly context: EntityContext;
+
+    constructor(private source: EntitySource<T>) {
+        this.model = source[modelSymbol];
+        this.context = source[contextSymbol];
+    }
+
+    async select(keys: Partial<T>, loadChangeEntry = false) {
+        const q = this.context.driver.selectQueryWithKeys(this.model, keys);
+        const r = await this.context.connection.executeQuery(q);
+        const result = r.rows[0];
+        if (loadChangeEntry) {
+            const ce = this.context.changeSet.getEntry(result);
+            ce.apply(result);
+            return ce.entity;
+        }
+        return result;
+    }
+
+    async insert(entity: Partial<T>, loadChangeEntry = false) {
+        const q = this.context.driver.insertQuery(this.model, entity);
+        const r = await this.context.connection.executeQuery(q);
+        const result = r.rows[0];
+        if (loadChangeEntry) {
+            const ce = this.context.changeSet.getEntry(result);
+            ce.apply(result);
+            return ce.entity;
+        }
+        return r.rows[0];
+    }
+
+    async update(entity: Partial<T>, loadChangeEntry = false) {
+        const q = this.context.driver.updateQuery(this.model, entity);
+        const r = await this.context.connection.executeQuery(q);
+        const result = r.rows?.[0];
+        if (loadChangeEntry) {
+            const ce = this.context.changeSet.getEntry(result);
+            ce.apply(result ?? {});
+            return ce.entity;
+        }
+        return r.rows[0];
+    }
+
+    async selectOrInsert(entity: Partial<T>, retry = 3) {
+        const tx = this.context.connection.currentTransaction;
+        let tid: string;
+        if (tx) {
+            tid = `txp_${Date.now()}`;
+            await tx.save(tid);
+        }
+
+        try {
+            const r = await this.select(entity);
+            if (r) {
+                return r;
+            }
+            return await this.insert(entity);
+        } catch (error) {
+            retry --;
+            if(retry > 0) {
+                if (tid) {
+                    await tx.rollbackTo(tid);
+                }
+                await sleep(300);
+                return await this.selectOrInsert(entity, retry);
+            }
+            throw error;
+        }
+    }
+
+    async upsert(entity: Partial<T>, retry = 3) {
+
+        const tx = this.context.connection.currentTransaction;
+        let tid: string;
+        if (tx) {
+            tid = `txp_${Date.now()}`;
+            await tx.save(tid);
+        }
+
+        try {
+            const r = await this.update(entity);
+            if (r) {
+                return r;
+            }
+            return await this.insert(entity);
+        } catch (error) {
+            retry --;
+            if(retry > 0) {
+                if (tid) {
+                    await tx.rollbackTo(tid);
+                }
+                await sleep(300);
+                return await this.upsert(entity, retry);
+            }
+            throw error;
+        }
+    }
+}
+
 export class EntitySource<T = any> {
 
-    public statements = {
-
-    };
+    public statements = new EntityStatements<T>(this);
 
     get [modelSymbol]() {
         return this.model;

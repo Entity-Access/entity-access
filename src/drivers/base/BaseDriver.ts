@@ -4,9 +4,10 @@ import EntityAccessError from "../../common/EntityAccessError.js";
 import "../../common/IDisposable.js";
 
 import QueryCompiler from "../../compiler/QueryCompiler.js";
+import { IColumn } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
-import ChangeEntry from "../../model/changes/ChangeEntry.js";
+import ChangeEntry, { IChange } from "../../model/changes/ChangeEntry.js";
 import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NotExits, NumberLiteral, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export interface IRecord {
@@ -228,6 +229,97 @@ export abstract class BaseDriver {
 
     /** Must dispose ObjectPools */
     abstract dispose();
+
+    abstract insertQuery(type: EntityType, entity): { text: string, values: any[] };
+
+    updateQuery(type: EntityType, entity: any, changes?: Map<IColumn, IChange>): { text: string; values: any[]; } {
+        let where = "";
+        let setParams = "";
+        let returning = "";
+        const values = [];
+        let i = 1;
+        if (changes) {
+            for (const [iterator, value] of changes.entries()) {
+                if (iterator.computed) {
+                    if (returning) {
+                        returning += ",";
+                    }
+                    returning += iterator.columnName + " as " + this.compiler.quote(iterator.name);
+                    continue;
+                }
+                if (setParams) {
+                    setParams += ",\r\n\t\t";
+                }
+                setParams += `${iterator.columnName} = $${i++}`;
+                values.push(value.newValue);
+            }
+            for (const iterator of type.keys) {
+                if(where) {
+                    where += "\r\n\t\tAND ";
+                }
+                where += `${iterator.columnName} = $${i++}`;
+                values.push(entity[iterator.name]);
+                continue;
+
+            }
+        } else {
+            for (const iterator of type.columns) {
+                if (iterator.key) {
+                    if(where) {
+                        where += "\r\n\t\tAND ";
+                    }
+                    where += `${iterator.columnName} = $${i++}`;
+                    values.push(entity[iterator.name]);
+                    continue;
+                }
+                if (setParams) {
+                    setParams += ",\r\n\t\t";
+                }
+                setParams += `${iterator.columnName} = $${i++}`;
+                values.push(entity[iterator.name]);
+            }
+        }
+        const text = `UPDATE ${type.fullyQualifiedTableName}\r\n\tSET ${setParams}\r\n\tWHERE ${where}`;
+        return { text, values };
+    }
+
+    deleteQuery(type: EntityType, entity: any): { text: string; values: any[]; } {
+        let where = "";
+        const values = [];
+        let i = 1;
+        for (const iterator of type.keys) {
+            if(where) {
+                where += "\r\n\t\tAND ";
+            }
+            where += `${iterator.columnName} = $${i++}`;
+            values.push(entity[iterator.name]);
+        }
+        const text = `DELETE FROM ${type.fullyQualifiedTableName}\r\n\tWHERE ${where}`;
+        return { text, values };
+    }
+
+    selectQueryWithKeys(type: EntityType, entity) {
+        let where = "";
+        let columns = "";
+        const values = [];
+        let i = 1;
+        for (const iterator of type.columns) {
+            if (iterator.key) {
+                if(where) {
+                    where += "\r\n\t\tAND ";
+                }
+                where += `${iterator.columnName} = $${i++}`;
+                values.push(entity[iterator.name]);
+                continue;
+            }
+            if (columns) {
+                columns += "\r\n\t\t";
+            }
+            columns += `${iterator.columnName} as ${this.compiler.escapeLiteral(iterator.name)}`;
+        }
+        const text = `SELECT ${columns}\r\n\tFROM ${type.fullyQualifiedTableName}\r\n\tWHERE ${where}`;
+        return { text, values };
+    }
 
     createSelectWithKeysExpression(type: EntityType, check: any, returnFields: Expression[] ) {
         let where = null as Expression;

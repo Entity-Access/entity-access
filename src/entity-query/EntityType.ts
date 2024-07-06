@@ -40,6 +40,7 @@ export default class EntityType {
     public readonly keys: IColumn[] = [];
 
     public readonly nonKeys: IColumn[] = [];
+    public readonly fullyQualifiedTableName: string;
 
     @InstanceCache
     public get fullyQualifiedName() {
@@ -67,6 +68,7 @@ export default class EntityType {
         this.schema = original.schema ? (namingConvention ? namingConvention(original.schema) : original.schema) : original.schema;
         this.entityName = original.entityName;
         this.doNotCreate = original.doNotCreate;
+        this.fullyQualifiedTableName = this.schema ? `${this.schema}.${this.name}` : this.name;
     }
 
     [addOrCreateColumnSymbol](name: string): IColumn {

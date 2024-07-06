@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import ObjectPool, { IPooledObject } from "../../common/ObjectPool.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
+import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
@@ -107,6 +108,38 @@ export default class PostgreSqlDriver extends BaseDriver {
                 po.on("end", clear);
             },
         });
+    }
+
+    insertQuery(type: EntityType, entity: any): { text: string; values: any[]; } {
+        let fields = "";
+        let valueParams = "";
+        let returning = "";
+        const values = [];
+        let i = 1;
+        for (const iterator of type.columns) {
+            if (iterator.generated || iterator.computed) {
+                if (returning) {
+                    returning += ",";
+                } else {
+                    returning = "RETURNING ";
+                }
+                returning += iterator.columnName + " as " + this.compiler.quote(iterator.name);
+                continue;
+            }
+            const value = entity[iterator.name];
+            if (value === void 0) {
+                continue;
+            }
+            if (fields) {
+                fields += ",";
+                valueParams += ",";
+            }
+            fields += iterator.columnName;
+            valueParams += `$${i++}`;
+            values.push(value);
+        }
+        const text = `INSERT INTO ${type.fullyQualifiedTableName}(${fields}) VALUES (${valueParams}) ${returning}`;
+        return { text, values };
     }
 
     dispose() {

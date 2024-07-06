@@ -230,7 +230,9 @@ export default class EntityContext {
     }
 
     private async saveChangesInternalWithoutEvents(options?: ISaveOptions) {
+        const signal = options?.signal;
         const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
+        const { connection } = this;
         for (const iterator of copy) {
             switch (iterator.status) {
                 case "inserted":
@@ -238,23 +240,26 @@ export default class EntityContext {
                     // we are choosing not to create one complicated SQL as generation
                     // of insert requires checking if value is supplied or not, if not, we have to choose
                     // default value
-                    const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
-                    const r = await this.executeExpression(insert, options);
-                    iterator.apply(r);
+                    // const insert = this.driver.createInsertExpression(iterator.type, iterator.entity);
+                    // const r = await this.executeExpression(insert, options);
+                    const insert = this.driver.insertQuery(iterator.type, iterator.entity);
+                    const r = await connection.executeQuery(insert, signal);
+                    iterator.apply(r.rows[0]);
                     break;
                 case "modified":
                     // this will update the modified map
                     iterator.detect();
                     if (iterator.modified.size > 0) {
-                        const update = this.driver.createUpdateExpression(iterator);
-                        const r1 = await this.executeExpression(update, options);
-                        iterator.apply(r1 ?? {});
+                        // const update = this.driver.createUpdateExpression(iterator);
+                        const update = this.driver.updateQuery(iterator.type, iterator.entity, iterator.modified);
+                        const r1 = await connection.executeQuery(update, signal);
+                        iterator.apply(r1.rows?.[0] ?? {});
                     }
                     break;
                 case "deleted":
-                    const deleteQuery = this.driver.createDeleteExpression(iterator.type, iterator.entity);
+                    const deleteQuery = this.driver.deleteQuery(iterator.type, iterator.entity);
                     if (deleteQuery) {
-                        await this.executeExpression(deleteQuery, options);
+                        await connection.executeQuery(deleteQuery, signal);
                     }
                     iterator.apply({});
                     break;

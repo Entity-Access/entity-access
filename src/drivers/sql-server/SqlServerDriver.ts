@@ -7,6 +7,7 @@ import SqlServerQueryCompiler from "./SqlServerQueryCompiler.js";
 import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerAutomaticMigrations.js";
 import { SqlServerLiteral } from "./SqlServerLiteral.js";
 import TimedCache from "../../common/cache/TimedCache.js";
+import EntityType from "../../entity-query/EntityType.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
@@ -23,6 +24,39 @@ export default class SqlServerDriver extends BaseDriver {
     constructor(private readonly config: ISqlServerConnectionString) {
         super(config);
         config.server = config.host;
+    }
+
+    insertQuery(type: EntityType, entity: any): { text: string; values: any[]; } {
+        let fields = "";
+        let valueParams = "";
+        const values = [];
+        let returning = "";
+        let i = 1;
+        for (const iterator of type.columns) {
+            if (iterator.generated || iterator.computed) {
+                if (returning) {
+                    returning += ",";
+                } else {
+                    returning = "OUTPUT ";
+                }
+                returning += "INSERTED." + iterator.columnName + " as " + this.compiler.quote(iterator.name);
+                continue;
+            }
+            const field = iterator.columnName;
+            const value = entity[iterator.name];
+            if (value === void 0) {
+                continue;
+            }
+            values.push(value);
+            if (fields) {
+                fields += ",";
+                valueParams += ",";
+            }
+            fields += field;
+            valueParams += `$${i++}`;
+        }
+        const text = `INSERT INTO ${type.fullyQualifiedTableName}(${fields}) ${returning} VALUES (${valueParams})`;
+        return { text, values };
     }
 
     dispose() {
