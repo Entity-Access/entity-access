@@ -318,7 +318,7 @@ export abstract class BaseDriver {
                 continue;
             }
             if (columns) {
-                columns += "\r\n\t\t";
+                columns += ",\r\n\t\t";
             }
             columns += `${iterator.columnName} as ${quote(iterator.name)}`;
         }
