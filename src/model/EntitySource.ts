@@ -128,7 +128,7 @@ export class EntityStatements<T = any> {
         }
     }
 
-    async upsert(entity: Partial<T>, retry = 3) {
+    async upsert(entity: Partial<T>, updateAfterSelect: (x:T) => T, retry = 3) {
 
         const tx = this.context.connection.currentTransaction;
         let tid: string;
@@ -138,6 +138,19 @@ export class EntityStatements<T = any> {
         }
 
         try {
+            if (updateAfterSelect) {
+                let existing = await this.select(entity);
+                if (existing) {
+                    existing = updateAfterSelect(existing);
+                    for (const key in entity) {
+                        if (Object.prototype.hasOwnProperty.call(entity, key)) {
+                            const element = entity[key];
+                            existing[key] = element;
+                        }
+                    }
+                    entity = existing;
+                }
+            }
             const r = await this.update(entity);
             if (r) {
                 return r;
@@ -150,7 +163,7 @@ export class EntityStatements<T = any> {
                     await tx.rollbackTo(tid);
                 }
                 await sleep(300);
-                return await this.upsert(entity, retry);
+                return await this.upsert(entity, updateAfterSelect, retry);
             }
             throw error;
         }
