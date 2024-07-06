@@ -110,7 +110,10 @@ export class EntityStatements<T = any> {
         const q = driver.updateQuery(this.model, entity);
         // console.log(q.text);
         const r = await context.connection.executeQuery(q);
-        const result = r.updated ? r.rows[0] : void 0;
+        if (!r.updated) {
+            return void 0;
+        }
+        const result = r.rows[0];
         if (result) {
             for (const key in result) {
                 if (Object.prototype.hasOwnProperty.call(result, key)) {
@@ -118,8 +121,6 @@ export class EntityStatements<T = any> {
                     entity[key] = element;
                 }
             }
-        } else {
-            return void 0;
         }
         if (loadChangeEntry) {
             const ce = this.context.changeSet.getEntry(entity);

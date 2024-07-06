@@ -116,14 +116,15 @@ export default class PostgreSqlDriver extends BaseDriver {
         let returning = "";
         const values = [];
         let i = 1;
+        const { quote } = this.compiler;
         for (const iterator of type.columns) {
             if (iterator.generated || iterator.computed) {
                 if (returning) {
-                    returning += ",";
+                    returning += ",\r\n\t\t";
                 } else {
                     returning = "RETURNING ";
                 }
-                returning += iterator.columnName + " as " + this.compiler.quote(iterator.name);
+                returning += iterator.columnName + " as " + quote(iterator.name);
                 continue;
             }
             const value = entity[iterator.name];
@@ -131,8 +132,8 @@ export default class PostgreSqlDriver extends BaseDriver {
                 continue;
             }
             if (fields) {
-                fields += ",";
-                valueParams += ",";
+                fields += ",\r\n\t\t";
+                valueParams += ",\r\n\t\t";
             }
             fields += iterator.columnName;
             valueParams += `$${i++}`;
