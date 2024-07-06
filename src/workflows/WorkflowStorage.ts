@@ -230,9 +230,11 @@ export default class WorkflowStorage {
         state.taskGroup ||= "default";
         // await db.saveChanges();
         if(state[loadedFromDb]) {
-            await db.workflows.saveDirect({ mode: "update", changes: state });
+            // await db.workflows.saveDirect({ mode: "update", changes: state });
+            await db.workflows.statements.update(state);
         } else {
-            await db.workflows.saveDirect({ mode: "upsert", changes: state });
+            // await db.workflows.saveDirect({ mode: "upsert", changes: state });
+            await db.workflows.statements.upsert(state);
         }
         await tx.commit();
     }
