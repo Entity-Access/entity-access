@@ -69,6 +69,9 @@ export class EntityStatements<T = any> {
     async select(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
         const q = this.context.driver.selectQueryWithKeys(this.model, entity);
         const r = await this.context.connection.executeQuery(q);
+        if (!r.rows?.length) {
+            return void 0;
+        }
         const result = r.rows[0];
         if (result) {
             for (const key in result) {
