@@ -139,7 +139,7 @@ export class EntityStatements<T = any> {
 
         try {
             if (updateAfterSelect) {
-                let existing = await this.select(entity);
+                let existing = await this.select(entity) as T;
                 if (existing) {
                     existing = updateAfterSelect(existing);
                     for (const key in entity) {
