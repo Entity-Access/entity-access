@@ -32,14 +32,15 @@ export default class SqlServerDriver extends BaseDriver {
         const values = [];
         let returning = "";
         let i = 1;
+        const { quote } = this.compiler;
         for (const iterator of type.columns) {
             if (iterator.generated || iterator.computed) {
                 if (returning) {
-                    returning += ",";
+                    returning += ",\r\n\t\t";
                 } else {
                     returning = "OUTPUT ";
                 }
-                returning += "INSERTED." + iterator.columnName + " as " + this.compiler.quote(iterator.name);
+                returning += "INSERTED." + iterator.columnName + " as " + quote(iterator.name);
                 continue;
             }
             const field = iterator.columnName;
@@ -49,8 +50,8 @@ export default class SqlServerDriver extends BaseDriver {
             }
             values.push(value);
             if (fields) {
-                fields += ",";
-                valueParams += ",";
+                fields += ",\r\n\t\t";
+                valueParams += ",\r\n\t\t";
             }
             fields += field;
             valueParams += `$${i++}`;

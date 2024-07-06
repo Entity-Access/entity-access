@@ -65,40 +65,68 @@ export class EntityStatements<T = any> {
         this.context = source[contextSymbol];
     }
 
-    async select(keys: Partial<T>, loadChangeEntry = false): Promise<T> {
-        const q = this.context.driver.selectQueryWithKeys(this.model, keys);
+    async select(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
+        const q = this.context.driver.selectQueryWithKeys(this.model, entity);
         const r = await this.context.connection.executeQuery(q);
         const result = r.rows[0];
-        if (loadChangeEntry) {
-            const ce = this.context.changeSet.getEntry(result);
-            ce.apply(result);
-            return ce.entity;
+        if (result) {
+            for (const key in result) {
+                if (Object.prototype.hasOwnProperty.call(result, key)) {
+                    const element = result[key];
+                    entity[key] = element;
+                }
+            }
         }
-        return result;
+        if (loadChangeEntry) {
+            const ce = this.context.changeSet.getEntry(entity, entity);
+            return ce.entity as T;
+        }
+        return entity as T;
     }
 
     async insert(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
         const q = this.context.driver.insertQuery(this.model, entity);
+        // console.log(q.text);
         const r = await this.context.connection.executeQuery(q);
         const result = r.rows[0];
-        if (loadChangeEntry) {
-            const ce = this.context.changeSet.getEntry(result);
-            ce.apply(result);
-            return ce.entity;
+        if (result) {
+            for (const key in result) {
+                if (Object.prototype.hasOwnProperty.call(result, key)) {
+                    const element = result[key];
+                    entity[key] = element;
+                }
+            }
         }
-        return r.rows[0];
+        if (loadChangeEntry) {
+            const ce = this.context.changeSet.getEntry(entity, entity);
+            return ce.entity as any;
+        }
+        return entity as any;
     }
 
     async update(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
-        const q = this.context.driver.updateQuery(this.model, entity);
-        const r = await this.context.connection.executeQuery(q);
-        const result = r.rows?.[0];
-        if (loadChangeEntry) {
-            const ce = this.context.changeSet.getEntry(result);
-            ce.apply(result ?? {});
-            return ce.entity;
+        const { context } = this;
+        const { driver } = context;
+        const q = driver.updateQuery(this.model, entity);
+        // console.log(q.text);
+        const r = await context.connection.executeQuery(q);
+        const result = r.updated ? r.rows[0] : void 0;
+        if (result) {
+            for (const key in result) {
+                if (Object.prototype.hasOwnProperty.call(result, key)) {
+                    const element = result[key];
+                    entity[key] = element;
+                }
+            }
+        } else {
+            return void 0;
         }
-        return r.rows[0];
+        if (loadChangeEntry) {
+            const ce = this.context.changeSet.getEntry(entity);
+            ce.apply(entity ?? {});
+            return ce.entity as any;
+        }
+        return entity as any;
     }
 
     async selectOrInsert(entity: Partial<T>, retry = 3): Promise<T> {
@@ -128,7 +156,7 @@ export class EntityStatements<T = any> {
         }
     }
 
-    async upsert(entity: Partial<T>, updateAfterSelect: (x:T) => T, retry = 3): Promise<T> {
+    async upsert(entity: Partial<T>, updateAfterSelect?: (x:T) => T, retry = 3): Promise<T> {
 
         const tx = this.context.connection.currentTransaction;
         let tid: string;
@@ -142,13 +170,11 @@ export class EntityStatements<T = any> {
                 let existing = await this.select(entity) as T;
                 if (existing) {
                     existing = updateAfterSelect(existing);
-                    for (const key in entity) {
-                        if (Object.prototype.hasOwnProperty.call(entity, key)) {
-                            const element = entity[key];
-                            existing[key] = element;
+                    for (const key in existing) {
+                        if (Object.prototype.hasOwnProperty.call(existing, key)) {
+                            entity[key] = existing[key];
                         }
                     }
-                    entity = existing;
                 }
             }
             const r = await this.update(entity);

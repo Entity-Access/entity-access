@@ -272,11 +272,15 @@ export abstract class BaseDriver {
                     values.push(entity[iterator.name]);
                     continue;
                 }
+                const value = entity[iterator.name];
+                if (value === void 0) {
+                    continue;
+                }
                 if (setParams) {
                     setParams += ",\r\n\t\t";
                 }
                 setParams += `${iterator.columnName} = $${i++}`;
-                values.push(entity[iterator.name]);
+                values.push(value);
             }
         }
         const text = `UPDATE ${type.fullyQualifiedTableName}\r\n\tSET ${setParams}\r\n\tWHERE ${where}`;
@@ -303,6 +307,7 @@ export abstract class BaseDriver {
         let columns = "";
         const values = [];
         let i = 1;
+        const { quote } = this.compiler;
         for (const iterator of type.columns) {
             if (iterator.key) {
                 if(where) {
@@ -315,7 +320,7 @@ export abstract class BaseDriver {
             if (columns) {
                 columns += "\r\n\t\t";
             }
-            columns += `${iterator.columnName} as ${this.compiler.escapeLiteral(iterator.name)}`;
+            columns += `${iterator.columnName} as ${quote(iterator.name)}`;
         }
         const text = `SELECT ${columns}\r\n\tFROM ${type.fullyQualifiedTableName}\r\n\tWHERE ${where}`;
         return { text, values };
