@@ -145,7 +145,7 @@ export default class WorkflowStorage {
 
     async getWorkflow(id: string) {
         const db = new WorkflowContext(this.driver);
-        const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id && x.isWorkflow === true).first();
+        const r = await db.workflows.statements.select({}, { id, isWorkflow: true });
         if (r !== null) {
             return {
                 id,
@@ -170,7 +170,7 @@ export default class WorkflowStorage {
 
     async getAny(id: string) {
         const db = new WorkflowContext(this.driver);
-        const r = await db.workflows.where({ id }, (p) => (x) => x.id === p.id).first();
+        const r = await db.workflows.statements.select({}, { id });
         if (r !== null) {
             return {
                 id,
@@ -194,8 +194,9 @@ export default class WorkflowStorage {
         const db = new WorkflowContext(this.driver);
         if (text) {
             // save..
-            await db.workflows.where({ id }, (p) => (x) => x.id === p.id)
-                .update({ text}, (p) => (x) => ({ extra: p.text }));
+            await db.workflows.statements.update({ extra: text }, { id });
+            // await db.workflows.where({ id }, (p) => (x) => x.id === p.id)
+            //     .update({ text}, (p) => (x) => ({ extra: p.text }));
             return text;
         }
         const item = await db.workflows.where({ id }, (p) => (x) => x.id === p.id)
@@ -234,7 +235,7 @@ export default class WorkflowStorage {
             await db.workflows.statements.update(state);
         } else {
             // await db.workflows.saveDirect({ mode: "upsert", changes: state });
-            await db.workflows.statements.upsert({ entity: state });
+            await db.workflows.statements.upsert(state);
         }
         await tx.commit();
     }

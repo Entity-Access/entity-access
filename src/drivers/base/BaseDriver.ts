@@ -254,7 +254,7 @@ export abstract class BaseDriver {
                 values.push(value.newValue);
             }
             if (keys) {
-                for (const key of keys) {
+                for (const key of Object.keys(keys)) {
                     const iterator = type.getColumn(key);
                     if(where) {
                         where += "\r\n\t\tAND ";
@@ -285,7 +285,7 @@ export abstract class BaseDriver {
                 values.push(value);
             }
             if (keys) {
-                for (const key of keys) {
+                for (const key of Object.keys(keys)) {
                     const iterator = type.getColumn(key);
                     if(where) {
                         where += "\r\n\t\tAND ";
@@ -335,7 +335,7 @@ export abstract class BaseDriver {
             columns += `${iterator.columnName} as ${quote(iterator.name)}`;
         }
         if (keys) {
-            for (const key of keys) {
+            for (const key of Object.keys(keys)) {
                 const iterator = type.getColumn(key);
                 if(where) {
                     where += "\r\n\t\tAND ";
