@@ -161,8 +161,7 @@ export class EntityStatements<T = any> {
         }
     }
 
-    async upsert(p: { entity: Partial<T>, keys?: Partial<T>, updateAfterSelect?: (x:T) => T, retry?:number}): Promise<T> {
-        const { entity, keys, updateAfterSelect, retry = 3} = p;
+    async upsert(entity: Partial<T>, updateAfterSelect?: (x:T) => T, keys?: Partial<T>, retry = 3): Promise<T> {
         const tx = this.context.connection.currentTransaction;
         let tid: string;
         if (tx) {
@@ -188,13 +187,13 @@ export class EntityStatements<T = any> {
             }
             return await this.insert(entity);
         } catch (error) {
-            p.retry --;
+            retry --;
             if(retry > 0) {
                 if (tid) {
                     await tx.rollbackTo(tid);
                 }
                 await sleep(300);
-                return await this.upsert(p);
+                return await this.upsert(entity, updateAfterSelect, keys, retry);
             }
             throw error;
         }
