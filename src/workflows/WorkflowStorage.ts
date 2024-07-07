@@ -234,7 +234,7 @@ export default class WorkflowStorage {
             await db.workflows.statements.update(state);
         } else {
             // await db.workflows.saveDirect({ mode: "upsert", changes: state });
-            await db.workflows.statements.upsert(state);
+            await db.workflows.statements.upsert({ entity: state });
         }
         await tx.commit();
     }
