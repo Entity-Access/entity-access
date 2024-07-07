@@ -328,7 +328,7 @@ export abstract class BaseDriver {
         const values = [];
         let i = 1;
         const { quote } = this.compiler;
-        for (const iterator of type.nonKeys) {
+        for (const iterator of type.columns) {
             if (columns) {
                 columns += ",\r\n\t\t";
             }

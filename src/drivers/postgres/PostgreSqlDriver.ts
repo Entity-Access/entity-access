@@ -124,7 +124,7 @@ export default class PostgreSqlDriver extends BaseDriver {
                 } else {
                     returning = "RETURNING ";
                 }
-                returning += iterator.columnName + " as " + quote(iterator.name);
+                returning += iterator.quotedColumnName + " as " + iterator.quotedName;
                 continue;
             }
             const value = entity[iterator.name];
@@ -135,7 +135,7 @@ export default class PostgreSqlDriver extends BaseDriver {
                 fields += ",\r\n\t\t";
                 valueParams += ",\r\n\t\t";
             }
-            fields += iterator.columnName;
+            fields += iterator.quotedColumnName;
             valueParams += `$${i++}`;
             values.push(value);
         }
