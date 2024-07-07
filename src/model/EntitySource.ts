@@ -134,7 +134,7 @@ export class EntityStatements<T = any> {
         return entity as any;
     }
 
-    async selectOrInsert(entity: Partial<T>, keys: Partial<T>, retry = 3): Promise<T> {
+    async selectOrInsert(entity: Partial<T>, keys?: Partial<T>, retry = 3): Promise<T> {
         const tx = this.context.connection.currentTransaction;
         let tid: string;
         if (tx) {
