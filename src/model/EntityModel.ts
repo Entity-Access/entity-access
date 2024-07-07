@@ -6,16 +6,18 @@ import { BaseDriver } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
 import { IStringTransformer } from "../query/ast/IStringTransformer.js";
 import { IEntityRelation } from "../decorators/IColumn.js";
+import type QueryCompiler from "../compiler/QueryCompiler.js";
 
 const driverModelCache = Symbol("driverModelCache");
 
-const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, namingConvention: IStringTransformer) => {
+const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, compiler: QueryCompiler) => {
     let t = map.get(type);
     if (t) {
         return t;
     }
     const original = SchemaRegistry.model(type);
-    t = new EntityType(original, namingConvention);
+    const { namingConvention, quote } = compiler;
+    t = new EntityType(original, namingConvention, quote);
     map.set(type,  t);
     for (const iterator of original.columns) {
         const column = { ... iterator };
@@ -24,6 +26,8 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
             : (namingConvention
                     ? namingConvention(column.columnName) : column.columnName);
         column.entityType = t;
+        column.quotedColumnName = quote(column.columnName);
+        column.quotedName = quote(column.name);
         t.addColumn(column);
     }
     t.indexes.push(... original.indexes.map((i) => ({ ... i, columns: [ ... i.columns.map((c) => ( { ... c}))] })));
@@ -40,7 +44,7 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, naming
             continue;
         }
         const relation: IEntityRelation = { ... iterator, relatedEntity: void 0,type: t };
-        t.addRelation(relation, (tc) => getOrCreateModel(map, tc, namingConvention));
+        t.addRelation(relation, (tc) => getOrCreateModel(map, tc, compiler));
     }
     return t;
 };
@@ -58,10 +62,11 @@ export default class EntityModel {
         let source = this.sources.get(type);
         if (!source) {
             const cache = (this.context.driver[driverModelCache] ??= new Map());
+            const { compiler } = this.context.driver;
             const entityType = getOrCreateModel(
                 cache,
                 type,
-                this.context.driver.compiler.namingConvention
+                compiler
             );
             this.types.set(type, entityType);
             source = new EntitySource(entityType, this.context);

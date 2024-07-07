@@ -244,22 +244,22 @@ export abstract class BaseDriver {
                     if (returning) {
                         returning += ",";
                     }
-                    returning += iterator.columnName + " as " + this.compiler.quote(iterator.name);
+                    returning += `${iterator.quotedColumnName} as ${iterator.quotedName}`;
                     continue;
                 }
                 if (setParams) {
                     setParams += ",\r\n\t\t";
                 }
-                setParams += `${iterator.columnName} = $${i++}`;
+                setParams += `${iterator.quotedColumnName} = $${i++}`;
                 values.push(value.newValue);
             }
             if (keys) {
                 for (const key of Object.keys(keys)) {
-                    const iterator = type.getColumn(key);
+                    const iterator = type.getField(key);
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
-                    where += `${iterator.columnName} = $${i++}`;
+                    where += `${iterator.quotedColumnName} = $${i++}`;
                     values.push(keys[iterator.name]);
                 }
             } else {
@@ -267,7 +267,7 @@ export abstract class BaseDriver {
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
-                    where += `${iterator.columnName} = $${i++}`;
+                    where += `${iterator.quotedColumnName} = $${i++}`;
                     values.push(entity[iterator.name]);
                     continue;
                 }
@@ -281,16 +281,16 @@ export abstract class BaseDriver {
                 if (setParams) {
                     setParams += ",\r\n\t\t";
                 }
-                setParams += `${iterator.columnName} = $${i++}`;
+                setParams += `${iterator.quotedColumnName} = $${i++}`;
                 values.push(value);
             }
             if (keys) {
                 for (const key of Object.keys(keys)) {
-                    const iterator = type.getColumn(key);
+                    const iterator = type.getField(key);
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
-                    where += `${iterator.columnName} = $${i++}`;
+                    where += `${iterator.quotedColumnName} = $${i++}`;
                     values.push(keys[iterator.name]);
                 }
             } else {
@@ -298,7 +298,7 @@ export abstract class BaseDriver {
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
-                    where += `${iterator.columnName} = $${i++}`;
+                    where += `${iterator.quotedColumnName} = $${i++}`;
                     values.push(entity[iterator.name]);
                 }
             }
@@ -315,7 +315,7 @@ export abstract class BaseDriver {
             if(where) {
                 where += "\r\n\t\tAND ";
             }
-            where += `${iterator.columnName} = $${i++}`;
+            where += `${iterator.quotedColumnName} = $${i++}`;
             values.push(entity[iterator.name]);
         }
         const text = `DELETE FROM ${type.fullyQualifiedTableName}\r\n\tWHERE ${where}`;
@@ -332,15 +332,15 @@ export abstract class BaseDriver {
             if (columns) {
                 columns += ",\r\n\t\t";
             }
-            columns += `${iterator.columnName} as ${quote(iterator.name)}`;
+            columns += `${iterator.quotedColumnName} as ${iterator.quotedName}`;
         }
         if (keys) {
             for (const key of Object.keys(keys)) {
-                const iterator = type.getColumn(key);
+                const iterator = type.getField(key);
                 if(where) {
                     where += "\r\n\t\tAND ";
                 }
-                where += `${iterator.columnName} = $${i++}`;
+                where += `${iterator.quotedColumnName} = $${i++}`;
                 values.push(keys[iterator.name]);
             }
         } else {
@@ -348,7 +348,7 @@ export abstract class BaseDriver {
                 if(where) {
                     where += "\r\n\t\tAND ";
                 }
-                where += `${iterator.columnName} = $${i++}`;
+                where += `${iterator.quotedColumnName} = $${i++}`;
                 values.push(entity[iterator.name]);
             }
         }

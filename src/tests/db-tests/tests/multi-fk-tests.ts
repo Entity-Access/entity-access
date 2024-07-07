@@ -13,29 +13,20 @@ export default async function(this: TestConfig) {
     const { userID } = await context.users.asQuery().first();
     const { categoryID } = await context.categories.asQuery().first();
 
-    await context.userCategories.saveDirect({
-        mode: "insert",
-        changes: {
-            userID,
-            categoryID
-        }
+    await context.userCategories.statements.insert({
+        userID,
+        categoryID
     });
 
-    await context.userCategoryTags.saveDirect({
-        mode: "insert",
-        changes: {
-            categoryID,
-            userID,
-            tag: "A"
-        }
+    await context.userCategoryTags.statements.insert({
+        categoryID,
+        userID,
+        tag: "A"
     });
-    await context.userCategoryTags.saveDirect({
-        mode: "insert",
-        changes: {
-            categoryID,
-            userID,
-            tag: "B"
-        }
+    await context.userCategoryTags.statements.insert({
+        categoryID,
+        userID,
+        tag: "B"
     });
 
     const first = await context.userCategories.asQuery()

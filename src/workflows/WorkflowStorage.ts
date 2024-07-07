@@ -146,7 +146,7 @@ export default class WorkflowStorage {
     async getWorkflow(id: string) {
         const db = new WorkflowContext(this.driver);
         const r = await db.workflows.statements.select({}, { id, isWorkflow: true });
-        if (r !== null) {
+        if (r) {
             return {
                 id,
                 parentID: r.parentID,
@@ -171,7 +171,7 @@ export default class WorkflowStorage {
     async getAny(id: string) {
         const db = new WorkflowContext(this.driver);
         const r = await db.workflows.statements.select({}, { id });
-        if (r !== null) {
+        if (r) {
             return {
                 id,
                 parentID: r.parentID,

@@ -40,10 +40,9 @@ export default class SqlServerDriver extends BaseDriver {
                 } else {
                     returning = "OUTPUT ";
                 }
-                returning += "INSERTED." + iterator.columnName + " as " + quote(iterator.name);
+                returning += "INSERTED." + iterator.quotedColumnName + " as " + iterator.quotedName;
                 continue;
             }
-            const field = iterator.columnName;
             const value = entity[iterator.name];
             if (value === void 0) {
                 continue;
@@ -53,7 +52,7 @@ export default class SqlServerDriver extends BaseDriver {
                 fields += ",\r\n\t\t";
                 valueParams += ",\r\n\t\t";
             }
-            fields += field;
+            fields += iterator.quotedColumnName;
             valueParams += `$${i++}`;
         }
         const text = `INSERT INTO ${type.fullyQualifiedTableName}(${fields}) ${returning} VALUES (${valueParams})`;

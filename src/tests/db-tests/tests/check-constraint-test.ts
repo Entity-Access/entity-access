@@ -18,14 +18,11 @@ export default async function(this: TestConfig) {
     try {
 
         // try direct save...
-        await context.productPrices.saveDirect({
-            mode: "insert",
-            changes: {
-                productID: first.productID,
-                active: true,
-                amount: -1,
-                startDate: new Date(),
-            }
+        await context.productPrices.statements.insert({
+            productID: first.productID,
+            active: true,
+            amount: -1,
+            startDate: new Date(),
         });
     } catch (error) {
         // expcted...

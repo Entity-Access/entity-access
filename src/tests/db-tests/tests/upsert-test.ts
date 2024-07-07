@@ -13,36 +13,35 @@ export default async function(this: TestConfig) {
     let changes = { address: "e@e.com"};
     let keys = { ... changes };
 
-    let e = await context.emailAddresses.saveDirect({ mode: "upsert", changes, keys});
+    let e = await context.emailAddresses.statements.upsert(changes, void 0, keys);
     assert.strictEqual("1", e.id);
-    e = await context.emailAddresses.saveDirect({ mode: "upsert", changes, keys});
-    assert.strictEqual("1", e.id);
-
-    e = await context.emailAddresses.saveDirect({
-        mode: "upsert",
-        changes: { ... changes, name: "a" },
-        keys: {
-            id: e.id
-        }
-    });
+    e = await context.emailAddresses.statements.upsert(changes, void 0, keys);
     assert.strictEqual("1", e.id);
 
-    e = await context.emailAddresses.saveDirect({
-        mode: "selectOrInsert",
-        changes: { ... changes },
-        keys: {
+    e = await context.emailAddresses.statements.upsert(
+        { ... changes, name: "a" },
+        void 0,
+        {
             id: e.id
         }
-    });
+    );
+    assert.strictEqual("1", e.id);
+
+    e = await context.emailAddresses.statements.selectOrInsert(
+        { ... changes },
+        {
+            id: e.id
+        }
+    );
     assert.strictEqual("1", e.id);
     assert.strictEqual("a", e.name);
 
     changes = { address: "a@e.com"};
     keys = { ... changes };
-    e = await context.emailAddresses.saveDirect({ mode: "selectOrInsert", changes, keys});
+    e = await context.emailAddresses.statements.selectOrInsert(changes, keys);
     assert.strictEqual("2", e.id);
 
-    e = await context.emailAddresses.saveDirect({ mode: "selectOrInsert", changes, keys});
+    e = await context.emailAddresses.statements.selectOrInsert(changes, keys);
     assert.strictEqual("2", e.id);
 
     await context.saveChanges();

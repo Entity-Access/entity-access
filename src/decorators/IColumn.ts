@@ -15,6 +15,9 @@ export interface IColumn {
      */
     formattedName?: string;
 
+    quotedName?: string;
+    quotedColumnName?: string;
+
     order?: number;
     key?: boolean;
     /**

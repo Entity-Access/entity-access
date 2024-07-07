@@ -59,7 +59,7 @@ export default class EntityType {
     private selectAll: SelectStatement;
     private selectOne: SelectStatement;
 
-    constructor(original?: EntityType, namingConvention?: IStringTransformer) {
+    constructor(original?: EntityType, namingConvention?: IStringTransformer, quote?: IStringTransformer) {
         if (!original) {
             return;
         }
@@ -68,7 +68,9 @@ export default class EntityType {
         this.schema = original.schema ? (namingConvention ? namingConvention(original.schema) : original.schema) : original.schema;
         this.entityName = original.entityName;
         this.doNotCreate = original.doNotCreate;
-        this.fullyQualifiedTableName = this.schema ? `${this.schema}.${this.name}` : this.name;
+        this.fullyQualifiedTableName = quote
+            ? (this.schema ? quote(this.schema) + "." + quote(this.name) : quote(this.name))
+            : this.schema ? this.schema + "." + this.name : this.name;
     }
 
     [addOrCreateColumnSymbol](name: string): IColumn {
