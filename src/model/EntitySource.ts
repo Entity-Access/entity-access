@@ -108,7 +108,7 @@ export class EntityStatements<T = any> {
         return entity as any;
     }
 
-    async update(entity: Partial<T>, keys: Partial<T>, loadChangeEntry = false): Promise<T> {
+    async update(entity: Partial<T>, keys?: Partial<T>, loadChangeEntry = false): Promise<T> {
         const { context } = this;
         const { driver } = context;
         const q = driver.updateQuery(this.model, entity, void 0, keys);
@@ -161,7 +161,7 @@ export class EntityStatements<T = any> {
         }
     }
 
-    async upsert(entity: Partial<T>, keys: Partial<T>, updateAfterSelect?: (x:T) => T, retry = 3): Promise<T> {
+    async upsert(entity: Partial<T>, keys?: Partial<T>, updateAfterSelect?: (x:T) => T, retry = 3): Promise<T> {
 
         const tx = this.context.connection.currentTransaction;
         let tid: string;
