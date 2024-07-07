@@ -232,7 +232,7 @@ export abstract class BaseDriver {
 
     abstract insertQuery(type: EntityType, entity): { text: string, values: any[] };
 
-    updateQuery(type: EntityType, entity: any, changes?: Map<IColumn, IChange>): { text: string; values: any[]; } {
+    updateQuery(type: EntityType, entity: any, changes?: Map<IColumn, IChange>, keys?: any): { text: string; values: any[]; } {
         let where = "";
         let setParams = "";
         let returning = "";
@@ -253,18 +253,17 @@ export abstract class BaseDriver {
                 setParams += `${iterator.columnName} = $${i++}`;
                 values.push(value.newValue);
             }
-            for (const iterator of type.keys) {
-                if(where) {
-                    where += "\r\n\t\tAND ";
+            if (keys) {
+                for (const key of keys) {
+                    const iterator = type.getColumn(key);
+                    if(where) {
+                        where += "\r\n\t\tAND ";
+                    }
+                    where += `${iterator.columnName} = $${i++}`;
+                    values.push(keys[iterator.name]);
                 }
-                where += `${iterator.columnName} = $${i++}`;
-                values.push(entity[iterator.name]);
-                continue;
-
-            }
-        } else {
-            for (const iterator of type.columns) {
-                if (iterator.key) {
+            } else {
+                for (const iterator of type.keys) {
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
@@ -272,6 +271,9 @@ export abstract class BaseDriver {
                     values.push(entity[iterator.name]);
                     continue;
                 }
+            }
+        } else {
+            for (const iterator of type.nonKeys) {
                 const value = entity[iterator.name];
                 if (value === void 0) {
                     continue;
@@ -281,6 +283,24 @@ export abstract class BaseDriver {
                 }
                 setParams += `${iterator.columnName} = $${i++}`;
                 values.push(value);
+            }
+            if (keys) {
+                for (const key of keys) {
+                    const iterator = type.getColumn(key);
+                    if(where) {
+                        where += "\r\n\t\tAND ";
+                    }
+                    where += `${iterator.columnName} = $${i++}`;
+                    values.push(keys[iterator.name]);
+                }
+            } else {
+                for (const iterator of type.keys) {
+                    if(where) {
+                        where += "\r\n\t\tAND ";
+                    }
+                    where += `${iterator.columnName} = $${i++}`;
+                    values.push(entity[iterator.name]);
+                }
             }
         }
         const text = `UPDATE ${type.fullyQualifiedTableName}\r\n\tSET ${setParams}\r\n\tWHERE ${where}`;
@@ -302,25 +322,35 @@ export abstract class BaseDriver {
         return { text, values };
     }
 
-    selectQueryWithKeys(type: EntityType, entity) {
+    selectQueryWithKeys(type: EntityType, entity, keys?) {
         let where = "";
         let columns = "";
         const values = [];
         let i = 1;
         const { quote } = this.compiler;
-        for (const iterator of type.columns) {
-            if (iterator.key) {
+        for (const iterator of type.nonKeys) {
+            if (columns) {
+                columns += ",\r\n\t\t";
+            }
+            columns += `${iterator.columnName} as ${quote(iterator.name)}`;
+        }
+        if (keys) {
+            for (const key of keys) {
+                const iterator = type.getColumn(key);
+                if(where) {
+                    where += "\r\n\t\tAND ";
+                }
+                where += `${iterator.columnName} = $${i++}`;
+                values.push(keys[iterator.name]);
+            }
+        } else {
+            for (const iterator of type.keys) {
                 if(where) {
                     where += "\r\n\t\tAND ";
                 }
                 where += `${iterator.columnName} = $${i++}`;
                 values.push(entity[iterator.name]);
-                continue;
             }
-            if (columns) {
-                columns += ",\r\n\t\t";
-            }
-            columns += `${iterator.columnName} as ${quote(iterator.name)}`;
         }
         const text = `SELECT ${columns}\r\n\tFROM ${type.fullyQualifiedTableName}\r\n\tWHERE ${where}`;
         return { text, values };

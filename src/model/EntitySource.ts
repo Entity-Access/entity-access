@@ -66,8 +66,8 @@ export class EntityStatements<T = any> {
         this.context = source[contextSymbol];
     }
 
-    async select(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
-        const q = this.context.driver.selectQueryWithKeys(this.model, entity);
+    async select(entity: Partial<T>, keys: Partial<T>, loadChangeEntry = false): Promise<T> {
+        const q = this.context.driver.selectQueryWithKeys(this.model, entity, keys);
         const r = await this.context.connection.executeQuery(q);
         if (!r.rows?.length) {
             return void 0;
@@ -108,10 +108,10 @@ export class EntityStatements<T = any> {
         return entity as any;
     }
 
-    async update(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
+    async update(entity: Partial<T>, keys: Partial<T>, loadChangeEntry = false): Promise<T> {
         const { context } = this;
         const { driver } = context;
-        const q = driver.updateQuery(this.model, entity);
+        const q = driver.updateQuery(this.model, entity, void 0, keys);
         // console.log(q.text);
         const r = await context.connection.executeQuery(q);
         if (!r.updated) {
@@ -134,7 +134,7 @@ export class EntityStatements<T = any> {
         return entity as any;
     }
 
-    async selectOrInsert(entity: Partial<T>, retry = 3): Promise<T> {
+    async selectOrInsert(entity: Partial<T>, keys: Partial<T>, retry = 3): Promise<T> {
         const tx = this.context.connection.currentTransaction;
         let tid: string;
         if (tx) {
@@ -143,7 +143,7 @@ export class EntityStatements<T = any> {
         }
 
         try {
-            const r = await this.select(entity);
+            const r = await this.select(entity, keys);
             if (r) {
                 return r;
             }
@@ -155,13 +155,13 @@ export class EntityStatements<T = any> {
                     await tx.rollbackTo(tid);
                 }
                 await sleep(300);
-                return await this.selectOrInsert(entity, retry);
+                return await this.selectOrInsert(entity, keys, retry);
             }
             throw error;
         }
     }
 
-    async upsert(entity: Partial<T>, updateAfterSelect?: (x:T) => T, retry = 3): Promise<T> {
+    async upsert(entity: Partial<T>, keys: Partial<T>, updateAfterSelect?: (x:T) => T, retry = 3): Promise<T> {
 
         const tx = this.context.connection.currentTransaction;
         let tid: string;
@@ -172,7 +172,7 @@ export class EntityStatements<T = any> {
 
         try {
             if (updateAfterSelect) {
-                let existing = await this.select(entity) as T;
+                let existing = await this.select(entity, keys) as T;
                 if (existing) {
                     existing = updateAfterSelect(existing);
                     for (const key in existing) {
@@ -182,7 +182,7 @@ export class EntityStatements<T = any> {
                     }
                 }
             }
-            const r = await this.update(entity);
+            const r = await this.update(entity, keys);
             if (r) {
                 return r;
             }
@@ -194,7 +194,7 @@ export class EntityStatements<T = any> {
                     await tx.rollbackTo(tid);
                 }
                 await sleep(300);
-                return await this.upsert(entity, updateAfterSelect, retry);
+                return await this.upsert(entity, keys, updateAfterSelect, retry);
             }
             throw error;
         }
