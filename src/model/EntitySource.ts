@@ -67,7 +67,10 @@ export class EntityStatements<T = any> {
     }
 
     async select(entity: Partial<T>, keys: Partial<T>, loadChangeEntry = false): Promise<T> {
-        const q = this.context.driver.selectQueryWithKeys(this.model, entity, keys);
+        const { context } = this;
+        const q = context.driver.selectQueryWithKeys(this.model, entity, keys);
+        const { logger } = context;
+        logger?.debug(q.text);
         const r = await this.context.connection.executeQuery(q);
         if (!r.rows?.length) {
             return void 0;
@@ -89,9 +92,12 @@ export class EntityStatements<T = any> {
     }
 
     async insert(entity: Partial<T>, loadChangeEntry = false): Promise<T> {
-        const q = this.context.driver.insertQuery(this.model, entity);
+        const { context } = this;
+        const q = context.driver.insertQuery(this.model, entity);
         // console.log(q.text);
-        const r = await this.context.connection.executeQuery(q);
+        const r = await context.connection.executeQuery(q);
+        const { logger } = context;
+        logger?.debug(q.text);
         const result = r.rows[0];
         if (result) {
             for (const key in result) {
@@ -112,6 +118,8 @@ export class EntityStatements<T = any> {
         const { context } = this;
         const { driver } = context;
         const q = driver.updateQuery(this.model, entity, void 0, keys);
+        const { logger } = context;
+        logger?.debug(q.text);
         // console.log(q.text);
         const r = await context.connection.executeQuery(q);
         if (!r.updated) {
@@ -163,6 +171,7 @@ export class EntityStatements<T = any> {
 
     async upsert(entity: Partial<T>, updateAfterSelect?: (x:T) => T, keys?: Partial<T>, retry = 3): Promise<T> {
         const tx = this.context.connection.currentTransaction;
+        const logger = this.context.logger;
         let tid: string;
         if (tx) {
             tid = `txp_${Date.now()}`;
@@ -187,6 +196,7 @@ export class EntityStatements<T = any> {
             }
             return await this.insert(entity);
         } catch (error) {
+            logger?.error(error);
             retry --;
             if(retry > 0) {
                 if (tid) {

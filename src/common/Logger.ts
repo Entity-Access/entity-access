@@ -13,12 +13,14 @@ export default class Logger implements IDisposable {
     private static globalInstance: ConsoleLogger;
 
     log(a) {
-        console.log(a);
+        return this;
+    }
+
+    debug(a) {
         return this;
     }
 
     error(a) {
-        console.error(a.stack ?? a);
         return this;
     }
 
@@ -40,6 +42,11 @@ export class ConsoleLogger extends Logger {
 
     error(a) {
         console.error(a.stack ?? a);
+        return this;
+    }
+
+    debug(a: any) {
+        console.debug(a);
         return this;
     }
 
