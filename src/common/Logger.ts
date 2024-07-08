@@ -76,8 +76,17 @@ class SessionLogger extends Logger {
         return this;
     }
 
+    debug(a: any): this {
+        this.items.push({ debug: a});
+        return this;
+    }
+
     [Symbol.dispose](): void {
-        for (const { log, error } of this.items) {
+        for (const { log, error, debug } of this.items) {
+            if (debug) {
+                this.parent.debug(debug);
+                continue;
+            }
             if (log) {
                 this.parent.log(log);
                 continue;
