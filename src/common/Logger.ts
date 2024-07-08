@@ -24,6 +24,10 @@ export default class Logger implements IDisposable {
         return this;
     }
 
+    warn(a) {
+        return this;
+    }
+
     newSession() {
         return new SessionLogger(this);
     }
@@ -54,6 +58,11 @@ export class ConsoleLogger extends Logger {
 
     debug(a: any) {
         console.debug(a);
+        return this;
+    }
+
+    warn(a: any) {
+        console.warn(a);
         return this;
     }
 
@@ -88,14 +97,23 @@ class SessionLogger extends Logger {
         return this;
     }
 
+    warn(a: any): this {
+        this.items.push({ warn: a});
+        return this;
+    }
+
     [Symbol.dispose](): void {
-        for (const { log, error, debug } of this.items) {
+        for (const { log, error, debug, warn } of this.items) {
             if (debug) {
                 this.parent.debug(debug);
                 continue;
             }
             if (log) {
                 this.parent.log(log);
+                continue;
+            }
+            if (warn) {
+                this.parent.warn(warn);
                 continue;
             }
             if (error) {
