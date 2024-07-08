@@ -196,7 +196,7 @@ export class EntityStatements<T = any> {
             }
             return await this.insert(entity);
         } catch (error) {
-            logger?.warn(error);
+            logger?.debug(error);
             retry --;
             if(retry > 0) {
                 if (tid) {

@@ -222,10 +222,9 @@ export default class EntityQuery<T = any>
         const updateStatement = this.getUpdateStatement(p, f, true);
 
         await using scope = new AsyncDisposableScope();
-        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        const session = this.context.logger ?? Logger.nullLogger;
         let query: { text: string, values: any[]};
         try {
-            scope.register(session);
             const type = this.type;
             const signal = this.signal;
 
@@ -256,7 +255,7 @@ export default class EntityQuery<T = any>
 
         const updateStatement = this.getUpdateStatement(p, f);
 
-        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        const session = this.context.logger ?? Logger.nullLogger;
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(this, updateStatement);
@@ -540,7 +539,7 @@ export default class EntityQuery<T = any>
         const nq = new EntityQuery({ ... this, selectStatement: select });
 
         await using scope = new AsyncDisposableScope();
-        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        const session = this.context.logger ?? Logger.nullLogger;
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(nq, select);
@@ -579,7 +578,7 @@ export default class EntityQuery<T = any>
         const nq = new EntityQuery({ ... this, selectStatement: select });
 
         await using scope = new AsyncDisposableScope();
-        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        const session = this.context.logger ?? Logger.nullLogger;
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(nq, select);
@@ -621,7 +620,7 @@ export default class EntityQuery<T = any>
         const nq = new EntityQuery({ ... this, selectStatement: select });
 
         await using scope = new AsyncDisposableScope();
-        const session = this.context.logger?.newSession() ?? Logger.nullLogger;
+        const session = this.context.logger ?? Logger.nullLogger;
         let query;
         try {
             query = this.context.driver.compiler.compileExpression(nq, select);
