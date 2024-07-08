@@ -35,6 +35,13 @@ export default class Logger implements IDisposable {
 
 export class ConsoleLogger extends Logger {
 
+    constructor(debugEnabled = false) {
+        super();
+        if (!debugEnabled) {
+            this.debug = () => this;
+        }
+    }
+
     log(a) {
         console.log(a);
         return this;
