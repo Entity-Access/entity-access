@@ -322,10 +322,10 @@ export default class WorkflowStorage {
         return list;
     }
 
-    async seed() {
+    async seed(version?) {
         const db = new WorkflowContext(this.driver);
         await db.connection.ensureDatabase();
-        await db.connection.automaticMigrations().migrate(db);
+        await db.connection.automaticMigrations().migrate(db, { version });
     }
 
 }
