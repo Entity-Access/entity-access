@@ -11,6 +11,14 @@ import PostgresMigrations from "./PostgresMigrations.js";
 
 export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
+    async ensureVersionTable(context: EntityContext, table: string) {
+        await context.connection.executeQuery(`CREATE TABLE IF NOT EXISTS ${table}(
+            "version" CHAR(200) NOT NULL,
+            "dateCreated" TIMESTAMP DEFAULT NOW(),
+            constraint PK_MigrationTable_Version PRIMARY KEY ("version")
+        )`);
+    }
+
     async migrateTable(context: EntityContext, type: EntityType) {
 
 

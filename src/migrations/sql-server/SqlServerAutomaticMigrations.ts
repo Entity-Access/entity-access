@@ -11,6 +11,16 @@ import SqlServerMigrations from "./SqlServerMigrations.js";
 
 export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
+    async ensureVersionTable(context: EntityContext, table: string) {
+        await context.connection.executeQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(table)}) IS NULL BEGIN
+            CREATE TABLE ${table}(
+            [version] VARCHAR(200) NOT NULL,
+            [dateCreated] DATETIME2 DEFAULT GETUTCDATE(),
+            constraint PK_MigrationTable_Version PRIMARY KEY ([version])
+        )
+        END`);
+    }
+
     async migrateTable(context: EntityContext, type: EntityType) {
 
 
