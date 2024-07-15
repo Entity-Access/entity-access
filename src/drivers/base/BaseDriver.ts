@@ -247,6 +247,9 @@ export abstract class BaseDriver {
                     returning += `${iterator.quotedColumnName} as ${iterator.quotedName}`;
                     continue;
                 }
+                if (!iterator.quotedColumnName) {
+                    continue;
+                }
                 if (setParams) {
                     setParams += ",\r\n\t\t";
                 }
