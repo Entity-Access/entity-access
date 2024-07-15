@@ -13,9 +13,10 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
     async ensureVersionTable(context: EntityContext, table: string) {
         await context.connection.executeQuery(`CREATE TABLE IF NOT EXISTS ${table}(
+            "name" CHAR(200) NOT NULL,
             "version" CHAR(200) NOT NULL,
             "dateCreated" TIMESTAMP DEFAULT NOW(),
-            constraint PK_MigrationTable_Version PRIMARY KEY ("version")
+            constraint PK_MigrationTable_Version PRIMARY KEY ("name","version")
         )`);
     }
 

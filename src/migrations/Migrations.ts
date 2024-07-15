@@ -13,15 +13,16 @@ export default abstract class Migrations {
 
     public async migrate(context: EntityContext , {
         version,
+        name = "default",
         historyTableName = "migrations",
         seed,
-    }: { version?: string, historyTableName?: string, seed?: (c: EntityContext) => Promise<any>} = {} ) {
+    }: { version?: string, name?: string, historyTableName?: string, seed?: (c: EntityContext) => Promise<any>} = {} ) {
         const { model } = context;
         const postMigration = [] as (() => Promise<void>)[];
 
         if (version) {
             // check if we have already stored this version...
-            if(await this.hasVersion(context, version, historyTableName)) {
+            if(await this.hasVersion(context, name, version, historyTableName)) {
                 console.warn(`Skipping migration, migration already exists for ${version}`);
                 return false;
             }
@@ -97,34 +98,38 @@ export default abstract class Migrations {
             if (seed) {
                 await seed(context);
             }
-            await this.commitVersion(context, version, historyTableName);
+            await this.commitVersion(context, name, version, historyTableName);
         }
         return true;
     }
 
-    async hasVersion(context: EntityContext, version: string, table: string) {
+    async hasVersion(context: EntityContext, name: string, version: string, table: string) {
         const { quote, escapeLiteral } = this.compiler;
 
         table = quote(table);
         const versionColumn = quote("version");
+        const nameColumn = quote("name");
         version = escapeLiteral(version);
+        name = escapeLiteral(name);
 
         await this.ensureVersionTable(context, table);
 
-        const r = await context.connection.executeQuery(`SELECT * FROM ${table} WHERE ${versionColumn} = ${version}`);
+        const r = await context.connection.executeQuery(`SELECT * FROM ${table} WHERE ${nameColumn} = ${name} AND ${versionColumn} = ${version}`);
         return r.rows?.length > 0;
     }
 
     abstract ensureVersionTable(context: EntityContext, table: string): Promise<any>;
 
-    async commitVersion(context: EntityContext, version, table) {
+    async commitVersion(context: EntityContext, name, version, table) {
         const { quote, escapeLiteral } = this.compiler;
 
         table = quote(table);
         const versionColumn = quote("version");
+        const nameColumn = quote("name");
         version = escapeLiteral(version);
+        name = escapeLiteral(name);
 
-        await context.connection.executeQuery(`INSERT INTO ${table}(${versionColumn}) VALUES (${version})`);
+        await context.connection.executeQuery(`INSERT INTO ${table}(${nameColumn}, ${versionColumn}) VALUES (${name}, ${version})`);
     }
 
     async migrateIndexInternal(context: EntityContext, index: IIndex, type: EntityType) {
