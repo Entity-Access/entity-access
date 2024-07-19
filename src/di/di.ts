@@ -109,6 +109,10 @@ export class ServiceProvider implements IDisposable {
         }
     }
 
+    attach(item) {
+        item[serviceProvider] = this;
+    }
+
     dispose() {
         this[Symbol.dispose]();
     }
