@@ -56,6 +56,11 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return prepareAny `(${a} ::boolean)`;
         }
     },
+    crypto: {
+        randomUUID() {
+            return [`gen_random_uuid()`];
+        },
+    },
     date: {
         now() {
             return prepareAny `NOW()`;

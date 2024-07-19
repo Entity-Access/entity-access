@@ -1,5 +1,7 @@
 import DateTime from "../types/DateTime.js";
 
+class GUID {}
+
 export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;
@@ -19,11 +21,13 @@ export interface ISql {
         asDecimal(a: any): number;
         asBoolean(a: any): boolean;
     },
+    crypto: {
+        randomUUID(): GUID
+    },
     math: {
         min<T>(... a: T[]): T,
         max<T>(... a: T[]): T,
     },
-
     text: {
         concat(... fragments: string[]): string;
         concatImmutable(... fragments: string[]): string;

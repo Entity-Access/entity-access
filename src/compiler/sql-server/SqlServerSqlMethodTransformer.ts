@@ -46,6 +46,11 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `CAST(${a} as bit)`;
         }
     },
+    crypto: {
+        randomUUID() {
+            return [`NEWID()`];
+        },
+    },
     date: {
         now() {
             return prepareAny `GETUTCDATE()`;
