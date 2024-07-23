@@ -8,6 +8,11 @@ export default class Restructure extends TransformVisitor {
     private map: Map<string, bpe.Node> = new Map();
 
     visitUnaryExpression(node: bpe.UnaryExpression): bpe.Node {
+        if (node.operator === "-") {
+            if (node.argument.type === "NumericLiteral") {
+                return bpe.numericLiteral(-node.argument.value);
+            }
+        }
         return node;
     }
 

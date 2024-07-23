@@ -203,6 +203,11 @@ export class NotExpression extends Expression {
     expression: Expression;
 }
 
+export class NegateExpression extends Expression {
+    readonly type = "NegateExpression";
+    expression: Expression;
+}
+
 export class ExistsExpression extends Expression {
     readonly type = "ExistsExpression";
     target: Expression;
@@ -485,6 +490,7 @@ export type ExpressionType =
     NotExits |
     UnionAllStatement |
     NotExpression |
+    NegateExpression |
     BracketExpression |
     TemplateElement
 ;

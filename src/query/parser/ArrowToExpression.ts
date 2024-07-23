@@ -1,5 +1,5 @@
 import { parseExpression } from "@babel/parser";
-import { ArrowFunctionExpression, BinaryExpression, BooleanLiteral, BracketExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NewObjectExpression, NotExpression, NullExpression, NumberLiteral, ParameterExpression, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
+import { ArrowFunctionExpression, BinaryExpression, BooleanLiteral, BracketExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, Expression, ExpressionAs, Identifier, MemberExpression, NegateExpression, NewObjectExpression, NotExpression, NullExpression, NumberLiteral, ParameterExpression, StringLiteral, TemplateLiteral } from "../ast/Expressions.js";
 import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import Restructure from "./Restructure.js";
@@ -129,6 +129,10 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     visitUnaryExpression(node: bpe.UnaryExpression): Expression {
+        switch(node.operator) {
+            case "-":
+                return NegateExpression.create({ expression: this.visit(node.argument)});
+        }
         return NotExpression.create({ expression: this.visit(node.argument)});
     }
 
