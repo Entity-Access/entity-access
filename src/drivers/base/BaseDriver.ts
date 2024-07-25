@@ -262,16 +262,27 @@ export abstract class BaseDriver {
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
+                    const compare = keys[iterator.name];
+                    if (compare === null) {
+                        where += `${iterator.quotedColumnName} is null`;
+                        continue;
+                    }
                     where += `${iterator.quotedColumnName} = $${i++}`;
-                    values.push(keys[iterator.name]);
+                    values.push(compare);
                 }
             } else {
                 for (const iterator of type.keys) {
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
+                    const compare = entity[iterator.name];
+                    if (compare === null) {
+                        where += `${iterator.quotedColumnName} is null`;
+                        continue;
+                    }
+
                     where += `${iterator.quotedColumnName} = $${i++}`;
-                    values.push(entity[iterator.name]);
+                    values.push(compare);
                     continue;
                 }
             }
@@ -293,16 +304,26 @@ export abstract class BaseDriver {
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
+                    const compare = keys[iterator.name];
+                    if (compare === null) {
+                        where += `${iterator.quotedColumnName} is null`;
+                        continue;
+                    }
                     where += `${iterator.quotedColumnName} = $${i++}`;
-                    values.push(keys[iterator.name]);
+                    values.push(compare);
                 }
             } else {
                 for (const iterator of type.keys) {
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
+                    const compare = entity[iterator.name];
+                    if (compare === null) {
+                        where += `${iterator.quotedColumnName} is null`;
+                        continue;
+                    }
                     where += `${iterator.quotedColumnName} = $${i++}`;
-                    values.push(entity[iterator.name]);
+                    values.push(compare);
                 }
             }
         }
@@ -343,16 +364,27 @@ export abstract class BaseDriver {
                 if(where) {
                     where += "\r\n\t\tAND ";
                 }
+                const compare = keys[iterator.name];
+                if (compare === null) {
+                    where += `${iterator.quotedColumnName} is null`;
+                    continue;
+                }
+
                 where += `${iterator.quotedColumnName} = $${i++}`;
-                values.push(keys[iterator.name]);
+                values.push(compare);
             }
         } else {
             for (const iterator of type.keys) {
                 if(where) {
                     where += "\r\n\t\tAND ";
                 }
+                const compare = entity[iterator.name];
+                if (compare === null) {
+                    where += `${iterator.quotedColumnName} is null`;
+                    continue;
+                }
                 where += `${iterator.quotedColumnName} = $${i++}`;
-                values.push(entity[iterator.name]);
+                values.push(compare);
             }
         }
         const text = `SELECT ${columns}\r\n\tFROM ${type.fullyQualifiedTableName}\r\n\tWHERE ${where}`;
