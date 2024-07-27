@@ -38,6 +38,10 @@ export class ShoppingContext extends EntityContext {
     public emailAddresses = this.model.register(EmailAddress);
 
     public userCategoryTags = this.model.register(UserCategoryTag);
+
+    public messages = this.model.register(UserMessage);
+
+    public archivedMessages = this.model.register(ArchivedUserMessage);
 }
 
 @Table("Users")
@@ -392,4 +396,36 @@ export class OrderItem {
     public product: Product;
     public productPrice: ProductPrice;
 
+}
+
+@Table("UserMessages")
+export class UserMessage {
+
+    @Column({ dataType: "BigInt", key: true, generated: "identity"})
+    messageID: number;
+
+    @Column({ dataType: "BigInt"})
+    fromID: number;
+
+    @Column({ dataType: "BigInt"})
+    toID: number;
+
+    @Column({ dataType: "Char"})
+    message: string;
+}
+
+@Table("ArchivedUserMessages")
+export class ArchivedUserMessage {
+
+    @Column({ dataType: "BigInt", key: true, generated: "identity"})
+    messageID: number;
+
+    @Column({ dataType: "BigInt"})
+    fromID: number;
+
+    @Column({ dataType: "BigInt"})
+    toID: number;
+
+    @Column({ dataType: "Char"})
+    message: string;
 }

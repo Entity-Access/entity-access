@@ -1,9 +1,10 @@
 import EntityAccessError from "../common/EntityAccessError.js";
 import Logger from "../common/Logger.js";
+import { modelSymbol } from "../common/symbols/symbols.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, DeleteStatement, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
@@ -31,29 +32,30 @@ export default class EntityQuery<T = any>
     }
 
     insertInTo(es: EntitySource) {
-        const model = (es as any).mode as EntityType;
-        const table = (es as any).model.fullyQualifiedName as TableLiteral;
-        const fields = [];
+        const model = es[modelSymbol] as EntityType;
+        const table = model.fullyQualifiedName as TableLiteral;
+        const fields = [] as string[];
         for (const iterator of this.selectStatement.fields) {
             if (iterator.type !== "ExpressionAs") {
-                fields.push(iterator);
-                continue;
+                throw new EntityAccessError(`as Expression expected instead of ${iterator.type}`);
             }
             const expAs = iterator as ExpressionAs;
             const field = model.getField(expAs.alias.value);
             if (!field) {
                 throw new EntityAccessError(`Field ${expAs.alias.value} not found in ${model.name}`);
             }
-            fields.push(Expression.as(expAs.expression, field.columnName));
+            fields.push(field.quotedColumnName);
         }
-        const values = { ... this.selectStatement, fields };
-        const query = InsertStatement.create({
-            table,
-            values
-        });
+        const query = { ... this.selectStatement };
         const { driver } = this.context;
-        const insert = driver.compiler.compileExpression(null, query);
-        return this.context.connection.executeQuery(insert, this.signal);
+        const selectQuery = driver.compiler.compileExpression(null, query);
+        const insertQuery = `INSERT INTO ${model.fullyQualifiedTableName}(${fields.join(",")})
+        ${selectQuery.text}`;
+        this.traceQuery?.(insertQuery);
+        return this.context.connection.executeQuery({
+            text: insertQuery,
+            values: selectQuery.values
+        }, this.signal);
     }
 
     selectView(parameters: any, fx: any): any {

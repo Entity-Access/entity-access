@@ -217,6 +217,8 @@ export class CallExpression extends Expression {
     readonly type = "CallExpression";
     callee: Expression;
     arguments: Expression[];
+    collectionMethod: string;
+    castMethod: string;
 }
 
 export class BracketExpression extends Expression {

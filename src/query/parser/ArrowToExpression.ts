@@ -268,9 +268,12 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
         const method = name[2];
 
+        const castMethod = name[1] === "cast" ? name[2] : void 0;
+
         const reWrittenCe = CallExpression.create({
             callee: Expression.identifier(name.join(".")),
-            arguments: ce.arguments
+            arguments: ce.arguments,
+            castMethod
         });
 
 
@@ -290,6 +293,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
         }
 
         const left = CallExpression.create({
+            collectionMethod: method,
             callee: MemberExpression.create({
                 target: mapCallee.target,
                 property: Expression.identifier(method),
