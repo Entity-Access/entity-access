@@ -241,10 +241,17 @@ function addHeadPhones(context: ShoppingContext, now: Date, owner: User) {
         children: [
             context.categories.add({
                 name: "Bluetooth",
-                categoryID: `${headPhoneCategory}/blue-tooth`
+                categoryID: `${headPhoneCategory}/blue-tooth`,
+                children: [
+                    context.categories.add({
+                        name: "BT 200",
+                        categoryID: `${headPhoneCategory}/blue-tooth/bt-200`,
+                    })
+                ]
             })
         ]
     });
+
 
     const startDate = new Date();
     const active = true;

@@ -581,16 +581,18 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     visitUpdateStatement(e: UpdateStatement): ITextQuery {
 
         const table = this.visit(e.table);
+        let where;
+        let set;
 
         if (e.join) {
             this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model });
             const as = e.join.as as ParameterExpression;
             this.scope.create({ parameter: as, model: as.model });
             const join = this.visit(e.join.source);
-            const where = this.visit(e.where);
+            where = this.visit(e.where);
             const joinName = this.scope.nameOf(as);
             const asName = this.scope.nameOf(e.sourceParameter);
-            const set = this.visitArray(e.set, ",");
+            set = this.visitArray(e.set, ",");
             const returning = e.returnUpdated ? [ ` RETURNING `, ... e.returnUpdated.map((r, i) => i
                 ? [ `, ${asName}.`, this.visit(r.expression), ` as ${this.visit(r.alias)}`]
                 : [ `${asName}.`, this.visit(r.expression), ` as ${this.visit(r.alias)}`]
@@ -599,9 +601,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
         }
 
-        const where = this.visit(e.where);
+        where = this.visit(e.where);
 
-        const set = this.visitArray(e.set);
+        set = this.visitArray(e.set);
 
         return prepare `UPDATE ${table} SET ${set} WHERE ${where}`;
     }
@@ -721,18 +723,19 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
     visitDeleteStatement(e: DeleteStatement): ITextQuery {
         const table = this.visit(e.table);
+        let where;
         if (e.join) {
             this.scope.create({ parameter: e.sourceParameter, model: e.sourceParameter.model });
             const as = e.join.as as ParameterExpression;
             this.scope.create({ parameter: as, model: as.model });
             const join = this.visit(e.join.source);
-            const where = this.visit(e.join.where);
+            where = this.visit(e.join.where);
             const joinName = this.scope.nameOf(as);
             const asName = this.scope.nameOf(e.sourceParameter);
             return prepare `WITH ${joinName} as (${join}) DELETE FROM ${table} as ${asName} USING ${joinName} WHERE ${where}`;
         }
 
-        const where = this.visit(e.where);
+        where = this.visit(e.where);
         return prepare `DELETE FROM ${table} WHERE ${where}`;
     }
 
@@ -777,6 +780,14 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     private resolveExpression(x: Expression): Expression {
+
+        const targetName = (mep: MemberExpression) => {
+            if (mep.target?.type === "MemberExpression") {
+                return targetName(mep.target as MemberExpression) + "." + (me.property as Identifier).value;
+            }
+            return (me.property as Identifier)?.value ?? "";
+        };
+
         if (x.type === "ParameterExpression") {
             const p1 = x as ParameterExpression;
             const scoped = this.scope.get(p1);
@@ -805,6 +816,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
                     if (!relation.isCollection) {
 
+                        const targetPath = targetName(me);
+
                         // let columnName = fkColumn.columnName;
                         // // for inverse relation, we need to
                         // // use primary key of current model
@@ -819,7 +832,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                         const select = scope?.selectStatement ?? this.source?.selectStatement;
                         if (select) {
                             select.joins ??= [];
-                            let join = select.joins.find((j) => j.model === relation.relatedEntity);
+                            let join = select.joins.find((j) => j.model === relation.relatedEntity && j.path === targetPath);
                             if (join) {
                                 // verify if join exits..
                                 this.scope.create({ parameter: join.as as ParameterExpression, model: join.model, selectStatement: select });
@@ -846,6 +859,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 joinType,
                                 model: joinParameter.model,
                                 source: Expression.identifier(relation.relatedEntity.name),
+                                path: targetPath,
                                 where
                             });
                             select.joins.push(join);

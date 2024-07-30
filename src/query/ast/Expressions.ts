@@ -312,6 +312,7 @@ export class JoinExpression extends Expression {
     as: Identifier | ParameterExpression;
     where: Expression;
     model: EntityType;
+    path: string;
 }
 
 export class ReturnUpdated extends Expression {
