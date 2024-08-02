@@ -88,6 +88,9 @@ export class EntityStatements<T = any> {
             const ce = this.context.changeSet.getEntry(entity, entity);
             return ce.entity as T;
         }
+        if (entity) {
+            Object.setPrototypeOf(entity, this.model.typeClass.prototype);
+        }
         return entity as T;
     }
 
