@@ -132,16 +132,18 @@ export interface IWorkflowResult<T> {
     extra?: string;
 }
 
+export interface IWorkflowThrottleGroup {
+    group: string;
+    maxPerSecond: number;
+}
+
 export interface IWorkflowQueueParameter {
     id?: string;
     throwIfExists?: boolean;
     eta?: DateTime;
     parentID?: string;
     taskGroup?: string;
-    throttle?: {
-        group: string;
-        maxPerSecond: number;
-    }
+    throttle?: IWorkflowThrottleGroup;
 }
 
 export interface IWorkflowStartParams {
@@ -317,7 +319,7 @@ export default class WorkflowContext {
         return pending.length;
     }
 
-    async runChild(w: Workflow, type, input) {
+    async runChild(w: Workflow, type, input, throttle?: IWorkflowThrottleGroup) {
 
         // there might still be some workflows pending
         // this will ensure even empty workflow !!
@@ -342,7 +344,7 @@ export default class WorkflowContext {
             throw new ActivitySuspendedError();
         }
 
-        await this.queue(type, input, { id, parentID: w.id });
+        await this.queue(type, input, { id, parentID: w.id, throttle });
         throw new ActivitySuspendedError();
     }
 
