@@ -3,7 +3,7 @@ import Inject from "../di/di.js";
 import DateTime from "../types/DateTime.js";
 import TimeSpan from "../types/TimeSpan.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
-import WorkflowContext from "./WorkflowContext.js";
+import WorkflowContext, { IWorkflowThrottleGroup } from "./WorkflowContext.js";
 import { WorkflowRegistry } from "./WorkflowRegistry.js";
 
 
@@ -84,8 +84,8 @@ export default abstract class Workflow<TIn = any, TOut = any> {
         }>({} as any);
     }
 
-    protected async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn): Promise<TChildOut> {
-        return this.context.runChild(this, type, input);
+    protected async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn, throttle?: IWorkflowThrottleGroup): Promise<TChildOut> {
+        return this.context.runChild(this, type, input, throttle);
     }
 
     protected async all<T extends readonly unknown[] | []>(values: T): Promise<{ -readonly [P in keyof T]: Awaited<T[P]> }>{
