@@ -56,7 +56,7 @@ export const flattenMethods = (m: any): ISqlMethodTransformer => {
     return (compiler: QueryCompiler, method: string, args: string[]) => {
         const fx = map.get(method);
         if (!fx) {
-            throw new EntityAccessError(`Invalid method ${method}`);
+            throw new EntityAccessError(`Invalid method ${method}`, 501);
         }
         return fx.apply(compiler, args);
     };

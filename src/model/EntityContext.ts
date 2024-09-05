@@ -59,7 +59,7 @@ export default class EntityContext {
         const eventsClass = this.events?.for(type, fail);
         if (!eventsClass) {
             if (fail) {
-                EntityAccessError.throw(`No rules defined for ${type.name}`);
+                EntityAccessError.throw(`No rules defined for ${type.name}`, 422);
             }
             return null;
         }

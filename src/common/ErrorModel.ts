@@ -11,7 +11,7 @@ export default class ErrorModel {
         return this.paramErrors.map((x) => x.name ? `${x.name}: ${x.reason}` : x.reason).join("\r\n");
     }
 
-    constructor(public title: string) {
+    constructor(public title: string, public readonly status = 500) {
     }
 
     public addError(name: string, reason: string) {

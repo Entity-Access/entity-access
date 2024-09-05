@@ -121,7 +121,7 @@ export default class ObjectPool<T> {
         }
 
         if (this.total >= this.maxSize) {
-            throw new EntityAccessError(`Maximum size of pool reached. Retry after sometime.`);
+            throw new EntityAccessError(`Maximum size of pool reached. Retry after sometime.`, 503);
         }
         this.total++;
 
