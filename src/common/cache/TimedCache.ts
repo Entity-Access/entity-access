@@ -1,7 +1,11 @@
 import CustomEvent from "../CustomEvent.js";
 import EventSet from "../EventSet.js";
 
-export default class TimedCache<TKey = any, T = any> {
+const w = new FinalizationRegistry<any>((heldValue) => {
+    clearInterval(heldValue);
+});
+
+export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     public deletedEvent = new EventSet<TKey>(this);
 
@@ -9,8 +13,16 @@ export default class TimedCache<TKey = any, T = any> {
 
     private map: Map<TKey,{ value: any, expire: number, ttl: number, dispose?: (item: any) => any }> = new Map();
 
+    private cid: NodeJS.Timer;
+
     constructor(private ttl = 15000) {
-        setInterval((x) => x.clear(), this.ttl, this);
+        const cid = setInterval((x) => x.clearExpired(), this.ttl, this);
+        w.register(this, cid);
+        this.cid = cid;
+    }
+
+    [Symbol.dispose]() {
+        clearInterval(this.cid);
     }
 
     delete(key: any) {
@@ -22,13 +34,8 @@ export default class TimedCache<TKey = any, T = any> {
      * Delete all the keys from the cache
      * @param dispatchEvents dispatch deleted Event
      */
-    deleteAll(dispatchEvents = true) {
-        if (dispatchEvents) {
-            for (const key of this.map.keys()) {
-                this.deletedEvent.dispatch(key);
-            }
-        }
-        this.map.clear();
+    clear() {
+        this.clearExpired(Number.POSITIVE_INFINITY);
     }
 
     getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = 15000) {
@@ -70,23 +77,24 @@ export default class TimedCache<TKey = any, T = any> {
         return item.value;
     }
 
-    private clear(): void {
+    private clearExpired(max = Date.now()): void {
         const expired = [];
-        const now = Date.now();
-        for (const [key, value] of Array.from(this.map.entries())) {
-            if(value.expire < now) {
-                expired.push(key);
-                // call dispose..
-                this.map.delete(key);
-                this.deletedEvent.dispatch(key);
-                try {
-                    const r = value.dispose?.(value.value);
-                    if (r?.then) {
-                        r.catch(() => void 0);
-                    }
-                } catch (error) {
-                    console.error(error);
+        for (const entry of this.map.entries()) {
+            if(entry[1].expire < max) {
+                expired.push(entry);
+            }
+        }
+        for (const [key, value] of expired) {
+            // call dispose..
+            this.map.delete(key);
+            this.deletedEvent.dispatch(key);
+            try {
+                const r = value.dispose?.(value.value);
+                if (r?.then) {
+                    r.catch(() => void 0);
                 }
+            } catch (error) {
+                console.error(error);
             }
         }
     }

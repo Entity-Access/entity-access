@@ -14,7 +14,8 @@
         "emitDecoratorMetadata": true,
         "lib": [
             "ES2018",
-            "ESNext.Disposable"
+            "ESNext.Disposable",
+            "ES2021.WeakRef"
         ]
     },
     "include": [
