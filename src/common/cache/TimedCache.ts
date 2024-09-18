@@ -18,6 +18,19 @@ export default class TimedCache<TKey = any, T = any> {
         this.map.delete(key);
     }
 
+    /**
+     * Delete all the keys from the cache
+     * @param dispatchEvents dispatch deleted Event
+     */
+    deleteAll(dispatchEvents = true) {
+        if (dispatchEvents) {
+            for (const key of this.map.keys()) {
+                this.deletedEvent.dispatch(key);
+            }
+        }
+        this.map.clear();
+    }
+
     getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = 15000) {
         let item = this.map.get(key);
         if (!item) {
