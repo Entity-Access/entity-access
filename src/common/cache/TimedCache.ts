@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import CustomEvent from "../CustomEvent.js";
 import EventSet from "../EventSet.js";
 
@@ -27,6 +28,17 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     delete(key: any) {
         this.deletedEvent.dispatch(key);
+        const item = this.map.get(key);
+        if (!item) {
+            return;
+        }
+        try {
+            if (item.dispose) {
+                item.dispose(item.value)?.catch?.(console.error);
+            }
+        } catch {
+            // do nothing
+        }
         this.map.delete(key);
     }
 
