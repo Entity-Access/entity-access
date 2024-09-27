@@ -36,26 +36,21 @@ export default class ChangeSet {
 
     *getChanges(max = 5): Generator<ChangeEntry, any, any> {
 
+        this.detectChanges();
+
         const pending = [] as ChangeEntry[];
-        const d = this.addedEvent.listen((ce) => pending.push(ce.detail));
-        try {
-            this.detectChanges();
+        using d = this.addedEvent.listen((ce) => pending.push(ce.detail));
 
-            yield * [].concat(this.entries) as any;
+        yield * [].concat(this.entries) as any;
 
-            while(pending.length) {
-                const copy = [].concat(pending) as ChangeEntry[];
-                for (const iterator of copy) {
-                    iterator.setupInverseProperties();
-                    iterator.detect();
-                }
-                pending.length = 0;
-                yield *copy as any;
+        while(pending.length) {
+            const copy = [].concat(pending) as ChangeEntry[];
+            for (const iterator of copy) {
+                iterator.setupInverseProperties();
+                iterator.detect();
             }
-
-
-        } finally {
-            d[Symbol.dispose]();
+            pending.length = 0;
+            yield *copy as any;
         }
     }
 
