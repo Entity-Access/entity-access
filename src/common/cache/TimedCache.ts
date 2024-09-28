@@ -18,12 +18,13 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     constructor(private ttl = 15000) {
         const cid = setInterval((x) => x.clearExpired(), this.ttl, this);
-        w.register(this, cid);
+        w.register(this, cid, cid);
         this.cid = cid;
     }
 
     [Symbol.dispose]() {
         clearInterval(this.cid);
+        w.unregister(this.cid);
     }
 
     delete(key: any) {
