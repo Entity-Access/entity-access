@@ -1,7 +1,9 @@
 /* eslint-disable no-console */
+import assert from "assert";
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 import { Query } from "../../../query/Query.js";
 import { TestConfig } from "../../TestConfig.js";
+import DateTime from "../../../types/DateTime.js";
 
 export default async function (this: TestConfig) {
 
@@ -16,14 +18,18 @@ export default async function (this: TestConfig) {
     await connection.executeQuery(`SELECT 1;`);
 
     // select items...
-    const items = await connection.executeReader(`SELECT * FROM (VALUES (1, 1), (1, 1)) as V(ID, Value)`);
+    await using items = await connection.executeReader(`SELECT * FROM (VALUES (1, 1), (1, 1)) as V(ID, Value)`);
 
-    try {
-        for await (const iterator of items.next(100)) {
-            console.log(iterator);
-        }
-    } finally {
-        await items.dispose();
+    for await (const iterator of items.next(100)) {
+        console.log(iterator);
     }
 
+    const { rows: [ { now }] } = await connection.executeQuery(`SELECT NOW() as "now"`);
+
+    assert(now instanceof DateTime);
+    assert(now instanceof Date);
+
+    const { rows: [ { nullDate }] } = await connection.executeQuery(`SELECT null ::timestamp as "nullDate"`);
+
+    assert(nullDate === null);
 }
