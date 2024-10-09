@@ -4,6 +4,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
+import DateTime from "../../types/DateTime.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
@@ -27,6 +28,11 @@ export interface IPgSqlConnectionString extends IDbConnectionString {
 const pgID = Symbol("pgID");
 
 pg.types.setTypeParser(pg.types.builtins.INT8, (n) => n === "0" ? 0 : n);
+
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, (n) => n === null ? null : new DateTime(n));
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMPTZ, (n) => n === null ? null : new DateTime(n));
+pg.types.setTypeParser(pg.types.builtins.DATE, (n) => n === null ? null : new DateTime(n));
+pg.types.setTypeParser(pg.types.builtins.TIMETZ, (n) => n === null ? null : new DateTime(n));
 
 class DbReader implements IDbReader {
 

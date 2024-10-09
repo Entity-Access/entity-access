@@ -16,8 +16,8 @@ export interface ISql {
         asInteger(a: any): number;
         asBigInt(a: any): number;
         asText(a: any): string;
-        asDate(a: any): Date;
-        asDateTime(a: any): Date;
+        asDate(a: any): DateTime;
+        asDateTime(a: any): DateTime;
         asDecimal(a: any): number;
         asBoolean(a: any): boolean;
     },
@@ -89,12 +89,13 @@ export interface ISql {
         minuteOf(d: Date|DateTime): number;
         hourOf(d: Date|DateTime): number;
         secondOf(d: Date|DateTime): number;
-        addYears(d: Date|DateTime, n: number): Date;
-        addMonths(d: Date|DateTime, n: number): Date;
-        addDays(d: Date|DateTime, n: number): Date;
-        addHours(d: Date|DateTime, n: number): Date;
-        addMinutes(d: Date|DateTime, n: number): Date;
-        addSeconds(d: Date|DateTime, n: number): Date;
+
+        addYears<T extends Date | DateTime>(d: T, n: number): T;
+        addMonths<T extends Date | DateTime>(d: T, n: number): T;
+        addDays<T extends Date | DateTime>(d: T, n: number): T;
+        addHours<T extends Date | DateTime>(d: T, n: number): T;
+        addMinutes<T extends Date | DateTime>(d: T, n: number): T;
+        addSeconds<T extends Date | DateTime>(d: T, n: number): T;
         epoch(d: DateTime);
     }
 

@@ -8,10 +8,17 @@ import SqlServerAutomaticMigrations from "../../migrations/sql-server/SqlServerA
 import { SqlServerLiteral } from "./SqlServerLiteral.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 import EntityType from "../../entity-query/EntityType.js";
+import DateTime from "../../types/DateTime.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
 const namedPool = new TimedCache<string, sql.ConnectionPool>();
+
+sql.map.register(DateTime, sql.Date);
+sql.map.register(DateTime, sql.DateTime);
+sql.map.register(DateTime, sql.DateTime2);
+sql.map.register(DateTime, sql.DateTimeOffset);
+sql.map.register(DateTime, sql.SmallDateTime);
 
 export default class SqlServerDriver extends BaseDriver {
 
