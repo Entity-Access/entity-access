@@ -13,6 +13,10 @@ export default async function (this: TestConfig) {
 
     const connection = this.driver.newConnection();
 
+    if (!(this.driver instanceof PostgreSqlDriver)) {
+        return;
+    }
+
     await connection.ensureDatabase();
     // create table...
     await connection.executeQuery(`SELECT 1;`);
