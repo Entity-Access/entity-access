@@ -29,7 +29,7 @@ export default async function (this: TestConfig) {
     assert(now instanceof DateTime);
     assert(now instanceof Date);
 
-    const { rows: [ { nullDate }] } = await connection.executeQuery(`SELECT null ::timestamp as "nullDate"`);
+    const { rows: [ { nullDate }] } = await connection.executeQuery({ text: `SELECT $1::timestamp as "nullDate"`, values: [null] });
 
     assert(nullDate === null);
 }

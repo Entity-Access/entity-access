@@ -29,10 +29,18 @@ const pgID = Symbol("pgID");
 
 pg.types.setTypeParser(pg.types.builtins.INT8, (n) => n === "0" ? 0 : n);
 
-pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, (n) => n === null ? null : new DateTime(n));
-pg.types.setTypeParser(pg.types.builtins.TIMESTAMPTZ, (n) => n === null ? null : new DateTime(n));
-pg.types.setTypeParser(pg.types.builtins.DATE, (n) => n === null ? null : new DateTime(n));
-pg.types.setTypeParser(pg.types.builtins.TIMETZ, (n) => n === null ? null : new DateTime(n));
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, (n) =>
+    new DateTime(n)
+);
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMPTZ, (n) =>
+    new DateTime(n)
+);
+pg.types.setTypeParser(pg.types.builtins.DATE, (n) =>
+    new DateTime(n)
+);
+pg.types.setTypeParser(pg.types.builtins.TIMETZ, (n) =>
+    new DateTime(n)
+);
 
 class DbReader implements IDbReader {
 
