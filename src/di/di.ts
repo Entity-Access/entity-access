@@ -72,7 +72,6 @@ export class ServiceProvider implements IDisposable {
     }
 
     resolve<T>(type: IClassOf<T>, doNotThrow?: boolean): T {
-        let instance;
         const sd = this.getRegistration(type, false, doNotThrow);
         if (!sd) {
             return;
@@ -83,23 +82,12 @@ export class ServiceProvider implements IDisposable {
                 if (this[globalServiceProvider] === this) {
                     throw new Error(`Unable to create scoped service ${type?.name ?? type} in global scope.`);
                 }
-                instance = this.map.get(key);
-                if (!instance) {
-                    instance = this.createFromDescriptor(sd);
-                    this.map.set(key, instance);
-                }
-                return  instance;
+                return this.map.get(key) ?? this.createFromDescriptor(sd, key);
             case "Singleton":
                 const sp = this[globalServiceProvider];
-                instance = sp.map.get(key);
-                if (!instance) {
-                    instance = sp.createFromDescriptor(sd);
-                    sp.map.set(key, instance);
-                }
-                return  instance;
+                return sp.map.get(key) ?? sp.createFromDescriptor(sd, key);
             case "Transient":
-                instance = this.createFromDescriptor(sd);
-                return instance;
+                return this.createFromDescriptor(sd, key);
         }
     }
 
@@ -149,11 +137,12 @@ export class ServiceProvider implements IDisposable {
         return sd;
     }
 
-    private createFromDescriptor(sd: IServiceDescriptor): any {
+    private createFromDescriptor(sd: IServiceDescriptor, key): any {
         if(sd.factory) {
             const instance = sd.factory(this);
             instance[serviceProvider] = this;
             instance[globalServiceProvider] = this[globalServiceProvider];
+            this.map.set(key, instance);
             // initialize properties...
             this.resolveProperties(instance);
             if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
@@ -161,7 +150,7 @@ export class ServiceProvider implements IDisposable {
             }
             return instance;
         }
-        return this.createFromType(sd.key);
+        return this.createFromType(sd.key, key);
     }
 
     private resolveProperties(instance, type?) {
@@ -177,12 +166,13 @@ export class ServiceProvider implements IDisposable {
         }
     }
 
-    private createFromType(type): any {
+    private createFromType(type, key = type): any {
         const injectTypes = type[injectServiceTypesSymbol] as any[];
         const injectServices = injectTypes
             ? injectTypes.map((x) => this.resolve(x))
             : [];
         const instance = new type(... injectServices);
+        this.map.set(key, instance);
         instance[serviceProvider] = this;
         instance[globalServiceProvider] = this[globalServiceProvider];
         if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
