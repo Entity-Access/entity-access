@@ -48,18 +48,19 @@ export class ServiceProvider implements IDisposable {
         this.map.set(ServiceProvider, this);
     }
 
-    add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T, registerDisposable = false) {
+    add<T1, T extends T1>(type: IAbstractClassOf<T1> | IClassOf<T1>, instance: T) {
         this.getRegistration(type, true);
         this.map.set(type, instance);
         instance[serviceProvider] = this;
         instance[globalServiceProvider] = this[globalServiceProvider];
         this.resolveProperties(instance);
-        if (registerDisposable) {
-            if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
-                (this.disposables ??= []).push(instance);
-            }
-        }
         return instance;
+    }
+
+    registerDisposable(instance) {
+        if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
+            (this.disposables ??= []).push(instance);
+        }
     }
 
     createScope() {
