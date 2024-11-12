@@ -87,11 +87,6 @@ export class ServiceProvider implements IDisposable {
                 if (!instance) {
                     instance = this.createFromDescriptor(sd);
                     this.map.set(key, instance);
-                    instance[serviceProvider] = this;
-                    instance[globalServiceProvider] = this[globalServiceProvider];
-                    if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
-                        (this.disposables ??= []).push(instance);
-                    }
                 }
                 return  instance;
             case "Singleton":
@@ -99,18 +94,11 @@ export class ServiceProvider implements IDisposable {
                 instance = sp.map.get(key);
                 if (!instance) {
                     instance = sp.createFromDescriptor(sd);
-                    instance[serviceProvider] = this;
-                    instance[globalServiceProvider] = sp;
                     sp.map.set(key, instance);
-                    if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
-                        (sp.disposables ??= []).push(instance);
-                    }
                 }
                 return  instance;
             case "Transient":
                 instance = this.createFromDescriptor(sd);
-                instance[serviceProvider] = this;
-                instance[globalServiceProvider] = this[globalServiceProvider];
                 return instance;
         }
     }
@@ -168,6 +156,9 @@ export class ServiceProvider implements IDisposable {
             instance[globalServiceProvider] = this[globalServiceProvider];
             // initialize properties...
             this.resolveProperties(instance);
+            if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
+                (this.disposables ??= []).push(instance);
+            }
             return instance;
         }
         return this.createFromType(sd.key);
@@ -194,6 +185,9 @@ export class ServiceProvider implements IDisposable {
         const instance = new type(... injectServices);
         instance[serviceProvider] = this;
         instance[globalServiceProvider] = this[globalServiceProvider];
+        if (instance[Symbol.dispose] || instance[Symbol.asyncDispose]) {
+            (this.disposables ??= []).push(instance);
+        }
         // initialize properties...
         this.resolveProperties(instance, type);
         return instance;
