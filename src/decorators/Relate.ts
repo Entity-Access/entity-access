@@ -86,7 +86,7 @@ export function RelateToOne(c, p?): any {
         }
     }
 
-    const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex } = p;
+    const { property, inverseKey: invKey, inverseProperty, dotNotCreateIndex, foreignKeyConstraint } = p;
 
     return (target: any, fkName: string): any => {
 
@@ -105,6 +105,7 @@ export function RelateToOne(c, p?): any {
             relatedName: NameParser.parseMember(inverseProperty),
             relatedKey: invKey ? NameParser.parseMember(invKey) : void 0,
             doNotCreateIndex: dotNotCreateIndex,
+            foreignKeyConstraint,
             singleInverseRelation: true
         });
 
