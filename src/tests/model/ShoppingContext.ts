@@ -145,7 +145,11 @@ export class UserProfile {
     @Column({ key: true, dataType: "BigInt"})
     @RelateToOne(User, {
         property: (up) => up.user,
-        inverseProperty: (u) => u.profile
+        inverseProperty: (u) => u.profile,
+        foreignKeyConstraint: {
+            name: "FC_UserProfiles_User",
+            cascade: "delete"
+        }
     })
     public profileID: number;
 
