@@ -287,7 +287,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (this.source?.context) {
             const query = FilteredExpression.isFiltered(e)
                 ? this.source.context.query(relatedType)
-                : this.source.context.filteredQuery(relatedType, "include", false, targetType);
+                : this.source.context.filteredQuery(relatedType, "include", false, targetType.typeClass);
             select = { ...(query as EntityQuery).selectStatement };
             select.fields = [
                 NumberLiteral.create({ value: 1 })
@@ -335,7 +335,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (this.source?.context) {
             const query = FilteredExpression.isFiltered(e)
                 ? this.source.context.query(relatedType)
-                : this.source.context.filteredQuery(relatedType, "include", false, targetType);
+                : this.source.context.filteredQuery(relatedType, "include", false, targetType.typeClass);
             select = { ...(query as EntityQuery).selectStatement };
             select.fields = [
                 NumberLiteral.create({ value: 1 })
