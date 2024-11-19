@@ -18,7 +18,6 @@ interface IPropertyChain {
 interface IPropertyMethods {
     identifier?: Identifier;
     parameter?: ParameterExpression;
-    
 }
 
 export interface IMappingModel {
