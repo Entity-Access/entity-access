@@ -335,7 +335,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (this.source?.context) {
             const query = FilteredExpression.isFiltered(e)
                 ? this.source.context.query(relatedType)
-                : this.source.context.filteredQuery(relatedType, "include", false);
+                : this.source.context.filteredQuery(relatedType, "include", false, targetType);
             select = { ...(query as EntityQuery).selectStatement };
             select.fields = [
                 NumberLiteral.create({ value: 1 })
