@@ -48,7 +48,7 @@ export interface IQueryResult {
     updated?: number;
 }
 
-const currentTransaction = Symbol("currentTrnsaction");
+const currentTransaction = Symbol("currentTransaction");
 
 export abstract class EntityTransaction {
 
@@ -58,7 +58,8 @@ export abstract class EntityTransaction {
     private old: EntityTransaction;
 
     constructor(protected conn: BaseConnection) {
-        this.old = conn[currentTransaction];
+        const old = conn[currentTransaction];
+        this.old = old;
         conn[currentTransaction] = this;
     }
 
@@ -66,14 +67,22 @@ export abstract class EntityTransaction {
         return this.beginTransaction();
     }
 
-    commit() {
+    async commit() {
+        if (this.committedOrRolledBack) {
+            throw new EntityAccessError("Transaction is already committed or rolled back. But not disposed");
+        }
         this.committedOrRolledBack = true;
-        return this.commitTransaction();
+        await this.commitTransaction();
+        await this.dispose();
     }
 
-    rollback() {
+    async rollback() {
+        if (this.committedOrRolledBack) {
+            throw new EntityAccessError("Transaction is already committed or rolled back. But not disposed");
+        }
         this.committedOrRolledBack = true;
-        return this.rollbackTransaction();
+        await this.rollbackTransaction();
+        await this.dispose();
     }
 
     save(id) {
