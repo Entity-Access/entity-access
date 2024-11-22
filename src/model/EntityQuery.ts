@@ -451,11 +451,12 @@ export default class EntityQuery<T = any>
         }
     }
 
-    async firstOrFail(): Promise<T> {
-        for await(const iterator of this.limit(1).enumerate()) {
-            return iterator;
+    async firstOrFail(errorMessage = `No records found for ${this.type?.name || "Table"}`): Promise<T> {
+        const first = await this.first();
+        if (first) {
+            return first;
         }
-        throw new Error(`No records found for ${this.type?.name || "Table"}`);
+        throw new Error(errorMessage);
     }
 
     async first(): Promise<T> {
