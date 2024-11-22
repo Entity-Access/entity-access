@@ -2,7 +2,7 @@ import ErrorModel from "./ErrorModel.js";
 
 export default class EntityAccessError extends Error {
 
-    static throw(message: string = "Access denied", status = 429) {
+    static throw(message: string = "Access denied", status = 500): never {
         throw new EntityAccessError(message, status);
     }
 
