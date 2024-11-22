@@ -12,7 +12,7 @@ export type IFieldsAsNumbers<T> = { [P in keyof T]: number };
 export interface IBaseQuery<T> {
     enumerate(): AsyncGenerator<T>;
 
-    firstOrFail(): Promise<T>;
+    firstOrFail(errorMessage?: string): Promise<T>;
     first(): Promise<T>;
 
     some(): Promise<boolean>;
