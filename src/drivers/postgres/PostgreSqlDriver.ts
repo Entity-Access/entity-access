@@ -41,6 +41,7 @@ pg.types.setTypeParser(pg.types.builtins.DATE, (n) =>
 pg.types.setTypeParser(pg.types.builtins.TIMETZ, (n) =>
     new DateTime(n)
 );
+// pg.types.setTypeParser(pg.types.builtins.NUMERIC, (n) => n ? Number(n) : 0);
 
 class DbReader implements IDbReader {
 
