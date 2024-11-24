@@ -30,13 +30,13 @@ export interface ISql {
     },
     json: {
         isJson(text: string): boolean;
-        isJsonArray(text: string): boolean;
-        isJsonObject(text: string): boolean;
-        isJsonScalar(text: string): boolean;
+        isArray(text: string): boolean;
+        isObject(text: string): boolean;
+        isScalar(text: string): boolean;
         isNotJson(text: string): boolean;
-        isNotJsonArray(text: string): boolean;
-        isNotJsonObject(text: string): boolean;
-        isNotJsonScalar(text: string): boolean;
+        isNotArray(text: string): boolean;
+        isNotObject(text: string): boolean;
+        isNotScalar(text: string): boolean;
     },
     text: {
         concat(... fragments: string[]): string;

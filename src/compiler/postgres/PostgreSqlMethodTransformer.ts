@@ -109,25 +109,25 @@ export const PostgreSqlHelper: ISqlHelpers = {
         isJson(text) {
             return prepareAny `${text} IS JSON`;
         },
-        isJsonObject(text) {
+        isObject(text) {
             return prepareAny `${text} IS JSON OBJECT`;
         },
-        isJsonArray(text) {
+        isArray(text) {
             return prepareAny `${text} IS JSON ARRAY`;
         },
-        isJsonScalar(text) {
+        isScalar(text) {
             return prepareAny `${text} IS JSON SCALAR`;
         },
         isNotJson(text) {
             return prepareAny `${text} IS NOT JSON`;
         },
-        isNotJsonObject(text) {
+        isNotObject(text) {
             return prepareAny `${text} IS NOT JSON OBJECT`;
         },
-        isNotJsonArray(text) {
+        isNotArray(text) {
             return prepareAny `${text} IS NOT JSON ARRAY`;
         },
-        isNotJsonScalar(text) {
+        isNotScalar(text) {
             return prepareAny `${text} IS NOT JSON SCALAR`;
         },
     },

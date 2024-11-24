@@ -107,25 +107,25 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         isJson(text) {
             return prepareAny `(ISJSON(${text}) > 0)`;
         },
-        isJsonObject(text) {
+        isObject(text) {
             return prepareAny `(ISJSON(${text}, OBJECT) > 0)`;
         },
-        isJsonArray(text) {
+        isArray(text) {
             return prepareAny `(ISJSON(${text}, ARRAY) > 0)`;
         },
-        isJsonScalar(text) {
+        isScalar(text) {
             return prepareAny `(ISJSON(${text}, SCALAR) > 0)`;
         },
         isNotJson(text) {
             return prepareAny `(ISJSON(${text}) = 0)`;
         },
-        isNotJsonObject(text) {
+        isNotObject(text) {
             return prepareAny `(ISJSON(${text}, OBJECT) = 0)`;
         },
-        isNotJsonArray(text) {
+        isNotArray(text) {
             return prepareAny `(ISJSON(${text}, ARRAY) = 0)`;
         },
-        isNotJsonScalar(text) {
+        isNotScalar(text) {
             return prepareAny `(ISJSON(${text}, SCALAR) = 0)`;
         },
     },
