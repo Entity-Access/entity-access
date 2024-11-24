@@ -28,6 +28,16 @@ export interface ISql {
         min<T>(... a: T[]): T,
         max<T>(... a: T[]): T,
     },
+    json: {
+        isJson(text: string): boolean;
+        isJsonArray(text: string): boolean;
+        isJsonObject(text: string): boolean;
+        isJsonScalar(text: string): boolean;
+        isNotJson(text: string): boolean;
+        isNotJsonArray(text: string): boolean;
+        isNotJsonObject(text: string): boolean;
+        isNotJsonScalar(text: string): boolean;
+    },
     text: {
         concat(... fragments: string[]): string;
         concatImmutable(... fragments: string[]): string;
@@ -42,6 +52,7 @@ export interface ISql {
         iLike(text: string, test: string): boolean;
         likeAny(text: string, test: string[]): boolean;
         iLikeAny(text: string, test: string[]): boolean;
+
         left(text: string, length: number): string;
         length(text: string): number;
         right(text: string, length: number): string;

@@ -105,9 +105,35 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return prepareAny `EXTRACT(EPOCH FROM ${d})`;
         },
     },
+    json: {
+        isJson(text) {
+            return prepareAny `${text} IS JSON`;
+        },
+        isJsonObject(text) {
+            return prepareAny `${text} IS JSON OBJECT`;
+        },
+        isJsonArray(text) {
+            return prepareAny `${text} IS JSON ARRAY`;
+        },
+        isJsonScalar(text) {
+            return prepareAny `${text} IS JSON SCALAR`;
+        },
+        isNotJson(text) {
+            return prepareAny `${text} IS NOT JSON`;
+        },
+        isNotJsonObject(text) {
+            return prepareAny `${text} IS NOT JSON OBJECT`;
+        },
+        isNotJsonArray(text) {
+            return prepareAny `${text} IS NOT JSON ARRAY`;
+        },
+        isNotJsonScalar(text) {
+            return prepareAny `${text} IS NOT JSON SCALAR`;
+        },
+    },
     text: {
         collate(text, collation) {
-            return prepareAny `${text} COLLATE "${onlyAlphaNumeric(collation)}")`;
+            return prepareAny `${text} COLLATE "${onlyAlphaNumeric(collation)}"`;
         },
         concat(...p) {
             const text = ["CONCAT("];

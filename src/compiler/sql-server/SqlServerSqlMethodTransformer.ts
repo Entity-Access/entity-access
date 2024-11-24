@@ -103,6 +103,32 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `GREATEST(${ joinAny(p) })`;
         },
     },
+    json: {
+        isJson(text) {
+            return prepareAny `(ISJSON(${text}) > 0)`;
+        },
+        isJsonObject(text) {
+            return prepareAny `(ISJSON(${text}, OBJECT) > 0)`;
+        },
+        isJsonArray(text) {
+            return prepareAny `(ISJSON(${text}, ARRAY) > 0)`;
+        },
+        isJsonScalar(text) {
+            return prepareAny `(ISJSON(${text}, SCALAR) > 0)`;
+        },
+        isNotJson(text) {
+            return prepareAny `(ISJSON(${text}) = 0)`;
+        },
+        isNotJsonObject(text) {
+            return prepareAny `(ISJSON(${text}, OBJECT) = 0)`;
+        },
+        isNotJsonArray(text) {
+            return prepareAny `(ISJSON(${text}, ARRAY) = 0)`;
+        },
+        isNotJsonScalar(text) {
+            return prepareAny `(ISJSON(${text}, SCALAR) = 0)`;
+        },
+    },
     text: {
         collate(text, collation) {
             const sanitize = (t) => t.replace(/[\W_]+/g,"");
