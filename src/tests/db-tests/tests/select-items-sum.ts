@@ -48,6 +48,11 @@ export default async function(this: TestConfig) {
 
     assert.notEqual(null, report);
 
+    // const all = await context.orders.asQuery().map(void 0, (p) => (x) => x.total)
+    //     .first();
+
+    // assert.notEqual(null, all);
+
     // const r = await context.users.all()
     //     .trace(console.log)
     //     .sum(void 0, (p) => (x) => ({

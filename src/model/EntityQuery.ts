@@ -220,6 +220,8 @@ export default class EntityQuery<T = any>
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     async updateSelect(p?, f?): Promise<T[]> {
         const updateStatement = this.getUpdateStatement(p, f, true);
 
@@ -350,6 +352,8 @@ export default class EntityQuery<T = any>
         return updateStatement;
     }
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     async toArray(): Promise<T[]> {
         const results: T[] = [];
         for await (const iterator of this.enumerate()) {
@@ -358,6 +362,8 @@ export default class EntityQuery<T = any>
         return results;
     }
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     async *enumerate(): AsyncGenerator<T, any, unknown> {
 
         await using scope = new AsyncDisposableScope();
@@ -451,6 +457,8 @@ export default class EntityQuery<T = any>
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     async firstOrFail(errorMessage = `No records found for ${this.type?.name || "Table"}`): Promise<T> {
         const first = await this.first();
         if (first) {
@@ -459,7 +467,9 @@ export default class EntityQuery<T = any>
         throw new Error(errorMessage);
     }
 
-    async first(): Promise<T> {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    async first(): Promise<T>{
         for await(const iterator of this.limit(1).enumerate()) {
             return iterator;
         }
