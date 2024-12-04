@@ -10,17 +10,17 @@ export type IFilterExpression<P = any, T = any> = [input: P, x: (p: P) => (s: T)
 export type IFieldsAsNumbers<T> = { [P in keyof T]: number };
 
 export interface IBaseQuery<T> {
-    enumerate(): T extends object ? AsyncGenerator<T> : never;
+    enumerate(this: T extends object ? IBaseQuery<T> : never): AsyncGenerator<T>;
 
-    firstOrFail(errorMessage?: string): T extends object ? Promise<T> : never;
-    first(): T extends object ? Promise<T> : never;
+    firstOrFail(this: T extends object ? IBaseQuery<T> : never, errorMessage?: string): Promise<T>;
+    first(this: T extends object ? IBaseQuery<T> : never): Promise<T>;
 
     some(): Promise<boolean>;
 
     select<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
     map<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
 
-    toArray(): T extends object ? Promise<T[]> : never;
+    toArray(this: T extends object ? IBaseQuery<T> : never): Promise<T[]>;
 
     toQuery(): { text: string, values: any[]};
 
@@ -42,7 +42,7 @@ export interface IBaseQuery<T> {
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
 
     update<P>(parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<number>;
-    updateSelect<P>(parameters: P, fx: (p: P) => (x:T) => Partial<T>): T extends object ? Promise<T[]> : never;
+    updateSelect<P>(this: T extends object ? IBaseQuery<T> : never, parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<T[]>;
 
     /**
      * Warning !! Be careful, this will delete rows from the database and neither soft delete nor any other events will be invoked.
