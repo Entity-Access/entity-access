@@ -352,8 +352,8 @@ export class EntitySource<T = any> {
             filter.push(`x.${iterator.name} === p.${iterator.name}`);
         }
 
-        const q = this.where(keys, `(p) => (x) => ${filter.join(" && ")}` as any);
-        return q.first();
+        const q = this.where(keys, `(p) => (x) => ${filter.join(" && ")}` as any) as any;
+        return q.first() as Promise<T>;
     }
 
     public add(item: Partial<T>): T {
