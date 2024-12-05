@@ -362,7 +362,7 @@ export class EntitySource<T = any> {
     }
 
     public navigation<TR>(keys: Partial<T>, property: (x: T) => TR): IEntityQuery<TR> {
-        const name = NameParser.parseMember(property);
+        const name = typeof property === "string" ? property : NameParser.parseMember(property);
         const { relation } = this.model.getProperty(name);
         if (!relation) {
             throw new EntityAccessError(`No relation found`);
