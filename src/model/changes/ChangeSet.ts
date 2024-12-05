@@ -1,10 +1,9 @@
-import CustomEvent from "../../common/CustomEvent.js";
 import EntityAccessError from "../../common/EntityAccessError.js";
 import EventSet from "../../common/EventSet.js";
-import SchemaRegistry from "../../decorators/SchemaRegistry.js";
+import { identityMapSymbol } from "../../common/symbols/symbols.js";
 import EntityContext from "../EntityContext.js";
 import IdentityMap from "../identity/IdentityMap.js";
-import IdentityService, { identityMapSymbol } from "../identity/IdentityService.js";
+import IdentityService from "../identity/IdentityService.js";
 import ChangeEntry, { privateUpdateEntry, getContext } from "./ChangeEntry.js";
 
 

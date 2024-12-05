@@ -1,8 +1,8 @@
 import EventEmitter from "events";
 import type ChangeEntry from "../changes/ChangeEntry.js";
 import type ChangeSet from "../changes/ChangeSet.js";
-import IdentityService, { identityMapSymbol } from "./IdentityService.js";
 import { IColumn } from "../../decorators/IColumn.js";
+import { identityMapSymbol } from "../../common/symbols/symbols.js";
 
 
 

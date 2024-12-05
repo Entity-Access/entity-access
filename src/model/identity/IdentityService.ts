@@ -1,30 +1,32 @@
+import { identitySymbol } from "../../common/symbols/symbols.js";
 import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 import type EntityType from "../../entity-query/EntityType.js";
 
-export const identityMapSymbol = Symbol("identityMapSymbol");
-
 export default class IdentityService {
 
-    public static buildIdentity(model: EntityType, ... keys: any[]) {
-        const type = model.name;
-        return JSON.stringify({ type, keys });
-    }
-
     public static getIdentity(entityType: EntityType, entity) {
-        const keys = [];
+
+        const identity = entity[identitySymbol];
+        if (identity) {
+            return identity;
+        }
+
+        const $type = entityType.name;
+        const keys = { $type };
+        let hasAll = true;
         for (const iterator of entityType.keys) {
             const key = entity[iterator.name];
             if(key === void 0) {
+                hasAll = false;
                 break;
             }
-            keys.push(key);
+            keys[iterator.name] = key;
         }
 
-        if (keys.length !== entityType.keys.length) {
+        if (!hasAll) {
             return;
         }
-        const type = entityType.name;
-        return JSON.stringify({ type , keys });
+        return entity[identitySymbol] = JSON.stringify(keys);
     }
 
 }
