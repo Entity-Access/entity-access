@@ -1,13 +1,14 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
-import type { IBaseQuery, IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
-import EntityQuery from "./EntityQuery.js";
+import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
 import { contextSymbol, modelSymbol, traceSymbol } from "../common/symbols/symbols.js";
 import { Expression, ExpressionAs, Identifier, InsertStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
 import IdentityService from "./identity/IdentityService.js";
 import sleep from "../common/sleep.js";
 import EntityAccessError from "../common/EntityAccessError.js";
+import NameParser from "../decorators/parser/NameParser.js";
+import EntityQuery from "./EntityQuery.js";
 
 const removeUndefined = (obj) => {
     if (!obj) {
@@ -342,6 +343,10 @@ export class EntitySource<T = any> {
     }
 
     public loadByKeys(keys: Partial<T>): Promise<T> {
+        return (this.queryByKeys(keys) as any) .first() as Promise<T>;
+    }
+
+    public queryByKeys(keys: Partial<T>): IEntityQuery<T> {
         const identity = IdentityService.getIdentity(this.model, keys);
         const entry = this.context.changeSet.getByIdentity(identity);
         if (entry) {
@@ -352,8 +357,45 @@ export class EntitySource<T = any> {
             filter.push(`x.${iterator.name} === p.${iterator.name}`);
         }
 
-        const q = this.where(keys, `(p) => (x) => ${filter.join(" && ")}` as any) as any;
-        return q.first() as Promise<T>;
+        return this.where(keys, `(p) => (x) => ${filter.join(" && ")}` as any) as any;
+        // return q.first() as Promise<T>;
+    }
+
+    public navigation<TR>(keys: Partial<T>, property: (x: T) => TR): IEntityQuery<TR> {
+        const name = NameParser.parseMember(property);
+        const { relation } = this.model.getProperty(name);
+        if (!relation) {
+            throw new EntityAccessError(`No relation found`);
+        }
+
+        const { relatedEntity } = relation;
+
+        if (relation.isInverseRelation) {
+
+            // we will just try to load all inverse items...
+            // this is tricky as we need to build inverse query...
+            const { relatedRelation } = relation;
+            const filter = [];
+            for (const { fkColumn, relatedKeyColumn } of relatedRelation.fkMap) {
+                filter.push(`x.${fkColumn.name} === p.${relatedKeyColumn.name}`);
+            }
+
+            const query = `(p) => (x) => ${filter.join(" && ")}` as any;
+            // console.log(query);
+
+            return this.context.model.register(relatedEntity.typeClass)
+                .where(keys, query);
+
+        }
+
+        // need to setup inverse key check
+        // const key = relatedEntity.keys[0];
+        const ek = {} as any;
+        // keys[key.name] = this.entity[relation.fkColumn.name];
+        for (const { fkColumn, relatedKeyColumn } of relation.fkMap) {
+            ek[relatedKeyColumn.name] = keys[fkColumn.name];
+        }
+        return this.context.model.register(relatedEntity.typeClass).queryByKeys(ek);
     }
 
     public add(item: Partial<T>): T {
