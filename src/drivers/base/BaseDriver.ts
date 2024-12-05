@@ -268,6 +268,9 @@ export abstract class BaseDriver {
             if (keys) {
                 for (const key of Object.keys(keys)) {
                     const iterator = type.getField(key);
+                    if (!iterator) {
+                        continue;
+                    }
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
@@ -310,6 +313,9 @@ export abstract class BaseDriver {
             if (keys) {
                 for (const key of Object.keys(keys)) {
                     const iterator = type.getField(key);
+                    if (!iterator) {
+                        continue;
+                    }
                     if(where) {
                         where += "\r\n\t\tAND ";
                     }
@@ -370,6 +376,9 @@ export abstract class BaseDriver {
         if (keys) {
             for (const key of Object.keys(keys)) {
                 const iterator = type.getField(key);
+                if (!iterator) {
+                    continue;
+                }
                 if(where) {
                     where += "\r\n\t\tAND ";
                 }
