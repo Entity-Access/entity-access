@@ -11,7 +11,7 @@ export default class IdentityService {
             return identity;
         }
 
-        const $type = entityType.name;
+        const $type = entityType.entityName;
         const keys = { $type };
         let hasAll = true;
         for (const iterator of entityType.keys) {
