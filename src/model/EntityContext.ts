@@ -77,6 +77,10 @@ export default class EntityContext {
         return query;
     }
 
+    expand<T, TR>(type: IClassOf<T>, keys: Partial<T>, property: (x: T) => TR) {
+        return this.model.register(type).navigation(keys, property);
+    }
+
     filteredQuery<T>(type: IClassOf<T>, mode: "read" | "include" | "modify" | "delete" | "none", fail = false, parentType?, key?) {
         const query = this.model.register(type).asQuery();
         if (!this.verifyFilters || mode === "none") {
