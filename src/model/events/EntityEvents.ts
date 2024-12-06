@@ -1,3 +1,4 @@
+import JsonReadable from "../../common/JsonReadable.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
 import NameParser from "../../decorators/parser/NameParser.js";
 import Inject from "../../di/di.js";
@@ -99,7 +100,4 @@ export default class EntityEvents<T> {
         return done;
     }
 
-    beforeJson(entity: T) {
-        return entity;
-    }
 }

@@ -252,17 +252,17 @@ export default class EntityType {
         return { ... this.selectOne };
     }
 
-    public map(row: any) {
-        Object.setPrototypeOf(row, this.typeClass.prototype);
-        return row;
-        // const c = new this.typeClass();
-        // for (const iterator of this.columns) {
-        //     const value = row[iterator.columnName];
-        //     if (value === void 0) {
-        //         continue;
-        //     }
-        //     c[iterator.name] = value;
-        // }
-        // return c;
-    }
+    // public map(row: any) {
+    //     Object.setPrototypeOf(row, this.typeClass.prototype);
+    //     return row;
+    //     // const c = new this.typeClass();
+    //     // for (const iterator of this.columns) {
+    //     //     const value = row[iterator.columnName];
+    //     //     if (value === void 0) {
+    //     //         continue;
+    //     //     }
+    //     //     c[iterator.name] = value;
+    //     // }
+    //     // return c;
+    // }
 }
