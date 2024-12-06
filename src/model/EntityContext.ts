@@ -44,6 +44,8 @@ export default class EntityContext {
 
     private _connection: BaseConnection;
 
+    private readonly eventsCache  = new Map();
+
     constructor(
         @Inject
         public driver: BaseDriver,
@@ -55,21 +57,27 @@ export default class EntityContext {
         this.raiseEvents = !!events;
     }
 
-    eventsFor<T>(type: IClassOf<T>, fail = true): EntityEvents<T>{
-        const eventsClass = this.events?.for(type, fail);
-        if (!eventsClass) {
-            if (fail) {
-                EntityAccessError.throw(`No rules defined for ${type.name}`, 422);
+    eventsFor<T>(type: IClassOf<T>, fail = true): EntityEvents<T> {
+        let ee = this.eventsCache.get(type);
+        if (ee === void 0) {
+            const eventsClass = this.events?.for(type, fail);
+            if (!eventsClass) {
+                if (fail) {
+                    EntityAccessError.throw(`No rules defined for ${type.name}`, 422);
+                }
+                this.eventsCache.set(type, null);
+                return null;
             }
-            return null;
+            ee = ServiceProvider.create(this, eventsClass);
+            Object.defineProperty(ee, "verify", {
+                get:() => {
+                    return this.verifyFilters;
+                }
+            });
+            this.eventsCache.set(type, ee);
+            return ee;
         }
-        const events = ServiceProvider.create(this, eventsClass);
-        Object.defineProperty(events, "verify", {
-            get:() => {
-                return this.verifyFilters;
-            }
-        });
-        return events;
+        return ee;
     }
 
     query<T>(type: IClassOf<T>) {
