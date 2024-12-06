@@ -97,4 +97,10 @@ export default class EntityEvents<T> {
         return done;
     }
 
+    preJson(entity: T) {
+        return entity;
+    }
+
 }
+
+
