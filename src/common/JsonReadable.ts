@@ -19,8 +19,7 @@ export default class JsonReadable extends Readable {
 
     constructor(
         private readonly model: any,
-        serviceOwner?,
-        private readonly toJsonFunc?: (x: any) => any
+        serviceOwner?
     ) {
         super();
         if (serviceOwner) {
@@ -38,8 +37,6 @@ export default class JsonReadable extends Readable {
     }
 
     nonRecursiveSerialize(size: number) {
-
-        const { toJsonFunc = (x) => x.toJSON?.() ?? x } = this;
 
         const { pendingStack: stack } = this;
         while(stack.length) {
@@ -116,7 +113,7 @@ export default class JsonReadable extends Readable {
 
             this.serviceOwner?.attach(item);
 
-            item = toJsonFunc(item) ?? item;
+            item = this.preJSON(item) ?? item;
             const tokens = [ { key: "$id", element: $id } ] as { key, element}[];
             for (const key in item) {
                 if (Object.hasOwn(item, key)) {
@@ -143,6 +140,9 @@ export default class JsonReadable extends Readable {
             this.push("{", "utf-8");
         }
 
+    }
+    preJSON(item: any): any {
+        return item.toJSON?.() ?? item;
     }
 
 }
