@@ -20,8 +20,7 @@ export default class JsonReadable extends Readable {
     constructor(
         private readonly model: any,
         serviceOwner?,
-        private readonly toJsonFunc?: (x: any) => any,
-        private readonly toJsonThisArg?: any,
+        private readonly toJsonFunc?: (x: any) => any
     ) {
         super();
         if (serviceOwner) {
@@ -40,7 +39,7 @@ export default class JsonReadable extends Readable {
 
     nonRecursiveSerialize(size: number) {
 
-        const { toJsonFunc = (x) => x.toJSON?.() ?? x, toJsonThisArg } = this;
+        const { toJsonFunc = (x) => x.toJSON?.() ?? x } = this;
 
         const { pendingStack: stack } = this;
         while(stack.length) {
@@ -117,7 +116,7 @@ export default class JsonReadable extends Readable {
 
             this.serviceOwner?.attach(item);
 
-            item = toJsonFunc.call(toJsonThisArg, item) ?? item;
+            item = toJsonFunc(item) ?? item;
             const tokens = [ { key: "$id", element: $id } ] as { key, element}[];
             for (const key in item) {
                 if (Object.hasOwn(item, key)) {
