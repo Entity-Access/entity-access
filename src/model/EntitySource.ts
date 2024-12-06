@@ -59,12 +59,10 @@ export type ISaveDirect<T> = {
 
 export class EntityStatements<T = any> {
 
-    private readonly model: EntityType;
-    private readonly context: EntityContext;
 
-    constructor(private source: EntitySource<T>) {
-        this.model = source[modelSymbol];
-        this.context = source[contextSymbol];
+    constructor(
+        private readonly model: EntityType,
+        private readonly context: EntityContext) {
     }
 
     async select(entity: Partial<T>, keys: Partial<T>, loadChangeEntry = false): Promise<T> {
@@ -229,7 +227,7 @@ export class EntityStatements<T = any> {
 
 export class EntitySource<T = any> {
 
-    public statements = new EntityStatements<T>(this);
+    public statements:  EntityStatements<T>;
 
     get [modelSymbol]() {
         return this.model;
@@ -246,7 +244,7 @@ export class EntitySource<T = any> {
         private readonly model: EntityType,
         private readonly context: EntityContext
     ) {
-
+        this.statements = new EntityStatements<T>(model, context);
     }
 
     public async saveDirect({

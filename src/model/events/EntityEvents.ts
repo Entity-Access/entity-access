@@ -1,7 +1,4 @@
-import JsonReadable from "../../common/JsonReadable.js";
-import { IClassOf } from "../../decorators/IClassOf.js";
 import NameParser from "../../decorators/parser/NameParser.js";
-import Inject from "../../di/di.js";
 import type  EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../EntityContext.js";
 import { IEntityQuery } from "../IFilterWithParameter.js";

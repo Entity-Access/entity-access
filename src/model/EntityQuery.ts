@@ -244,6 +244,7 @@ export default class EntityQuery<T = any>
                 // const item = type.map(iterator) as any;
                 // set identity...
                 Object.setPrototypeOf(iterator, prototype);
+                iterator.$type = type.entityName;
                 const entry = this.context.changeSet.getEntry(iterator, iterator);
                 relationMapper.fix(entry);
                 results.push(entry.entity as any);
@@ -412,12 +413,13 @@ export default class EntityQuery<T = any>
             this.traceQuery?.(query.text);
             const reader = await this.context.connection.executeReader(query, signal);
             scope.register(reader);
-            const prototype = type ? type.typeClass.prototype : void 0;
+            const prototype = type?.typeClass.prototype;
             for await (const iterator of reader.next(10, signal)) {
                 if (type) {
                     // const item = type.map(iterator) as any;
                     // set identity...
                     Object.setPrototypeOf(iterator, prototype);
+                    iterator.$type = type.entityName;
                     const entry = this.context.changeSet.getEntry(iterator, iterator);
                     relationMapper.fix(entry);
                     yield entry.entity as any;
@@ -442,11 +444,13 @@ export default class EntityQuery<T = any>
             query = this.context.driver.compiler.compileExpression(this, select);
             this.traceQuery?.(query.text);
             reader = await this.context.connection.executeReader(query, signal);
-            const prototype = select.model ? select.model.typeClass.prototype : void 0;
+            const type = select.model;
+            const prototype = type?.typeClass.prototype;
             for await (const iterator of reader.next(10, signal)) {
                 // const item = select.model?.map(iterator) ?? iterator;
                 if (prototype) {
                     Object.setPrototypeOf(iterator, prototype);
+                    iterator.$type = type.entityName;
                 }
                 const entry = this.context.changeSet.getEntry(iterator, iterator);
                 relationMapper.fix(entry);

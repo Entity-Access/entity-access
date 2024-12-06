@@ -29,7 +29,6 @@ export default class JsonReadable extends Readable {
     }
 
     _read(size: number): void {
-        console.log(size);
         if (this.stack.length) {
             this.nonRecursiveSerialize(size);
             return;
