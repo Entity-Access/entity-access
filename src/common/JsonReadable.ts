@@ -11,9 +11,9 @@ type IJsonToken = {
 
 export default class JsonReadable extends Readable {
 
-    map = new Map();
+    private doneMap = new Map();
 
-    stack = [] as IJsonToken[];
+    private pendingStack = [] as IJsonToken[];
 
     private readonly serviceOwner: ServiceProvider;
 
@@ -25,11 +25,11 @@ export default class JsonReadable extends Readable {
         if (serviceOwner) {
             this.serviceOwner = ServiceProvider.from(serviceOwner);
         }
-        this.stack.push({ target: model });
+        this.pendingStack.push({ target: model });
     }
 
     _read(size: number): void {
-        if (this.stack.length) {
+        if (this.pendingStack.length) {
             this.nonRecursiveSerialize(size);
             return;
         }
@@ -37,7 +37,7 @@ export default class JsonReadable extends Readable {
     }
 
     nonRecursiveSerialize(size: number) {
-        const { stack } = this;
+        const { pendingStack: stack } = this;
         while(stack.length) {
 
             if (this.readableLength > size) {
@@ -102,13 +102,13 @@ export default class JsonReadable extends Readable {
                 continue;
             }
 
-            let $id = this.map.get(item);
+            let $id = this.doneMap.get(item);
             if ($id) {
                 this.push(`{"$id": ${$id}}`, "utf-8");
                 continue;
             }
-            $id = this.map.size + 1;
-            this.map.set(item, $id);
+            $id = this.doneMap.size + 1;
+            this.doneMap.set(item, $id);
 
             this.serviceOwner?.attach(item);
 
