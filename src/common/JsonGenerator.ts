@@ -26,7 +26,14 @@ export default class JsonGenerator {
         return Readable.from(this.generate(model));
     }
 
-    protected *generate(model: any) {
+    /**
+     * The reason for non recursive method is,
+     * since circular json can have more depth then
+     * visualized. And stack can grow to become
+     * more complicated.
+     * @param model model
+     */
+    *generate(model: any) {
 
         const stack = [] as IJsonToken[];
         const doneMap = new Map();
