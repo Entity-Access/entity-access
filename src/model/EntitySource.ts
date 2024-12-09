@@ -341,15 +341,15 @@ export class EntitySource<T = any> {
     }
 
     public loadByKeys(keys: Partial<T>): Promise<T> {
-        return (this.queryByKeys(keys) as any) .first() as Promise<T>;
-    }
-
-    public queryByKeys(keys: Partial<T>): IEntityQuery<T> {
         const identity = IdentityService.getIdentity(this.model, keys);
         const entry = this.context.changeSet.getByIdentity(identity);
         if (entry) {
             return entry.entity;
         }
+        return (this.queryByKeys(keys) as any) .first() as Promise<T>;
+    }
+
+    public queryByKeys(keys: Partial<T>): IEntityQuery<T> {
         const filter = [];
         for (const iterator of this.model.keys) {
             filter.push(`x.${iterator.name} === p.${iterator.name}`);
