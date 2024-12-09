@@ -67,6 +67,7 @@ function removeID(a) {
             return a;
         }
         delete a.$id;
+        delete a.$ref;
         for (const key in a) {
             if (Object.prototype.hasOwnProperty.call(a, key)) {
                 const element = a[key];
