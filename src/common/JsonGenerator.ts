@@ -119,7 +119,7 @@ export default class JsonGenerator {
 
         yield `{${nest}"$id": ${$id}`;
         for (const key in model) {
-            if (Object.prototype.hasOwnProperty.call(model, key)) {
+            if (Object.hasOwn(model, key)) {
                 const element = model[key];
                 if (element === void 0) {
                     continue;
