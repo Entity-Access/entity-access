@@ -120,10 +120,32 @@ export default class JsonGenerator {
         yield `{${nest}"$id": ${$id}`;
         for (const key in model) {
             if (Object.prototype.hasOwnProperty.call(model, key)) {
-                yield ",";
                 const element = model[key];
+                if (element === void 0) {
+                    continue;
+                }
+                yield ",";
+                if (nest) {
+                    yield nest;
+                }
                 yield JSON.stringify(key);
                 yield `:`;
+                if (element === null) {
+                    yield "null";
+                    continue;
+                }
+                switch(typeof element) {
+                    case "bigint":
+                        yield JSON.stringify(element.toString());
+                        continue;
+                    case "boolean":
+                        yield element ? "true": "false";
+                        continue;
+                    case "string":
+                    case "number":
+                        yield JSON.stringify(element);
+                        continue;
+                }
                 yield this.recursiveGenerate(element, doneMap);
             }
         }
