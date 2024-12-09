@@ -105,7 +105,7 @@ export default class JsonGenerator {
 
         let $id = doneMap.get(model);
         if ($id) {
-            yield `{"$id": ${$id}}`;
+            yield `{"$ref": ${$id}}`;
             return;
         }
         $id = doneMap.size + 1;
@@ -115,14 +115,12 @@ export default class JsonGenerator {
 
         model = this.preJSON(model) ?? model;
 
-        yield `{`;
+        const nest = "";
+
+        yield `{${nest}"$id": ${$id}`;
         for (const key in model) {
             if (Object.prototype.hasOwnProperty.call(model, key)) {
-                if (suffix) {
-                    yield suffix;
-                } else {
-                    suffix = ",";
-                }
+                yield ",";
                 const element = model[key];
                 yield JSON.stringify(key);
                 yield `:`;
