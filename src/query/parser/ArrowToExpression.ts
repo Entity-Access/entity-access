@@ -65,15 +65,23 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             }
 
             const firstTarget = body.params[0];
-            if (firstTarget.type !== "Identifier") {
-                throw new Error("Expecting an identifier");
+
+            let name = "____x";
+
+            if (firstTarget) {
+
+                if (firstTarget.type !== "Identifier") {
+                    throw new Error("Expecting an identifier");
+                }
+                name = firstTarget.name;
             }
 
-            target ??= ParameterExpression.create({ name: firstTarget.name});
+
+            target ??= ParameterExpression.create({ name});
 
             body = body.body;
 
-            const visitor = new this(params, target, firstTarget.name);
+            const visitor = new this(params, target, name);
             return {
                 params,
                 target,
