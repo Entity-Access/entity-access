@@ -76,7 +76,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         this.clearExpired(Number.POSITIVE_INFINITY);
     }
 
-    getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = 15000) {
+    getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = this.ttl) {
         let item = this.get(key);
         if (!item) {
             item = { value: factory(key, p1), ttl, expire: Date.now() + ttl };
@@ -91,7 +91,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
     getOrCreateAsync(
         key: TKey,
         factory: (k: TKey) => Promise<T>,
-        ttl: number = 15000,
+        ttl: number = this.ttl,
         dispose?: ((item: T) => any)
     ): Promise<T> {
         let item = this.get(key);
