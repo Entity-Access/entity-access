@@ -6,13 +6,23 @@ const w = new FinalizationRegistry<any>((heldValue) => {
     clearInterval(heldValue);
 });
 
+export interface ICachedItem {
+    dispose?: (item: any) => any;
+    ttl: number;
+    expire: number;
+    value: any;
+}
+
 export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     public deletedEvent = new EventSet<TKey>(this);
 
     public addedEvent = new EventSet<{ key: TKey, value: T}>(this);
 
-    private map: Map<TKey,{ value: any, expire: number, ttl: number, dispose?: (item: any) => any }> = new Map();
+    private map: Map<TKey,ICachedItem> = new Map();
+
+    private g1: Map<TKey, ICachedItem>;
+    private g2: Map<TKey, ICachedItem>;
 
     private cid: NodeJS.Timer;
 
@@ -32,7 +42,20 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     delete(key: any) {
         this.deletedEvent.dispatch(key);
-        const item = this.map.get(key);
+        let item = this.map.get(key);
+        if (item) {
+            this.map.delete(key);
+        } else {
+            item = this.g1?.get(key);
+            if (item) {
+                this.g1.delete(key);
+            } else {
+                item = this.g2?.get(key);
+                if (item) {
+                    this.g2.delete(key);
+                }
+            }
+        }
         if (!item) {
             return;
         }
@@ -43,7 +66,6 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         } catch {
             // do nothing
         }
-        this.map.delete(key);
     }
 
     /**
@@ -55,7 +77,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
     }
 
     getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = 15000) {
-        let item = this.map.get(key);
+        let item = this.get(key);
         if (!item) {
             item = { value: factory(key, p1), ttl, expire: Date.now() + ttl };
             this.addedEvent.dispatch({ key, value: item.value });
@@ -72,7 +94,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         ttl: number = 15000,
         dispose?: ((item: T) => any)
     ): Promise<T> {
-        let item = this.map.get(key);
+        let item = this.get(key);
         if (!item) {
             item = { value: factory(key), ttl, expire: Date.now() + ttl, dispose };
             this.addedEvent.dispatch({ key, value: item.value });
@@ -80,7 +102,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
             // we need to make sure we do not cache
             // the promise if it fails
             item.value.catch(() => {
-                this.map.delete(key);
+                this.delete(key);
             });
             if (dispose) {
                 item.value.then((r) => {
@@ -94,15 +116,33 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
     }
 
     private clearExpired(max = Date.now()): void {
+        const old = this.g2;
+        this.g2 = this.g1;
+        this.g1 = this.map;
+        this.map = new Map();
+        if (!old) {
+            return;
+        }
+
+        /**
+         * Generation 2 is the oldest. So it is marked for removal.
+         * Generation 1 is set to current map.
+         * Map is set to new generation.
+         * As recently fetched items will be inside Generation 1.
+         * We will migrate old generation to Generation 1.
+         */
+
         const expired = [];
-        for (const entry of this.map.entries()) {
+        for (const entry of old.entries()) {
             if(entry[1].expire < max) {
                 expired.push(entry);
+            } else {
+                // we will move oldest item to generation 1
+                this.g1.set(entry[0], entry[1]);
             }
         }
         for (const [key, value] of expired) {
             // call dispose..
-            this.map.delete(key);
             this.deletedEvent.dispatch(key);
             try {
                 const r = value.dispose?.(value.value);
@@ -112,6 +152,26 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
             } catch (error) {
                 console.error(error);
             }
+        }
+    }
+
+    private get(key) {
+        let item = this.map.get(key);
+        if (item) {
+            return item;
+        }
+        item = this.g1?.get(key);
+        if (item) {
+            this.g1.delete(key);
+            this.map.set(key, item);
+            return item;
+        }
+
+        item = this.g2?.get(key);
+        if (item) {
+            this.g2.delete(key);
+            this.map.set(key, item);
+            return item;
         }
     }
 
