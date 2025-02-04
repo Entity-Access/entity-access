@@ -10,6 +10,7 @@ export interface ICachedItem {
     dispose?: (item: any) => any;
     ttl: number;
     expire: number;
+    maxExpire: number;
     value: any;
 }
 
@@ -28,7 +29,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     private tid: any;
 
-    constructor(private ttl = 15000) {
+    constructor(private ttl = 15000, private maxTTL = ttl * 4) {
         const cid = setInterval((x) => x.clearExpired(), this.ttl, this);
         this.tid = {};
         w.register(this, cid, this.tid);
@@ -79,7 +80,8 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
     getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = this.ttl) {
         let item = this.get(key);
         if (!item) {
-            item = { value: factory(key, p1), ttl, expire: Date.now() + ttl };
+            const now = Date.now();
+            item = { value: factory(key, p1), ttl, expire: now + ttl, maxExpire: now + this.maxTTL };
             this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
         } else {
@@ -96,7 +98,8 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
     ): Promise<T> {
         let item = this.get(key);
         if (!item) {
-            item = { value: factory(key), ttl, expire: Date.now() + ttl, dispose };
+            const now = Date.now();
+            item = { value: factory(key), ttl, expire: now + ttl, maxExpire: now + this.maxTTL, dispose };
             this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
             // we need to make sure we do not cache
@@ -133,12 +136,12 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
          */
 
         const expired = [];
-        for (const entry of old.entries()) {
-            if(entry[1].expire < max) {
-                expired.push(entry);
+        for (const [key, value] of old.entries()) {
+            if(value.expire < max || value.maxExpire < max) {
+                expired.push(value);
             } else {
                 // we will move oldest item to generation 1
-                this.g1.set(entry[0], entry[1]);
+                this.g1.set(key, value);
             }
         }
         for (const [key, value] of expired) {
