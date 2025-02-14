@@ -18,6 +18,29 @@ const serviceProvider = Symbol("serviceProvider");
 
 const globalServiceProvider = Symbol("globalInstance");
 
+let newServiceTarget = null;
+
+const patched = Symbol("serviceConstructorPatched");
+
+const patchClass = (type) => {
+    if (type[patched]) {
+        return;
+    }
+    const parent = Object.getPrototypeOf(type);
+    if (parent === null || parent === Object || parent === Object.prototype) {
+        // eslint-disable-next-line @typescript-eslint/ban-types
+        const old = type.constructor as Function;
+        type.constructor = function (...a) {
+            this[serviceProvider] = newServiceTarget;
+            return old.apply(this, a);
+        };
+        type[patched] = true;
+        return;
+    }
+    patchClass(parent);
+    type[patched] = true;
+};
+
 export class ServiceProvider implements IDisposable {
 
     public static from(owner: any) {
@@ -167,10 +190,14 @@ export class ServiceProvider implements IDisposable {
     }
 
     private createFromType(type, key = type): any {
+        const old = newServiceTarget;
+        newServiceTarget = this;
         const injectTypes = type[injectServiceTypesSymbol] as any[];
         const injectServices = injectTypes
             ? injectTypes.map((x) => this.resolve(x))
             : [];
+        patchClass(type.prototype);
+        type = type.prototype?.constructor ?? type;
         const instance = new type(... injectServices);
         this.map.set(key, instance);
         instance[serviceProvider] = this;
@@ -180,6 +207,7 @@ export class ServiceProvider implements IDisposable {
         }
         // initialize properties...
         this.resolveProperties(instance, type);
+        newServiceTarget = old;
         return instance;
     }
 
@@ -264,9 +292,9 @@ export default function Inject(target, key, index?: number): any {
 
     const pType = (Reflect as any).getMetadata("design:type", target, key);
     (target[injectServiceKeysSymbol] ??= {})[key] = pType;
-    Object.defineProperty(target, key, {
+    const descriptor = {
         get() {
-            const result = ServiceProvider.resolve(this, pType);
+            const result = ServiceProvider.resolve(newServiceTarget ?? this, pType);
             // get is compatible with AtomWatcher
             // as it will ignore getter and it will
             // not try to set a binding refresher
@@ -276,9 +304,9 @@ export default function Inject(target, key, index?: number): any {
             return result;
         },
         configurable: true
-    });
-
-
+    };
+    Object.defineProperty(target, key, descriptor);
+    return descriptor;
 }
 
 export function Register(kind: ServiceKind, factory?: (sp: ServiceProvider) => any) {
