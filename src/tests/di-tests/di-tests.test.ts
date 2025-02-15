@@ -1,4 +1,4 @@
-import Inject, { RegisterSingleton, ServiceProvider } from "../../di/di.js";
+import Inject, { RegisterSingleton, ServiceObject, ServiceProvider } from "../../di/di.js";
 
 const services = new ServiceProvider();
 
@@ -17,12 +17,12 @@ class Branch {
 }
 
 @RegisterSingleton
-class Leaf {
+class Leaf extends ServiceObject {
     @Inject branch: Branch;
 
     leaf: string;
 
-    constructor() {
+    postInit() {
         this.leaf = this.branch.branchRoot.root + " -> "  +this.branch.branch + " -> leaf";
     }
 }
