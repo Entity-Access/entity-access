@@ -273,7 +273,11 @@ export default function Inject(target, key, index?: number): any {
     (target[injectServiceKeysSymbol] ??= {})[key] = pType;
     const descriptor = {
         get() {
-            const result = ServiceProvider.resolve(this, pType);
+            const sp = this[serviceProvider] as ServiceProvider;
+            if (!sp) {
+                throw new Error("No service provider registered, in case if want to initialize service object in constructor, please dervie from ServiceObject")
+            }
+            const result = sp.resolve(pType);
             // get is compatible with AtomWatcher
             // as it will ignore getter and it will
             // not try to set a binding refresher
