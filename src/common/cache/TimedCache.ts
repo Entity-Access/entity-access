@@ -138,7 +138,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         const expired = [];
         for (const [key, value] of old.entries()) {
             if(value.expire < max || value.maxExpire < max) {
-                expired.push(value);
+                expired.push([key, value]);
             } else {
                 // we will move oldest item to generation 1
                 this.g1.set(key, value);
