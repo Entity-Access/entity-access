@@ -4,13 +4,11 @@ import sleep from "../../common/sleep.js";
 
 export default async function() {
 
-    await test3();
-
-    // await Promise.all([
-    //     test1(),
-    //     test2(),
-    //     test3()
-    // ]);
+    await Promise.all([
+        test1(),
+        test2(),
+        test3()
+    ]);
 }
 
 async function test1() {
