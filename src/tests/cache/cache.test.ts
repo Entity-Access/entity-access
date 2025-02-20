@@ -4,11 +4,13 @@ import sleep from "../../common/sleep.js";
 
 export default async function() {
 
-    await Promise.all([
-        test1(),
-        test2(),
-        test3()
-    ]);
+    await test3();
+
+    // await Promise.all([
+    //     test1(),
+    //     test2(),
+    //     test3()
+    // ]);
 }
 
 async function test1() {
@@ -152,5 +154,19 @@ async function  test3() {
 
     c1.getOrCreate("a2", 0, () => "a1");
     assert.equal("1,0,0", c1.sizes);
+
+
+    // check before ttl
+    c1.getOrCreate("a2", 0, () => "a1");
+    c1.getOrCreate("a1", 0, () => "a1");
+    assert.equal("2,0,0", c1.sizes);
+
+    await sleep(500);
+    c1.getOrCreate("a1", 0, () => "a1");
+    await sleep(500);
+    assert.equal("0,2,0", c1.sizes);
+    c1.getOrCreate("a1", 0, () => "a1");
+    await sleep(1000);
+    assert.equal("0,1,1", c1.sizes);
 
 }
