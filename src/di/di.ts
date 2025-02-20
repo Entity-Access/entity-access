@@ -18,6 +18,10 @@ const serviceProvider = Symbol("serviceProvider");
 
 const globalServiceProvider = Symbol("globalInstance");
 
+export abstract class ServiceObject {
+    abstract postInit();
+}
+
 export class ServiceProvider implements IDisposable {
 
     public static from(owner: any) {
@@ -180,6 +184,9 @@ export class ServiceProvider implements IDisposable {
         }
         // initialize properties...
         this.resolveProperties(instance, type);
+        if (instance instanceof ServiceObject) {
+            instance.postInit()?.catch(console.error);
+        }
         return instance;
     }
 
@@ -264,9 +271,13 @@ export default function Inject(target, key, index?: number): any {
 
     const pType = (Reflect as any).getMetadata("design:type", target, key);
     (target[injectServiceKeysSymbol] ??= {})[key] = pType;
-    Object.defineProperty(target, key, {
+    const descriptor = {
         get() {
-            const result = ServiceProvider.resolve(this, pType);
+            const sp = this[serviceProvider] as ServiceProvider;
+            if (!sp) {
+                throw new Error("No service provider registered, in case if want to initialize service object in constructor, please dervie from ServiceObject")
+            }
+            const result = sp.resolve(pType);
             // get is compatible with AtomWatcher
             // as it will ignore getter and it will
             // not try to set a binding refresher
@@ -276,9 +287,9 @@ export default function Inject(target, key, index?: number): any {
             return result;
         },
         configurable: true
-    });
-
-
+    };
+    Object.defineProperty(target, key, descriptor);
+    return descriptor;
 }
 
 export function Register(kind: ServiceKind, factory?: (sp: ServiceProvider) => any) {
