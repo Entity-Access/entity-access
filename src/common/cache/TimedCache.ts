@@ -20,6 +20,13 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     public addedEvent = new EventSet<{ key: TKey, value: T}>(this);
 
+    public get sizes() {
+        const s0 = this.map.size;
+        const s1 = this.g1?.size ?? 0;
+        const s2 = this.g2?.size ?? 0;
+        return `${s0},${s1},${s2}`;
+    }
+
     private map: Map<TKey,ICachedItem> = new Map();
 
     private g1: Map<TKey, ICachedItem>;
@@ -34,6 +41,18 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         this.tid = {};
         w.register(this, cid, this.tid);
         this.cid = cid;
+    }
+
+    public size(generation) {
+        switch(generation) {
+            case 0:
+                return this.map.size;
+            case 1:
+                return this.g1?.size ?? 0;
+            case 2:
+                return this.g2?.size ?? 0;
+        }
+        return 0;
     }
 
     [Symbol.dispose]() {
