@@ -51,9 +51,13 @@ async function test1() {
     // @ts-expect-error
     c1.clearExpired(Date.now());
 
+    // deletion is not immediate
+    await sleep(1);
+
     const firstV4 = "v4";
 
     const cc4 = c1.getOrCreate("a1", 0, () => firstV4);
+
 
     assert.equal(cc4, firstV4);
 }
@@ -79,6 +83,8 @@ async function test2() {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     c1.clearExpired(Date.now());
+
+    await sleep(1);
 
     const firstV2 = "v2";
 
@@ -108,6 +114,8 @@ async function test2() {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     c1.clearExpired(Date.now());
+
+    await sleep(1);
 
     const firstV4 = "v4";
 

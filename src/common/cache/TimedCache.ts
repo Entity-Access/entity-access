@@ -41,9 +41,19 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     private map: Map<TKey,ICachedItem> = new Map();
 
-    private times = new Map<number, TKey>();
-
     private weakRef;
+
+    private deleteItem = ([key, item]) => {
+        this.map.delete(key);
+        this.deletedEvent.dispatch(key);
+        try {
+            if (item.dispose) {
+                item.dispose(item.value)?.catch?.(console.error);
+            }
+        } catch {
+            // do nothing
+        }
+    }
 
     constructor(private ttl = 15000, private maxTTL = ttl * 4) {
         const r = new WeakRef(this);
@@ -58,14 +68,12 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
     }
 
     delete(key: any) {
-        this.deletedEvent.dispatch(key);
-        let item = this.map.get(key);
-        if (item) {
-            this.map.delete(key);
-            this.times.delete(item.expire);
-        }if (!item) {
+        const item = this.map.get(key);
+        if (!item) {
             return;
         }
+        this.map.delete(key);
+        this.deletedEvent.dispatch(key);
         try {
             if (item.dispose) {
                 item.dispose(item.value)?.catch?.(console.error);
@@ -92,10 +100,8 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
             this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
         } else {
-            this.times.delete(item.expire);
             item.expire += ttl;
         }
-        this.times.set(item.expire, key);
         return item.value as T;
     }
 
@@ -123,47 +129,19 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
                 });
             }
         } else {
-            this.times.delete(item.expire);
             item.expire += ttl;
         }
-        this.times.set(item.expire, key);
         return item.value;
     }
 
     private clearExpired(max = Date.now()): void {
 
-        /**
-         * deletion often leads to fragmentation.
-         * So we will let this array get garbate collected
-         * and we will assign new times
-         *
-         * The reason we are doing this to an array and not a map
-         * as map keys won't change regularly but times will
-         * change on every access.
-         */
-
-        const oldTimes = this.times;
-        this.times = new Map();
-
-        for(const [i, key] of oldTimes.entries()) {
-
-            if (i > max) {
-                this.times.set(i, key);
-                return;
+        for(const entry of this.map.entries()) {
+            const value = entry[1];
+            if (value.expire > max && value.maxExpire > max) {
+                continue;   
             }
-            const value = this.map.get(key);
-            this.map.delete(key);
-
-            // call dispose..
-            this.deletedEvent.dispatch(key);
-            try {
-                const r = value.dispose?.(value.value);
-                if (r?.then) {
-                    r.catch(() => void 0);
-                }
-            } catch (error) {
-                console.error(error);
-            }
+            setImmediate(this.deleteItem, entry);
         }
 
     }
