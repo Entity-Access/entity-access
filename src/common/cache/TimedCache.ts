@@ -2,10 +2,6 @@
 import CustomEvent from "../CustomEvent.js";
 import EventSet from "../EventSet.js";
 
-const w = new FinalizationRegistry<any>((heldValue) => {
-    clearInterval(heldValue);
-});
-
 export interface ICachedItem {
     dispose?: (item: any) => any;
     ttl: number;
@@ -14,50 +10,51 @@ export interface ICachedItem {
     value: any;
 }
 
+const cacheSet = new Set<WeakRef<TimedCache>>();
+
+setInterval(() => {
+    for (const element of cacheSet) {
+        setImmediate(() => {
+            const cache = element.deref();
+            if (cache === void 0) {
+                cacheSet.delete(element);
+                return;
+            }
+            cache.clear();
+        });
+    }
+}, 15000);
+
+const w = new FinalizationRegistry<any>((heldValue) => {
+    cacheSet.delete(heldValue);
+});
+
 export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     public deletedEvent = new EventSet<TKey>(this);
 
     public addedEvent = new EventSet<{ key: TKey, value: T}>(this);
 
-    public get sizes() {
-        const s0 = this.map.size;
-        const s1 = this.g1?.size ?? 0;
-        const s2 = this.g2?.size ?? 0;
-        return `${s0},${s1},${s2}`;
+    public get size() {
+        return this.map.size;
     }
 
     private map: Map<TKey,ICachedItem> = new Map();
 
-    private g1: Map<TKey, ICachedItem>;
-    private g2: Map<TKey, ICachedItem>;
+    private times = new Map<number, TKey>();
 
-    private cid: NodeJS.Timer;
-
-    private tid: any;
+    private weakRef;
 
     constructor(private ttl = 15000, private maxTTL = ttl * 4) {
-        const cid = setInterval((x) => x.clearExpired(), this.ttl, this);
-        this.tid = {};
-        w.register(this, cid, this.tid);
-        this.cid = cid;
-    }
-
-    public size(generation) {
-        switch(generation) {
-            case 0:
-                return this.map.size;
-            case 1:
-                return this.g1?.size ?? 0;
-            case 2:
-                return this.g2?.size ?? 0;
-        }
-        return 0;
+        const r = new WeakRef(this);
+        cacheSet.add(r);
+        this.weakRef = r;
+        w.register(this, r);
     }
 
     [Symbol.dispose]() {
-        clearInterval(this.cid);
-        w.unregister(this.tid);
+        cacheSet.delete(this.weakRef);
+        w.unregister(this.weakRef);
     }
 
     delete(key: any) {
@@ -65,18 +62,8 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         let item = this.map.get(key);
         if (item) {
             this.map.delete(key);
-        } else {
-            item = this.g1?.get(key);
-            if (item) {
-                this.g1.delete(key);
-            } else {
-                item = this.g2?.get(key);
-                if (item) {
-                    this.g2.delete(key);
-                }
-            }
-        }
-        if (!item) {
+            this.times.delete(item.expire);
+        }if (!item) {
             return;
         }
         try {
@@ -93,19 +80,22 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
      * @param dispatchEvents dispatch deleted Event
      */
     clear() {
-        this.clearExpired(Number.POSITIVE_INFINITY);
+        this.clearExpired(Number.MAX_SAFE_INTEGER);
     }
 
     getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = this.ttl) {
-        let item = this.get(key);
+        let item = this.map.get(key);
         if (!item) {
             const now = Date.now();
-            item = { value: factory(key, p1), ttl, expire: now + ttl, maxExpire: now + this.maxTTL };
+            const expire = now + ttl;
+                item = { value: factory(key, p1), ttl, expire, maxExpire: now + this.maxTTL };
             this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
         } else {
-            item.expire = Date.now() + ttl;
+            this.times.delete(item.expire);
+            item.expire += ttl;
         }
+        this.times.set(item.expire, key);
         return item.value as T;
     }
 
@@ -115,10 +105,11 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         ttl: number = this.ttl,
         dispose?: ((item: T) => any)
     ): Promise<T> {
-        let item = this.get(key);
+        let item = this.map.get(key);
         if (!item) {
             const now = Date.now();
-            item = { value: factory(key), ttl, expire: now + ttl, maxExpire: now + this.maxTTL, dispose };
+            const expire = now + ttl;
+                item = { value: factory(key), ttl, expire, maxExpire: now + this.maxTTL, dispose };
             this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
             // we need to make sure we do not cache
@@ -132,50 +123,37 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
                 });
             }
         } else {
-            item.expire = Date.now() + ttl;
+            this.times.delete(item.expire);
+            item.expire += ttl;
         }
+        this.times.set(item.expire, key);
         return item.value;
     }
 
     private clearExpired(max = Date.now()): void {
-        const old = this.g2;
-        this.g2 = this.g1;
-        this.g1 = this.map;
-        this.map = new Map();
-        if (!old) {
-            return;
-        }
 
         /**
-         * Generation 2 is the oldest. So it is marked for removal.
-         * Generation 1 is set to current map.
-         * Map is set to new generation.
-         * As recently fetched items will be inside Generation 1.
-         * We will migrate old generation to Generation 1.
+         * deletion often leads to fragmentation.
+         * So we will let this array get garbate collected
+         * and we will assign new times
+         *
+         * The reason we are doing this to an array and not a map
+         * as map keys won't change regularly but times will
+         * change on every access.
          */
 
-        const expired = [];
+        const oldTimes = this.times;
+        this.times = new Map();
 
-        const half = this.ttl/2;
+        for(const [i, key] of oldTimes.entries()) {
 
-        for (const [key, value] of old.entries()) {
-            if (value.maxExpire < max) {
-                expired.push([key, value]);
-                continue;
+            if (i > max) {
+                this.times.set(i, key);
+                return;
             }
-            if(value.expire < max) {
-                expired.push([key, value]);
-                continue;
-            }
+            const value = this.map.get(key);
+            this.map.delete(key);
 
-            const diff = value.expire - max;
-            if(diff > half) {
-                this.g1.set(key, value);
-            } else {
-                this.g2.set(key, value);
-            }
-        }
-        for (const [key, value] of expired) {
             // call dispose..
             this.deletedEvent.dispatch(key);
             try {
@@ -187,27 +165,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
                 console.error(error);
             }
         }
+
     }
-
-    private get(key) {
-        let item = this.map.get(key);
-        if (item) {
-            return item;
-        }
-        item = this.g1?.get(key);
-        if (item) {
-            this.g1.delete(key);
-            this.map.set(key, item);
-            return item;
-        }
-
-        item = this.g2?.get(key);
-        if (item) {
-            this.g2.delete(key);
-            this.map.set(key, item);
-            return item;
-        }
-    }
-
 
 }

@@ -4,13 +4,8 @@ import sleep from "../../common/sleep.js";
 
 export default async function() {
 
-    await test3();
-
-    // await Promise.all([
-    //     test1(),
-    //     test2(),
-    //     test3()
-    // ]);
+    await test1();
+    await test2();
 }
 
 async function test1() {
@@ -78,6 +73,8 @@ async function test2() {
     // @ts-expect-error
     c1.clearExpired(Date.now());
 
+    await sleep(200);
+
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
@@ -117,56 +114,4 @@ async function test2() {
     const cc4 = c1.getOrCreate("a1", 0, () => firstV4);
 
     assert.equal(cc4, firstV4);
-}
-
-async function  test3() {
-    const c1 = new TimedCache(1000);
-
-    c1.getOrCreate("a1", 0, () => "a1");
-    c1.getOrCreate("a2", 0, () => "a2");
-
-    assert.equal("2,0,0", c1.sizes);
-
-    await sleep(1000);
-    assert.equal("0,2,0", c1.sizes);
-
-    await sleep(1000);
-    assert.equal("0,0,2", c1.sizes);
-
-    c1.getOrCreate("a1", 0, () => "a1");
-    assert.equal("1,0,1", c1.sizes);
-
-    await sleep(1000);
-    c1.getOrCreate("a2", 0, () => "a1");
-    assert.equal("1,1,0", c1.sizes);
-
-    await sleep(1000);
-    assert.equal("0,1,1", c1.sizes);
-
-    await sleep(1000);
-    assert.equal("0,0,1", c1.sizes);
-
-    c1.getOrCreate("a2", 0, () => "a1");
-    assert.equal("1,0,0", c1.sizes);
-    c1.getOrCreate("a2", 0, () => "a1");
-    await sleep(1000);
-    assert.equal("0,1,0", c1.sizes);
-
-    c1.getOrCreate("a2", 0, () => "a1");
-    assert.equal("1,0,0", c1.sizes);
-
-
-    // check before ttl
-    c1.getOrCreate("a2", 0, () => "a1");
-    c1.getOrCreate("a1", 0, () => "a1");
-    assert.equal("2,0,0", c1.sizes);
-
-    await sleep(500);
-    c1.getOrCreate("a1", 0, () => "a1");
-    await sleep(500);
-    assert.equal("0,2,0", c1.sizes);
-    c1.getOrCreate("a1", 0, () => "a1");
-    await sleep(1000);
-    assert.equal("0,1,1", c1.sizes);
-
 }
