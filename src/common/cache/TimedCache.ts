@@ -13,6 +13,7 @@ export interface ICachedItem {
 const cacheSet = new Set<WeakRef<TimedCache>>();
 
 setInterval(() => {
+    const now = Date.now();
     for (const element of cacheSet) {
         setImmediate(() => {
             const cache = element.deref();
@@ -20,7 +21,8 @@ setInterval(() => {
                 cacheSet.delete(element);
                 return;
             }
-            cache.clear();
+            // @ts-expect-error
+            cache.clearExpired(now);
         });
     }
 }, 15000);
