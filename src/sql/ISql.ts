@@ -56,8 +56,8 @@ export interface ISql {
         left(text: string, length: number): string;
         length(text: string): number;
         right(text: string, length: number): string;
-        startsWith(text: string, test: string): boolean;
-        endsWith(text: string, test: string): boolean;
+        startsWith(text: string, textToFind: string): boolean;
+        endsWith(text: string, textToFind: string): boolean;
         /**
          * This will return index of given search, and it will
          * return -1 if test value is not found. If underlying provider
@@ -65,8 +65,8 @@ export interface ISql {
          * @param text string to be searched in
          * @param test string to search
          */
-        indexOf(text: string, test: string): number;
-        includes(text: string, test: string): boolean;
+        indexOf(text: string, textToFind: string): number;
+        includes(text: string, textToFind: string): boolean;
         normalize(text: string, kind?: string): string;
         collate(text: string, collation: string): string;
         lower(text: string): string;

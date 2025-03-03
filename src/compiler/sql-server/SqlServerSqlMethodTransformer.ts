@@ -193,7 +193,7 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
         },
         indexOf(text, test) {
-            return prepareAny `(CHARINDEX(${text}, ${test}) - 1)`;
+            return prepareAny `(CHARINDEX(${test}, ${text}) - 1)`;
         },
         left(text, length) {
             return prepareAny `left(${text}, ${length})`;
