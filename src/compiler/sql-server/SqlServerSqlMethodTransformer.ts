@@ -181,7 +181,7 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `CHARINDEX(${text}, ${test}) = LEN(${text}) - LEN(${test})`;
         },
         includes(text, test) {
-            return prepareAny `(CHARINDEX(${text}, ${test}) > 0)`;
+            return prepareAny `(CHARINDEX(${test}, ${text}) > 0)`;
         },
         length(text) {
             return prepareAny `LEN(${text})`;
