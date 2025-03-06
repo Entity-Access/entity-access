@@ -9,7 +9,27 @@ export interface ISql {
         sum(a: number[]): number;
         count(a: any[]): number;
         avg(a: number[]): number
-    }
+    },
+    window: {
+        rowNumber: {
+            orderBy(order: number): number;
+            orderByDescending(order: number): number;
+            partitionByOrderBy(partition: any, order: number): number;
+            partitionByOrderByDescending(partition: any, order: number): number;
+        },
+        rank: {
+            orderBy(order: number): number;
+            orderByDescending(order: number): number;
+            partitionByOrderBy(partition: any, order: number): number;
+            partitionByOrderByDescending(partition: any, order: number): number;
+        }
+        denseRank: {
+            orderBy(order: number): number;
+            orderByDescending(order: number): number;
+            partitionByOrderBy(partition: any, order: number): number;
+            partitionByOrderByDescending(partition: any, order: number): number;
+        }
+    },
 
     cast: {
         asNumber(a: any): number;

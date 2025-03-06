@@ -2,7 +2,6 @@
 import { joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers, flattenMethods } from "../ISqlHelpers.js";
-import type QueryCompiler from "../QueryCompiler.js";
 
 export const SqlServerSqlHelper: ISqlHelpers = {
     ... Sql,
@@ -18,6 +17,50 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         },
         avg(a) {
             return prepareAny `AVG(${a})`;
+        },
+    },
+    window: {
+        rank: {
+            orderBy(order) {
+                return prepareAny `RANK() OVER (ORDER BY ${order})`;
+            },
+            orderByDescending(order) {
+                return prepareAny `RANK() OVER (ORDER BY ${order} DESC)`;
+            },
+            partitionByOrderBy(partition, order) {
+                return prepareAny `RANK() OVER (PARTITION BY ${partition} ORDER BY ${order})`;
+            },
+            partitionByOrderByDescending(partition, order) {
+                return prepareAny `RANK() OVER (PARTITION BY ${partition} ORDER BY ${order} DESC)`;
+            },
+        },
+        denseRank: {
+            orderBy(order) {
+                return prepareAny `DENSE_RANK() OVER (ORDER BY ${order})`;
+            },
+            orderByDescending(order) {
+                return prepareAny `DENSE_RANK() OVER (ORDER BY ${order} DESC)`;
+            },
+            partitionByOrderBy(partition, order) {
+                return prepareAny `DENSE_RANK() OVER (PARTITION BY ${partition} ORDER BY ${order})`;
+            },
+            partitionByOrderByDescending(partition, order) {
+                return prepareAny `DENSE_RANK() OVER (PARTITION BY ${partition} ORDER BY ${order} DESC)`;
+            },
+        },
+        rowNumber: {
+            orderBy(order) {
+                return prepareAny `ROW_NUMBER() OVER (ORDER BY ${order})`;
+            },
+            orderByDescending(order) {
+                return prepareAny `ROW_NUMBER() OVER (ORDER BY ${order} DESC)`;
+            },
+            partitionByOrderBy(partition, order) {
+                return prepareAny `ROW_NUMBER() OVER (PARTITION BY ${partition} ORDER BY ${order})`;
+            },
+            partitionByOrderByDescending(partition, order) {
+                return prepareAny `ROW_NUMBER() OVER (PARTITION BY ${partition} ORDER BY ${order} DESC)`;
+            },
         },
     },
     cast: {
