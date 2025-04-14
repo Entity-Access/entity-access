@@ -20,18 +20,45 @@ const isKeyEmpty = (key: any, columnName: IColumn) => {
     return key === null || key === "";
 };
 
+interface IVerificationSet {
+    change: ChangeEntry,
+    fields: ConditionalExpression[]
+}
+
+/**
+ * It is not good to verify all entities at once, but rather
+ * single entity as it would reduce the query to single row
+ * and avoid unnecessary joins.
+ *
+ * First failure will stop any further query evaluation.
+ */
+
 export default class VerificationSession {
 
-    private select: SelectStatement;
+    // private select: SelectStatement;
 
     private field: ConditionalExpression[];
 
+    private verificationSets: IVerificationSet[];
+
+
     constructor(private context: EntityContext) {
 
-        this.select = SelectStatement.create({});
+        // this.select = SelectStatement.create({});
+        this.verificationSets = [];
     }
 
     queueVerification(change: ChangeEntry, events: EntityEvents<any>) {
+
+        const vs = {
+            change,
+            fields: []
+        } as IVerificationSet;
+
+        this.verificationSets.push(vs);
+
+        this.field = vs.fields;
+
         const { type, entity } = change;
         if (change.status !== "inserted") {
             // verify access to the entity
@@ -143,29 +170,35 @@ export default class VerificationSession {
     }
 
     async verifyAsync(): Promise<any> {
-        if (!this.field?.length) {
-            return;
-        }
-        this.select.fields =[
-            Expression.as( this.field.length === 1 ? this.field[0] : Expression.templateLiteral(this.field), "error")
-        ];
-        this.select.sourceParameter = ParameterExpression.create({ name: "x"});
-        const source = ValuesStatement.create({
-            values: [
-                [NumberLiteral.one]
-            ],
-            as: Expression.identifier("a"),
-            fields: [Expression.identifier("a")]
-        });
-        this.select.source = source;
-        const compiler = this.context.driver.compiler;
-        const query = compiler.compileExpression(null, this.select);
-        const logger = ServiceProvider.resolve(this.context, Logger);
-        using session = logger.newSession();
-        const { rows: [ { error }]} = await this.context.connection.executeQuery(query);
-        if (error) {
-            session.error(`Failed executing \n${query.text}\n[\n${query.values.join(",")}]\n${error?.stack ?? error}`);
-            EntityAccessError.throw(error, 412);
+
+        for (const { fields } of this.verificationSets) {
+            if (!fields.length) {
+                continue;
+            }
+
+            const select = SelectStatement.create({});
+
+            select.fields =[
+                Expression.as( fields.length === 1 ? fields[0] : Expression.templateLiteral(fields), "error")
+            ];
+            select.sourceParameter = ParameterExpression.create({ name: "x"});
+            const source = ValuesStatement.create({
+                values: [
+                    [NumberLiteral.one]
+                ],
+                as: Expression.identifier("a"),
+                fields: [Expression.identifier("a")]
+            });
+            select.source = source;
+            const compiler = this.context.driver.compiler;
+            const query = compiler.compileExpression(null, select);
+            const logger = ServiceProvider.resolve(this.context, Logger);
+            using session = logger.newSession();
+            const { rows: [ { error }]} = await this.context.connection.executeQuery(query);
+            if (error) {
+                session.error(`Failed executing \n${query.text}\n[\n${query.values.join(",")}]\n${error?.stack ?? error}`);
+                EntityAccessError.throw(error, 412);
+            }
         }
     }
 
