@@ -204,13 +204,24 @@ export default class EntityQuery<T = any>
 
         const joins = this.selectStatement.joins ? [].concat(this.selectStatement.joins) : [];
 
+        let where = this.selectStatement.where;
+        where = where
+            ? Expression.logicalAnd(where, exp.body)
+            : exp.body;
+
         joins.push(JoinExpression.create({
             source: pq.selectStatement,
             as,
-            where: exp.body
+            where: Expression.equal(NumberLiteral.one, NumberLiteral.one)
         }));
 
-        return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, joins} });
+        return new EntityQuery({
+            ... this, selectStatement: {
+                ... this.selectStatement,
+                joins,
+                where
+            }
+        });
     }
 
     async delete(p, f): Promise<number> {
