@@ -20,6 +20,7 @@ export default class EntityQuery<T = any>
     public signal?: AbortSignal;
     public traceQuery: (text: string) => void;
     public includes: any[];
+    public scope: ParameterExpression[];
     constructor (p: Partial<EntityQuery<any>>
     ) {
         // lets clone select...
@@ -211,10 +212,13 @@ export default class EntityQuery<T = any>
         const exp = this.context.driver.compiler.compile(this, fx);
 
         const as = exp.params[0];
-        as.model = pq.selectStatement.model;
+        as.model = this.selectStatement.model;
 
         const exists = ExistsExpression.create({
-            target: pq.selectStatement
+            target: {
+                ... pq.selectStatement,
+                where: exp.body
+            } as SelectStatement,
         });
 
         let where = this.selectStatement.where;
@@ -224,7 +228,9 @@ export default class EntityQuery<T = any>
 
 
         return new EntityQuery({
-            ... this, selectStatement: {
+            ... this,
+            scope: this.scope ? [ ... this.scope, as] : [as],
+            selectStatement: {
                 ... this.selectStatement,
                 where
             }

@@ -48,6 +48,11 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         if (this.target) {
             this.scope.create({ parameter: target });
         }
+        if (source.scope) {
+            for (const p of source.scope) {
+                this.scope.create({ parameter: p, name: p.name, model: p.model})
+            }
+        }
     }
 
     visit(e1: Expression): ITextQuery {
