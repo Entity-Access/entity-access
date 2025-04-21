@@ -8,7 +8,7 @@ import { IColumn } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry, { IChange } from "../../model/changes/ChangeEntry.js";
-import { BinaryExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, NotExits, NumberLiteral, ReturnUpdated, SelectStatement, TableLiteral, UnionAllStatement, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { BinaryExpression, Constant, DeleteStatement, Expression, Identifier, InsertStatement, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;

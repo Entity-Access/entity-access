@@ -1,5 +1,5 @@
 import { NotSupportedError } from "../parser/NotSupportedError.js";
-import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement, NotExpression, BracketExpression, NegateExpression } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, ExpressionType, Identifier, InsertStatement, JoinExpression, MemberExpression, UpsertStatement, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionStatement, UpdateStatement, ValuesStatement, NotExpression, BracketExpression, NegateExpression } from "./Expressions.js";
 
 
 export default abstract class Visitor<T = any> {
@@ -69,8 +69,8 @@ export default abstract class Visitor<T = any> {
                 return this.visitArrayExpression(e);
             case "NotExists":
                 return this.visitNotExists(e);
-            case "UnionAllStatement":
-                return this.visitUnionAllStatement(e);
+            case "UnionStatement":
+                return this.visitUnionStatement(e);
             case "UpsertStatement":
                 return this.visitUpsertStatement(e);
             case "NotExpression":
@@ -95,7 +95,7 @@ export default abstract class Visitor<T = any> {
     visitUpsertStatement(e: UpsertStatement): T {
         throw new Error("Method not implemented.");
     }
-    visitUnionAllStatement(e: UnionAllStatement): T {
+    visitUnionStatement(e: UnionStatement): T {
         throw new NotSupportedError("Union All");
     }
     visitNotExists(e: NotExits): T {

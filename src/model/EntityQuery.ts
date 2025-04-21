@@ -190,6 +190,20 @@ export default class EntityQuery<T = any>
         });
     }
 
+    union(... p: any[]) {
+
+        const p1 = Expression.parameter("p1", this.selectStatement.model);
+
+        return new EntityQuery({
+            ... this,
+            selectStatement: {
+                ... p1.model.selectAllFields(),
+                source: Expression.union( this.selectStatement, ... p.map((x) => x.selectStatement))
+            },
+        });
+    }
+
+
     exists(p, fx): any {
 
         const pq = p as EntityQuery<any>;

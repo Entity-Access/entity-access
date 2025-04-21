@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-base-to-string */
-import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, BracketExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NegateExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionAllStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
+import { ArrayExpression, ArrowFunctionExpression, BigIntLiteral, BinaryExpression, BooleanLiteral, BracketExpression, CallExpression, CoalesceExpression, ConditionalExpression, Constant, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NegateExpression, NewObjectExpression, NotExits, NullExpression, NumberLiteral, OrderByExpression, ParameterExpression, ReturnUpdated, SelectStatement, StringLiteral, TableLiteral, TemplateElement, TemplateLiteral, UnionStatement, UpdateStatement, ValuesStatement } from "./Expressions.js";
 import Visitor from "./Visitor.js";
 
 const isBinary = (type) => /^(BinaryExpression|CoalesceExpression)$/.test(type);
@@ -182,8 +182,9 @@ export default class DebugStringVisitor extends Visitor<string> {
         return ` NOT EXISTS ${this.visit(e.target)}`;
     }
 
-    visitUnionAllStatement(e: UnionAllStatement): string {
-        return e.queries.map((x) => this.visit(x)).join("\nUNION ALL\n");
+    visitUnionStatement(e: UnionStatement): string {
+        const sep = `\nUNION${e.all ? " ALL" : ""}\n`;
+        return e.queries.map((x) => this.visit(x)).join(sep);
     }
 
     private visitArray(e: Expression[], separator = ", ") {

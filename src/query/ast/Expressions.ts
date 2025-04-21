@@ -103,9 +103,17 @@ export abstract class Expression {
         return BinaryExpression.create({ left, right, operator: "=", assign: true});
     }
 
+    static union(...queries: Expression[]) {
+        return UnionStatement.create({
+            queries,
+        });
+    }
+
+
     static unionAll(...queries: Expression[]) {
-        return UnionAllStatement.create({
-            queries
+        return UnionStatement.create({
+            queries,
+            all: true
         });
     }
 
@@ -450,8 +458,9 @@ export class UpsertStatement extends Expression {
     returnUpdated: ReturnUpdated;
 }
 
-export class UnionAllStatement extends Expression {
-    readonly type = "UnionAllStatement";
+export class UnionStatement extends Expression {
+    readonly type = "UnionStatement";
+    all = false;
     queries: Expression[];
 }
 
@@ -497,7 +506,7 @@ export type ExpressionType =
     ParameterExpression |
     ArrayExpression |
     NotExits |
-    UnionAllStatement |
+    UnionStatement |
     NotExpression |
     NegateExpression |
     BracketExpression |
