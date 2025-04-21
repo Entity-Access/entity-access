@@ -177,6 +177,26 @@ export default class EntityQuery<T = any>
         });
     }
 
+    innerJoin(p, fx): any {
+
+        const pq = p as EntityQuery<any>;
+
+        const exp = this.context.driver.compiler.compile(this, fx);
+
+        const as = exp.params[0];
+        as.model = pq.selectStatement.model;
+
+        const joins = this.selectStatement.joins ? [].concat(this.selectStatement.joins) : [];
+
+        joins.push(JoinExpression.create({
+            source: pq.selectStatement,
+            as,
+            where: exp.body
+        }));
+
+        return new EntityQuery({ ... this, selectStatement: { ... this.selectStatement, joins} });
+    }
+
     async delete(p, f): Promise<number> {
         if (f) {
             return this.where(p, f).delete(void 0, void 0);

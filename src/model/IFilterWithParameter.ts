@@ -29,6 +29,8 @@ export interface IBaseQuery<T> {
     where<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
     selectView<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => Partial<T>): DT;
 
+    innerJoin<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (p: JT) => (x: T) => boolean): DT;
+
     count(): Promise<number>;
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 
