@@ -55,6 +55,8 @@ export interface IBaseQuery<T> {
 
     trace<DT>(this: DT, tracer: (text: string) => void): DT;
 
+    unionAll<DT>(this: DT, ... p: DT[]): DT;
+
     /**
      * Inserts current sql statement into given entity source.
      * @param this query

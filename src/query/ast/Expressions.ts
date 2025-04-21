@@ -103,6 +103,12 @@ export abstract class Expression {
         return BinaryExpression.create({ left, right, operator: "=", assign: true});
     }
 
+    static unionAll(...queries: Expression[]) {
+        return UnionAllStatement.create({
+            queries
+        });
+    }
+
     static create<T extends Expression>(this: IClassOf<T>, p: Partial<Omit<T, "type">>) {
         (p as any).type = (this as any).name;
         Object.setPrototypeOf(p, this.prototype);

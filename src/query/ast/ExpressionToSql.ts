@@ -765,16 +765,17 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitUnionAllStatement(e: UnionAllStatement): ITextQuery {
-        const all: ITextQuery = [];
+        const all: ITextQuery = ["("];
         let first = true;
         for (const iterator of e.queries) {
-            all.push(this.visit(iterator));
-            if (first) {
+            if (!first) {
+                all.push(" UNION ALL ");
+            } else {
                 first = false;
-                continue;
             }
-            all.push(" UNION ALL ");
+            all.push(this.visit(iterator));
         }
+        all.push(")");
         return all;
     }
 

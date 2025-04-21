@@ -154,6 +154,8 @@ function addFemaleClothes(context: ShoppingContext, owner: User) {
     });
 }
 
+
+export const maleClothesCategory = "clothes/male";
 function addMaleClothes(context: ShoppingContext, owner: User) {
     const category = context.categories.add({
         name: "Male Clothes",
