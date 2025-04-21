@@ -17,7 +17,7 @@ export default async function(this: TestConfig) {
     const pq = context.productCategories.where({ headPhoneCategory }, (p) => (x) => x.categoryID === p.headPhoneCategory);
 
     const products = context.products.asQuery()
-        .innerJoin(pq, (p) => (x) => x.productID === p.productID);
+        .innerJoin(pq, (p) => (x) => x.productID === p.productID && x.owner.orders.some((o) => o.orderID > 0));
 
     const n = await products.count();
     assert(n > 0);

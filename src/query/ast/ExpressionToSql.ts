@@ -208,7 +208,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 // should be navigation...
                 const targetType = existingTarget.model;
                 const relation = targetType?.getProperty(firstMember.member);
-                if (relation) {
+                if (relation.relation) {
 
                     const body = e.arguments?.[0] as ExpressionType;
                     if (body?.type === "ArrowFunctionExpression") {

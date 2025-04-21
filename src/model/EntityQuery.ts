@@ -4,7 +4,7 @@ import { modelSymbol } from "../common/symbols/symbols.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, CallExpression, DeleteStatement, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NumberLiteral, OrderByExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NumberLiteral, OrderByExpression, ParameterExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
@@ -200,6 +200,8 @@ export default class EntityQuery<T = any>
         as.model = pq.selectStatement.model;
 
         const joins = this.selectStatement.joins ? [].concat(this.selectStatement.joins) : [];
+
+        // we need to remove joins from pq and merge it here...
 
         let where = this.selectStatement.where;
         where = where
