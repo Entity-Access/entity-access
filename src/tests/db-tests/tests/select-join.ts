@@ -15,11 +15,13 @@ export default async function(this: TestConfig) {
     context.changeSet.clear();
 
     const pq = context.productCategories.where({ headPhoneCategory }, (p) => (x) => x.categoryID === p.headPhoneCategory
-        && x.category.productCategories.some((pc) => pc.productCategoryID > 0)
+        && x.category.productCategories.some((pc) => pc.productCategoryID > 0 && pc.product.categories.some((c) => c.productCategoryID > 0))
         );
 
     const products = context.products.asQuery()
-        .innerJoin(pq, (p) => (x) => x.productID === p.productID && x.categories.some((o) => o.productCategoryID > 0));
+        .innerJoin(pq, (p) => (x) => x.productID === p.productID && x.categories.some((o) => o.productCategoryID > 0
+            && x.categories.some((c) => c.categoryID !== null)
+    ));
 
     const n = await products.count();
     assert(n > 0);

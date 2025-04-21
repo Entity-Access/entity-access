@@ -31,6 +31,8 @@ export interface IBaseQuery<T> {
 
     innerJoin<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (p: JT) => (x: T) => boolean): DT;
 
+    exists<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (p: JT) => (x: T) => boolean): DT;
+
     count(): Promise<number>;
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 

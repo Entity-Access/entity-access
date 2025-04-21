@@ -190,6 +190,33 @@ export default class EntityQuery<T = any>
         });
     }
 
+    exists(p, fx): any {
+
+        const pq = p as EntityQuery<any>;
+
+        const exp = this.context.driver.compiler.compile(this, fx);
+
+        const as = exp.params[0];
+        as.model = pq.selectStatement.model;
+
+        const exists = ExistsExpression.create({
+            target: pq.selectStatement
+        });
+
+        let where = this.selectStatement.where;
+        where = where
+            ? Expression.logicalAnd(where, exists)
+            : exists;
+
+
+        return new EntityQuery({
+            ... this, selectStatement: {
+                ... this.selectStatement,
+                where
+            }
+        });
+    }
+
     innerJoin(p, fx): any {
 
         const pq = p as EntityQuery<any>;
