@@ -184,10 +184,7 @@ export default class EntityQuery<T = any>
         return new EntityQuery({
             ... this,
             selectStatement: {
-                ... this.selectStatement,
-                where: null,
-                joins: null,
-                sourceParameter: p1,
+                ... p1.model.selectAllFields(),
                 source: Expression.unionAll( this.selectStatement, ... p.map((x) => x.selectStatement))
             },
         });
