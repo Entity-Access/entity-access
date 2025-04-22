@@ -426,7 +426,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     return [() => value[chain[0].member]];
                 }
                 const scope = this.scope.get(parameter);
-                if (scope.isRuntimeParam) {
+                if (scope?.isRuntimeParam) {
                     return [(p) => p[chain[0].member]];
                 }
 
