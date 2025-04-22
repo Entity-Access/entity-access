@@ -240,9 +240,13 @@ export class BracketExpression extends Expression {
     target: Expression;
 }
 
+let pid = 1;
+const pidSymbol = Symbol("pid");
+
 export class ParameterExpression extends Expression {
     readonly type = "ParameterExpression";
-    name: string;
+
+   name: string;
     /**
      * Default value if any...
      */
@@ -254,6 +258,10 @@ export class ParameterExpression extends Expression {
     model: EntityType;
 
     quotedLiteral: (x: string) => string;
+
+    get id() {
+        return this[pidSymbol] ??= pid++;
+    }
 
     toString() {
         return this.quotedLiteral?.(this.name) ?? this.name;

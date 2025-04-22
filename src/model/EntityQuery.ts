@@ -212,11 +212,13 @@ export default class EntityQuery<T = any>
         const exp = this.context.driver.compiler.compile(this, fx);
 
         const as = exp.params[0];
-        as.model = this.selectStatement.model;
+        as.model = pq.selectStatement.sourceParameter;
+
+        // const model = this.selectStatement.model;
 
         const exists = ExistsExpression.create({
             target: {
-                ... pq.selectStatement,
+                ... pq.selectStatement.model.selectAllFields(as),
                 where: exp.body
             } as SelectStatement,
         });
@@ -226,14 +228,15 @@ export default class EntityQuery<T = any>
             ? Expression.logicalAnd(where, exists)
             : exists;
 
+        const selectStatement = SelectStatement.create({
+            ... this.selectStatement,
+            where
+        });
 
         return new EntityQuery({
             ... this,
-            scope: this.scope ? [ ... this.scope, as] : [as],
-            selectStatement: {
-                ... this.selectStatement,
-                where
-            }
+            // scope: this.scope ? [ ... this.scope, as] : [as],
+            selectStatement
         });
     }
 

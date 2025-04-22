@@ -216,12 +216,12 @@ export default class EntityType {
         return relation;
     }
 
-    public selectAllFields() {
+    public selectAllFields(as?: ParameterExpression) {
         // if (this.selectAll) {
         //     return { ... this.selectAll };
         // }
         const source = this.fullyQualifiedName;
-        const as = Expression.parameter(this.name[0] + "1", this);
+        as ??= Expression.parameter(this.name[0] + "1", this);
         as.model = this;
         const fields = this.columns.map((c) => Expression.member(as, c.columnName));
         this.selectAll = SelectStatement.create({
