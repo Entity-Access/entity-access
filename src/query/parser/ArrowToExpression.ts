@@ -23,13 +23,13 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
      * @param target parameter target
      * @returns Parsed expression
      */
-    public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression) {
+    public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression, outerParameter?: ParameterExpression) {
         const key = fx.toString();
         const node = parsedCache.getOrCreate(key, fx, (k, f) => {
             const rs = new Restructure();
             return rs.visit(parseExpression(f.toString()));
         });
-        return this.transformUncached(node, target);
+        return this.transformUncached(node, target, outerParameter);
     }
 
     /**
@@ -40,7 +40,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
      * @param target parameter to replace
      * @returns transformed node
      */
-    private static transformUncached(node: bpe.Node, tx?: ParameterExpression) {
+    private static transformUncached(node: bpe.Node, tx?: ParameterExpression, outerParameter?: ParameterExpression): { params: Map<string, any>, body: Expression, target: ParameterExpression } {
 
         const cache = node[parameterCacheSymbol] ??= new TimedCache<ParameterExpression,bpe.Node>();
 
@@ -50,13 +50,29 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 throw new Error("Expecting an arrow function");
             }
 
-            const params = [] as ParameterExpression[];
+            const paramSet = new Map<string, any>();
+
+            let firstOuterParam = null;
+
+            const params = [];
 
             for (const iterator of node.params) {
                 if (iterator.type !== "Identifier") {
                     throw new Error("Expecting an identifier");
                 }
-                params.push(ParameterExpression.create({ name: iterator.name }));
+                if (!firstOuterParam && outerParameter) {
+                    firstOuterParam = iterator.name;
+                    paramSet.set(iterator.name, outerParameter);
+                    params.push(outerParameter);
+                    continue;
+                }
+                const p1 = ParameterExpression.create({ name: iterator.name });
+                paramSet.set(iterator.name, p1);
+                params.push(p1);
+            }
+
+            if (outerParameter && firstOuterParam) {
+                paramSet.set(firstOuterParam, outerParameter);
             }
 
             let body = node.body;
@@ -81,7 +97,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
             body = body.body;
 
-            const visitor = new this(params, target, name);
+            const visitor = new this(paramSet, target, name);
             return {
                 params,
                 target,
@@ -92,18 +108,15 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
     public readonly leftJoins: string[] = [];
 
-    private targetStack: Map<any,any> = new Map();
+    // private targetStack: Map<any,any> = new Map();
 
     protected constructor(
-        public params: ParameterExpression[],
+        private targetStack: Map<string,any>,
         public target: ParameterExpression,
         targetName: string
     ) {
         super();
         this.targetStack.set("Sql", "Sql");
-        for (const iterator of params) {
-            this.targetStack.set(iterator.name, iterator);
-        }
         if (targetName) {
             this.targetStack.set(targetName, target);
         }

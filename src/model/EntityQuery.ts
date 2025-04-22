@@ -209,17 +209,21 @@ export default class EntityQuery<T = any>
 
         const pq = p as EntityQuery<any>;
 
-        const exp = this.context.driver.compiler.compile(this, fx);
+        const { body } = this.context.driver.compiler.arrowToExpression.transform(
+            fx,
+            this.selectStatement.sourceParameter,
+            pq.selectStatement.sourceParameter
+        );
 
-        const as = exp.params[0];
-        as.model = pq.selectStatement.sourceParameter;
-
-        // const model = this.selectStatement.model;
+        let pqWhere = pq.selectStatement.where;
+        pqWhere = pqWhere
+            ? Expression.logicalAnd(pqWhere, body)
+            : body;
 
         const exists = ExistsExpression.create({
             target: {
-                ... pq.selectStatement.model.selectAllFields(as),
-                where: exp.body
+                ... pq.selectStatement,
+                where: pqWhere
             } as SelectStatement,
         });
 
