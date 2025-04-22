@@ -141,6 +141,7 @@ export class QueryExpander {
 
             joins.push(JoinExpression.create({
                 joinType: "INNER",
+                forceJoinType: "INNER",
                 source: { ... parent },
                 as: joinParameter,
                 model: parent.model,
@@ -220,6 +221,7 @@ export class QueryExpander {
 
         selectJoins.push(JoinExpression.create({
             joinType: "INNER",
+            forceJoinType: "INNER",
             source: { ... parent },
             as: selectJoinParameter,
             model: parent.model,

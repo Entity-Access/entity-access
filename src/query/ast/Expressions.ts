@@ -330,6 +330,7 @@ export class ConditionalExpression extends Expression {
 export class JoinExpression extends Expression {
     readonly type = "JoinExpression";
     joinType: "LEFT" | "INNER";
+    forceJoinType: "LEFT" | "INNER";
     source: SelectStatement | Identifier | ExpressionAs | TableLiteral;
     as: Identifier | ParameterExpression;
     where: Expression;

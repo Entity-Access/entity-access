@@ -752,7 +752,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const as = e.as ? prepare ` AS ${ e.as.type === "Identifier"
             ? e.as.value
             : this.scope.nameOf(e.as )}` : "";
-        return prepare ` ${e.joinType || "LEFT"} JOIN ${table}${as} ON ${where}`;
+        return prepare ` ${ e.forceJoinType || (e.joinType || "LEFT")} JOIN ${table}${as} ON ${where}`;
     }
 
     visitOrderByExpression(e: OrderByExpression): ITextQuery {
