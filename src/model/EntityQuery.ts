@@ -475,10 +475,18 @@ export default class EntityQuery<T = any>
 
             const include = this.includes;
             if (include?.length > 0) {
+
+                const selectForInclude = { ... this.selectStatement };
+
+                this.context.driver.compiler.compileExpression(this, selectForInclude)
+
                 // since we will be streaming results...
                 // it is important that we load all the
                 // included entities first...
-                const loaders = include.map((x) => QueryExpander.expand(this.context, { ... this.selectStatement } , x, false).map((y) => this.load(relationMapper, session, y, signal))).flat(2);
+                const loaders = include
+                    .map((x) => QueryExpander.expand(this.context, selectForInclude , x, false)
+                    .map((y) => this.load(relationMapper, session, y, signal)))
+                    .flat(2);
                 await Promise.all(loaders);
             }
 
