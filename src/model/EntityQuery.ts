@@ -599,6 +599,16 @@ export default class EntityQuery<T = any>
     }
 
     trace(traceQuery: (text: string) => void): any {
+
+        if (traceQuery) {
+            const old = traceQuery;
+            const header = "\n====================================================================\n\n";
+            const footer = "\n\n--------------------------------------------------------------------\n";
+            traceQuery = (text: string) => {
+                old(`${header}${text}${footer}`);
+            };
+        }
+
         return new EntityQuery({ ... this, traceQuery });
     }
 
