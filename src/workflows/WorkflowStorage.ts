@@ -102,10 +102,21 @@ export class WorkflowItem {
     public extra: string;
 
     @Column({ dataType: "Char", length: 400 , nullable: true})
+    @RelateTo(WorkflowItem, {
+        property: (x) => x.parent,
+        inverseProperty: (x) => x.children,
+        foreignKeyConstraint: {
+            name: "FC_Workflows_Parent_ID",
+            cascade: "delete"
+        }
+    })
     public parentID: string;
 
     @Column({ dataType: "Char", length: 400 , nullable: true})
     public lastID: string;
+
+    parent: WorkflowItem;
+    children: WorkflowItem[];
 }
 
 @RegisterScoped
