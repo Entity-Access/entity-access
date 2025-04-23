@@ -10,6 +10,7 @@ import { BinaryExpression, CallExpression, Expression, NullExpression, NumberLit
 import DateTime from "../types/DateTime.js";
 import WorkflowClock from "./WorkflowClock.js";
 import RawQuery from "../compiler/RawQuery.js";
+import { RelateTo } from "../decorators/Relate.js";
 
 const loadedFromDb = Symbol("loadedFromDB");
 
@@ -34,6 +35,13 @@ const loadedFromDb = Symbol("loadedFromDB");
         { name: (x) => x.queued, descending: false }
     ],
     filter: (x) => x.isWorkflow === true && x.throttleGroup !== null
+})
+@Index({
+    name: "IX_Workflows_Parent_ID",
+    columns: [
+        { name: (x) => x.parentID, descending: true }
+    ],
+    filter: (x) => x.parentID !== null
 })
 export class WorkflowItem {
 
