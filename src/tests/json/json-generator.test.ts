@@ -38,7 +38,7 @@ export default async function () {
 async function verifyJson(model) {
     const readable = new JsonGenerator();
 
-    const fileName = "./dist/a1.json";
+    const fileName = `./dist/${Date.now()}.json`;
 
     await writeFile(fileName, readable.reader(model));
     const text = await readFile(fileName, "utf-8");
