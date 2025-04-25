@@ -180,6 +180,12 @@ export default class EntityQuery<T = any>
 
     union(p, fx): any {
 
+        const limit = this.selectStatement.limit;
+        const offset = this.selectStatement.offset;
+
+        delete this.selectStatement.limit;
+        delete this.selectStatement.offset;
+
         const p1 = Expression.parameter("p1", this.selectStatement.model);
 
         const where = this.where(p, fx) as this;
@@ -188,33 +194,51 @@ export default class EntityQuery<T = any>
             ... this,
             selectStatement: {
                 ... p1.model.selectAllFields(),
-                source: Expression.union( this.selectStatement, where.selectStatement)
+                source: Expression.union( this.selectStatement, where.selectStatement),
+                limit,
+                offset
             },
         });
     }
 
     unionsAll(... p: any[]) {
 
+        const limit = this.selectStatement.limit;
+        const offset = this.selectStatement.offset;
+
+        delete this.selectStatement.limit;
+        delete this.selectStatement.offset;
+
         const p1 = Expression.parameter("p1", this.selectStatement.model);
 
         return new EntityQuery({
             ... this,
             selectStatement: {
                 ... p1.model.selectAllFields(),
-                source: Expression.unionAll( this.selectStatement, ... p.map((x) => x.selectStatement))
+                source: Expression.unionAll( this.selectStatement, ... p.map((x) => x.selectStatement)),
+                limit,
+                offset
             },
         });
     }
 
     unions(... p: any[]) {
 
+        const limit = this.selectStatement.limit;
+        const offset = this.selectStatement.offset;
+
+        delete this.selectStatement.limit;
+        delete this.selectStatement.offset;
+
         const p1 = Expression.parameter("p1", this.selectStatement.model);
 
         return new EntityQuery({
             ... this,
             selectStatement: {
                 ... p1.model.selectAllFields(),
-                source: Expression.union( this.selectStatement, ... p.map((x) => x.selectStatement))
+                source: Expression.union( this.selectStatement, ... p.map((x) => x.selectStatement)),
+                limit,
+                offset
             },
         });
     }
