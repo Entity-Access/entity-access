@@ -1,4 +1,4 @@
-import { createWriteStream, read, readFileSync } from "fs";
+import { createWriteStream, existsSync, read, readFileSync } from "fs";
 import JsonGenerator from "../../common/JsonGenerator.js";
 import { pipeline } from "stream/promises";
 import { readFile, writeFile } from "fs/promises";
@@ -35,10 +35,15 @@ export default async function () {
 
 }
 
+let fileID = 1;
+
 async function verifyJson(model) {
     const readable = new JsonGenerator();
 
-    const fileName = `./dist/${Date.now()}.json`;
+    let fileName = `./dist/${fileID++}.json`;
+    while(existsSync(fileName)) {
+        fileName = `./dist/${fileID++}.json`;
+    }
 
     await writeFile(fileName, readable.reader(model));
     const text = await readFile(fileName, "utf-8");
