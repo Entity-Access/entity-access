@@ -37,6 +37,8 @@ export interface IBaseQuery<T> {
     count(): Promise<number>;
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 
+    slice<DT>(this:DT, start?: number, end?: number): DT;
+
     sum(): Promise<number>;
     sum<P>(parameters: P, fx: (p: P) => (x: T) => number): Promise<number>;
     sum<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): Promise<IFieldsAsNumbers<TR>>;

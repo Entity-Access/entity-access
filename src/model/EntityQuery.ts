@@ -777,6 +777,18 @@ export default class EntityQuery<T = any>
 
     }
 
+    slice(start, end): any {
+        const nq = new EntityQuery({
+            ... this,
+            selectStatement: {
+                ... this.selectStatement,
+                limit: end,
+                offset: start
+            }
+        });
+        return nq;
+    }
+
     async count(parameters?:any, fx?: any): Promise<number> {
         if (parameters !== void 0) {
             return this.where(parameters, fx).count();
