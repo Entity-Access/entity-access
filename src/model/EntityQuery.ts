@@ -263,6 +263,7 @@ export default class EntityQuery<T = any>
             : exp.body;
 
         joins.push(JoinExpression.create({
+            forceJoinType: "INNER",
             source: pq.selectStatement,
             as,
             where: Expression.equal(NumberLiteral.one, NumberLiteral.one)
@@ -296,6 +297,8 @@ export default class EntityQuery<T = any>
         }
 
         const join = JoinExpression.create({
+            forceJoinType: "INNER",
+            joinType: "INNER",
             source,
             as,
             where
@@ -399,6 +402,8 @@ export default class EntityQuery<T = any>
         const as = Expression.parameter("s1", this.type);
         const sp = Expression.parameter("u1", this.type);
         const join = JoinExpression.create({
+            forceJoinType: "INNER",
+            joinType: "INNER",
             source: this.selectStatement,
             as
         });
