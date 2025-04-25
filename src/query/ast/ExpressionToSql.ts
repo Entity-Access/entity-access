@@ -779,7 +779,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
             } else {
                 first = false;
             }
-            all.push(this.visit(iterator));
+            all.push("(", this.visit(iterator), ")");
         }
         all.push(")");
         return all;
