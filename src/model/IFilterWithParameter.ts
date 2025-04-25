@@ -27,6 +27,7 @@ export interface IBaseQuery<T> {
     limit<DT>(this: DT, limit: number): DT;
     offset<DT>(this: DT, offset: number): DT;
     where<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
+    union<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
     selectView<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => Partial<T>): DT;
 
     innerJoin<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (p: JT) => (x: T) => boolean): DT;
@@ -57,8 +58,8 @@ export interface IBaseQuery<T> {
 
     trace<DT>(this: DT, tracer: (text: string) => void): DT;
 
-    unionAll<DT>(this: DT, ... p: DT[]): DT;
-    union<DT>(this: DT, ... p: DT[]): DT;
+    unionsAll<DT>(this: DT, ... p: DT[]): DT;
+    unions<DT>(this: DT, ... p: DT[]): DT;
 
     /**
      * Inserts current sql statement into given entity source.

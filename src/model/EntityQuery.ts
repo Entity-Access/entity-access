@@ -178,7 +178,22 @@ export default class EntityQuery<T = any>
         });
     }
 
-    unionAll(... p: any[]) {
+    union(p, fx): any {
+
+        const p1 = Expression.parameter("p1", this.selectStatement.model);
+
+        const where = this.where(p, fx) as this;
+
+        return new EntityQuery({
+            ... this,
+            selectStatement: {
+                ... p1.model.selectAllFields(),
+                source: Expression.union( this.selectStatement, where.selectStatement)
+            },
+        });
+    }
+
+    unionsAll(... p: any[]) {
 
         const p1 = Expression.parameter("p1", this.selectStatement.model);
 
@@ -191,7 +206,7 @@ export default class EntityQuery<T = any>
         });
     }
 
-    union(... p: any[]) {
+    unions(... p: any[]) {
 
         const p1 = Expression.parameter("p1", this.selectStatement.model);
 
