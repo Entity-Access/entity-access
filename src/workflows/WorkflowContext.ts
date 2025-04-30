@@ -115,7 +115,12 @@ function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, o
             }
             (this as any).currentTime = step.updated;
         }
-        await context.storage.save(step);
+        try {
+            await context.storage.save(step);
+        } catch (error) {
+            console.log(`Error saving step ${error.stack ?? error}`);
+            throw error;
+        }
         if (lastError) {
             throw lastError;
         }
