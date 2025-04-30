@@ -36,7 +36,7 @@ function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, o
 
         const clock = context.storage.clock;
 
-        const timer = setTimeout(() => console.log(`${store.id} id not finish in 30 seconds`), 30000);
+        const timer = setTimeout(() => console.log(`${id} id not finish in 30 seconds`), 30000);
 
 
         const existing = await context.storage.getAny(id);
