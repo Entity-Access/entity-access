@@ -206,9 +206,6 @@ export default class WorkflowStorage {
                 lockToken: p.uuid
             }));
         const all = items.map((x) => new WorkflowTask(x, db));
-        if (all.length) {
-            console.log(`Executing ${all.length} items for group ${taskGroup}`);
-        }
         return all;
     }
 

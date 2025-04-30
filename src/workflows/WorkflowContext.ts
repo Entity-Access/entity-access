@@ -108,7 +108,6 @@ function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, o
                 if (error instanceof ActivitySuspendedError) {
                     return;
                 }
-                console.error(error);
                 lastError = error;
                 step.error = error.stack ?? error.toString();
                 step.state = "failed";
@@ -304,7 +303,7 @@ export default class WorkflowContext {
     }
 
     public log ( ... a: any[]) {
-        // console.log(... a);
+        console.log(... a);
     }
 
     public async processQueueOnce({ taskGroup = "default", signal = void 0 as AbortSignal } = {}) {
@@ -403,9 +402,6 @@ export default class WorkflowContext {
             workflow.eta = clock.utcNow.add(instance.preserveTime);
         } catch (error) {
             if (error instanceof ActivitySuspendedError) {
-
-                console.log(`Suspending ${workflow.id} for ${error.ttl}`);
-
                 // this will update last id...
                 workflow.eta = clock.utcNow.add(error.ttl);
                 workflow.lockedTTL = null;
