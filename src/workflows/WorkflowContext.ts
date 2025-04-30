@@ -400,6 +400,7 @@ export default class WorkflowContext {
             workflow.output = JSON.stringify(result ?? 0);
             workflow.state = "done";
             workflow.eta = clock.utcNow.add(instance.preserveTime);
+            this.log(`Workflow ${workflow.id} finished successfully.`);
         } catch (error) {
             if (error instanceof ActivitySuspendedError) {
                 // this will update last id...
@@ -407,6 +408,7 @@ export default class WorkflowContext {
                 workflow.lockedTTL = null;
                 workflow.lockToken = null;
                 await this.storage.save(workflow);
+                this.log(`Workflow ${workflow.id} suspended till ${workflow.eta}`);
                 return;
             }
             error = error.stack ?? error.toString();
@@ -414,6 +416,7 @@ export default class WorkflowContext {
             console.error(error);
             workflow.state = "failed";
             workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
+            this.log(`Workflow ${workflow.id} failed ${workflow.error}`);
         }
 
         // in case of child workflow...
