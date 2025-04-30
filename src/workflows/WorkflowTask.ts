@@ -13,7 +13,7 @@ export default class WorkflowTask implements Disposable {
         public readonly item: WorkflowItem,
         public readonly context: WorkflowDbContext,
     ) {
-        this.timer = setInterval(this.renewLock, 1000);
+        this.timer = setInterval(this.renewLock, 3000);
         this.ac = new AbortController();
         this.signal = this.ac.signal;
     }
