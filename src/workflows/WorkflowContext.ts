@@ -4,7 +4,6 @@ import EntityAccessError from "../common/EntityAccessError.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import Inject, { RegisterSingleton, ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
 import DateTime from "../types/DateTime.js";
-import WorkflowStorage, { WorkflowItem } from "./WorkflowStorage.js";
 import type Workflow from "./Workflow.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
 import { IWorkflowSchema, WorkflowRegistry } from "./WorkflowRegistry.js";
@@ -12,6 +11,8 @@ import crypto from "crypto";
 import TimeSpan from "../types/TimeSpan.js";
 import sleep from "../common/sleep.js";
 import Waiter from "./Waiter.js";
+import { WorkflowItem } from "./WorkflowDbContext.js";
+import WorkflowStorage from "./WorkflowStorage.js";
 
 export const runChildSymbol = Symbol("runChild");
 
@@ -310,7 +311,8 @@ export default class WorkflowContext {
         // run...
         for (const iterator of pending) {
             try {
-                await this.run(iterator);
+                using l = iterator;
+                await this.run(iterator.item, iterator.signal);
             } catch (error) {
                 console.error(error);
             }
@@ -366,7 +368,7 @@ export default class WorkflowContext {
         }
     }
 
-    private async run(workflow: WorkflowItem) {
+    private async run(workflow: WorkflowItem, signal: AbortSignal) {
 
         const clock = this.storage.clock;
 

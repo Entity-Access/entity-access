@@ -1,134 +1,18 @@
 /* eslint-disable no-console */
 import { randomUUID } from "crypto";
-import Column from "../decorators/Column.js";
-import Index from "../decorators/Index.js";
-import Table from "../decorators/Table.js";
-import Inject, { RegisterScoped, RegisterSingleton, ServiceProvider } from "../di/di.js";
+import Inject, { RegisterSingleton } from "../di/di.js";
 import { BaseDriver } from "../drivers/base/BaseDriver.js";
-import EntityContext from "../model/EntityContext.js";
-import { BinaryExpression, CallExpression, Expression, NullExpression, NumberLiteral, UpdateStatement } from "../query/ast/Expressions.js";
+import { CallExpression, Expression, NullExpression, NumberLiteral, UpdateStatement } from "../query/ast/Expressions.js";
 import DateTime from "../types/DateTime.js";
 import WorkflowClock from "./WorkflowClock.js";
 import RawQuery from "../compiler/RawQuery.js";
-import { RelateTo } from "../decorators/Relate.js";
+import { WorkflowDbContext, WorkflowItem } from "./WorkflowDbContext.js";
+import WorkflowTask from "./WorkflowTask.js";
+import Sql from "../sql/Sql.js";
 
 const loadedFromDb = Symbol("loadedFromDB");
 
-@Table("Workflows")
-@Index({
-    name: "IX_Workflows_Group",
-    columns: [{ name: (x) => x.groupName, descending: false }],
-    filter: (x) => x.groupName !== null
-})
-@Index({
-    name: "IX_Workflows_taskGroup_ETA",
-    columns: [
-        { name: (x) => x.eta, descending: false },
-        { name: (x) => x.taskGroup, descending: false }
-    ],
-    filter: (x) => x.isWorkflow === true
-})
-@Index({
-    name: "IX_Workflows_Throttle_Group",
-    columns: [
-        { name: (x) => x.throttleGroup, descending: false },
-        { name: (x) => x.queued, descending: false }
-    ],
-    filter: (x) => x.isWorkflow === true && x.throttleGroup !== null
-})
-@Index({
-    name: "IX_Workflows_Parent_ID",
-    columns: [
-        { name: (x) => x.parentID, descending: true }
-    ],
-    filter: (x) => x.parentID !== null
-})
-export class WorkflowItem {
 
-    @Column({ dataType: "Char", length: 400, key: true })
-    public id: string;
-
-    @Column({ dataType: "Boolean" })
-    public isWorkflow: boolean;
-
-    @Column({ dataType: "Char", nullable: true })
-    public name: string;
-
-    @Column({ dataType: "Char", length: 200, nullable: true })
-    public groupName: string;
-
-    @Column({ dataType: "Char"})
-    public input: string;
-
-    @Column({ dataType: "Char", nullable: true})
-    public output: string;
-
-    @Column({ })
-    public eta: DateTime;
-
-    @Column({ })
-    public queued: DateTime;
-
-    @Column({ })
-    public updated: DateTime;
-
-    @Column({
-        dataType: "Char", length: 50,
-        default: () => `default`
-    })
-    public taskGroup: string;
-
-    @Column({
-        dataType: "Char", length: 200, nullable: true
-    })
-    public throttleGroup: string;
-
-    @Column({ dataType: "Int", default: () => 0})
-    public priority: number;
-
-    @Column({ nullable: true })
-    public lockedTTL: DateTime;
-
-    @Column({ nullable: true })
-    public lockToken: string;
-
-    @Column({ dataType: "AsciiChar", length: 10})
-    public state: "queued" | "failed" | "done";
-
-    @Column({ dataType: "Char", nullable: true})
-    public error: string;
-
-    @Column({ dataType: "Char", nullable: true})
-    public extra: string;
-
-    @Column({ dataType: "Char", length: 400 , nullable: true})
-    @RelateTo(WorkflowItem, {
-        property: (x) => x.parent,
-        inverseProperty: (x) => x.children,
-        foreignKeyConstraint: {
-            name: "FC_Workflows_Parent_ID",
-            cascade: "delete"
-        }
-    })
-    public parentID: string;
-
-    @Column({ dataType: "Char", length: 400 , nullable: true})
-    public lastID: string;
-
-    parent: WorkflowItem;
-    children: WorkflowItem[];
-}
-
-@RegisterScoped
-class WorkflowContext extends EntityContext {
-
-    public workflows = this.model.register(WorkflowItem);
-
-    verifyFilters: boolean = false;
-
-    raiseEvents: boolean = false;
-
-}
 
 @RegisterSingleton
 export default class WorkflowStorage {
@@ -146,7 +30,7 @@ export default class WorkflowStorage {
 
     async getNextEta(throttle: { group: string, maxPerSecond: number }) {
 
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         const last = await db.workflows.where(throttle, (p) => (x) => x.throttleGroup === p.group
             && x.isWorkflow === true)
             .orderByDescending(void 0, (p) => (x) => x.queued)
@@ -163,7 +47,7 @@ export default class WorkflowStorage {
     }
 
     async getWorkflow(id: string) {
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         const r = await db.workflows.statements.select({}, { id, isWorkflow: true });
         if (r) {
             return {
@@ -188,7 +72,7 @@ export default class WorkflowStorage {
 
 
     async getAny(id: string) {
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         const r = await db.workflows.statements.select({}, { id });
         if (r) {
             return {
@@ -210,7 +94,7 @@ export default class WorkflowStorage {
     }
 
     async extra(id, text?) {
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         if (text) {
             // save..
             await db.workflows.statements.update({ extra: text }, { id });
@@ -229,7 +113,7 @@ export default class WorkflowStorage {
      * @returns true if all items are deleted
      */
     async delete(id) {
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
             .limit(100)
             .delete({ id }, (p) => (x) => x.parentID === p.id);
@@ -242,7 +126,7 @@ export default class WorkflowStorage {
     }
 
     async save(state: Partial<WorkflowItem>) {
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         const connection = db.connection;
         await using tx = await connection.createTransaction();
         state.state ||= "queued";
@@ -260,7 +144,7 @@ export default class WorkflowStorage {
     }
 
     async dequeue(taskGroup: string, signal?: AbortSignal) {
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         const now = this.clock.utcNow;
 
         if(!this.lockQuery) {
@@ -281,7 +165,7 @@ export default class WorkflowStorage {
                     Expression.assign(
                         Expression.identifier(lockTTLField),
                         CallExpression.create({
-                            callee: Expression.identifier("Sql.date.addMinutes"),
+                            callee: Expression.identifier("Sql.date.addSeconds"),
                             arguments: [CallExpression.create({
                                 callee: Expression.identifier("Sql.date.now")
                             }),
@@ -312,6 +196,8 @@ export default class WorkflowStorage {
 
         const q = this.lockQuery;
 
+        const uuid = randomUUID();
+
         const items = await db.workflows
             .where({now, taskGroup}, (p) => (x) => x.eta <= p.now
                 && ( x.lockedTTL === null
@@ -323,26 +209,15 @@ export default class WorkflowStorage {
             .thenBy({}, (p) => (x) => x.priority)
             .limit(20)
             .withSignal(signal)
-            .toArray();
-        const list: WorkflowItem[] = [];
-        const uuid = randomUUID();
-        for (const iterator of items) {
-            // try to acquire lock...
-            iterator.lockToken = uuid;
-            try {
-                const r = await q.invoke(db.connection, iterator);
-                if (r.updated > 0) {
-                    list.push(iterator);
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        }
-        return list;
+            .updateSelect({ uuid}, (p) => (x) => ({
+                lockedTTL: Sql.date.addSeconds(Sql.date.now(), 15),
+                lockToken: p.uuid
+            }));
+        return items.map((x) => new WorkflowTask(x, db));
     }
 
     async seed(version?) {
-        const db = new WorkflowContext(this.driver);
+        const db = new WorkflowDbContext(this.driver);
         await db.connection.ensureDatabase();
         await db.connection.automaticMigrations().migrate(db, { version, name: "workflows" });
     }
