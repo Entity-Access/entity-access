@@ -303,7 +303,7 @@ export default class WorkflowContext {
     }
 
     public log ( ... a: any[]) {
-        console.log(... a);
+        // console.log(... a);
     }
 
     public async processQueueOnce({ taskGroup = "default", signal = void 0 as AbortSignal } = {}) {
