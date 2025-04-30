@@ -6,7 +6,7 @@ export default class WorkflowTask implements Disposable {
 
     timer: NodeJS.Timer;
 
-    total = 0;
+    total = 1;
 
     public readonly signal;
     private ac: AbortController;
@@ -33,9 +33,12 @@ export default class WorkflowTask implements Disposable {
     renewLock = () => {
         const { id, lockToken, lockedTTL } = this.item;
         const now = DateTime.now;
-        this.total += 1;
-        if (this.total > 10) {
-            console.log(`${this.item.id} is running for more than 30 seconds.`);
+        if (this.total) {
+            this.total += 1;
+            if (this.total > 10) {
+                console.log(`${this.item.id} is running for more than 30 seconds.`);
+                this.total = 0;
+            }
         }
         if (DateTime.from(lockedTTL).msSinceEpoch < now.msSinceEpoch) {
             this.ac.abort(new Error("Timed out"));
