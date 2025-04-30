@@ -213,7 +213,11 @@ export default class WorkflowStorage {
                 lockedTTL: Sql.date.addSeconds(Sql.date.now(), 15),
                 lockToken: p.uuid
             }));
-        return items.map((x) => new WorkflowTask(x, db));
+        const all = items.map((x) => new WorkflowTask(x, db));
+        if (all.length) {
+            console.log(`Executing ${all.length} items for group ${taskGroup}`);
+        }
+        return all;
     }
 
     async seed(version?) {

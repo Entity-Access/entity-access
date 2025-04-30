@@ -21,8 +21,10 @@ export default class WorkflowTask implements Disposable {
     [Symbol.dispose]() {
         clearInterval(this.timer);
         const { id, lockToken } = this.item;
-        this.context.workflows.statements.update({ lockedTTL: null, lockToken: null}, { id, lockToken})
-            .catch(console.error);
+        if (lockToken) {
+            this.context.workflows.statements.update({ lockedTTL: null, lockToken: null}, { id, lockToken})
+                .catch(console.error);
+        }
     }
 
     renewLock = () => {
