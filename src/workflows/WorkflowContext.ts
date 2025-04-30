@@ -36,17 +36,21 @@ function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, o
 
         const clock = context.storage.clock;
 
+        const timer = setTimeout(() => console.log(`${store.id} id not finish in 30 seconds`), 30000);
+
 
         const existing = await context.storage.getAny(id);
         if (existing) {
             if (existing.state === "failed" && existing.error) {
                 context.log(`Invoke failed ${name}(${id}) with ${existing.error}, at ${DateTime.from(existing.updated).msSinceEpoch}`);
+                clearTimeout(timer);
                 throw new Error(existing.error);
             }
             if (existing.state === "done") {
                 context.log(`Invoked ${name}(${id}) with ${existing.output}, at ${DateTime.from(existing.updated).msSinceEpoch}`);
                 (this as any).currentTime = DateTime.from(existing.updated);
                 const output = JSON.parse(existing.output);
+                clearTimeout(timer);
                 return output;
             }
         }
@@ -115,12 +119,8 @@ function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, o
             }
             (this as any).currentTime = step.updated;
         }
-        try {
-            await context.storage.save(step);
-        } catch (error) {
-            console.log(`Error saving step ${error.stack ?? error}`);
-            throw error;
-        }
+        await context.storage.save(step);
+        clearTimeout(timer);
         if (lastError) {
             throw lastError;
         }
