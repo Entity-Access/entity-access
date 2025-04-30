@@ -17,7 +17,7 @@ const loadedFromDb = Symbol("loadedFromDB");
 @RegisterSingleton
 export default class WorkflowStorage {
 
-    private lockQuery: RawQuery;
+    // private lockQuery: RawQuery;
 
     constructor(
         @Inject
@@ -147,54 +147,54 @@ export default class WorkflowStorage {
         const db = new WorkflowDbContext(this.driver);
         const now = this.clock.utcNow;
 
-        if(!this.lockQuery) {
+        // if(!this.lockQuery) {
 
-            const type = db.model.getEntityType(WorkflowItem);
+        //     const type = db.model.getEntityType(WorkflowItem);
 
-            const px = Expression.parameter("x");
-            const lockTokenField = type.getProperty("lockToken").field.columnName;
-            const lockTTLField = type.getProperty("lockedTTL").field.columnName;
+        //     const px = Expression.parameter("x");
+        //     const lockTokenField = type.getProperty("lockToken").field.columnName;
+        //     const lockTTLField = type.getProperty("lockedTTL").field.columnName;
 
-            const exp = UpdateStatement.create({
-                table: type.fullyQualifiedName,
-                set: [
-                    Expression.assign(
-                        Expression.identifier(lockTokenField),
-                        Expression.member(px, "lockToken")
-                    ),
-                    Expression.assign(
-                        Expression.identifier(lockTTLField),
-                        CallExpression.create({
-                            callee: Expression.identifier("Sql.date.addSeconds"),
-                            arguments: [CallExpression.create({
-                                callee: Expression.identifier("Sql.date.now")
-                            }),
-                            NumberLiteral.create({ value: 15 })
-                        ]
-                        })
-                    )
-                ],
-                where: Expression.logicalAnd(Expression.equal(
-                    Expression.identifier("id"),
-                    Expression.member(px, "id")
-                ), Expression.logicalOr(
-                    Expression.equal(
-                        Expression.identifier(lockTTLField),
-                        NullExpression.create({})
-                    ),
-                    Expression.lessOrEqual(
-                        Expression.identifier(lockTTLField),
-                        CallExpression.create({
-                            callee: Expression.identifier("Sql.date.now")
-                        })
-                    )
-                ))
-            });
+        //     const exp = UpdateStatement.create({
+        //         table: type.fullyQualifiedName,
+        //         set: [
+        //             Expression.assign(
+        //                 Expression.identifier(lockTokenField),
+        //                 Expression.member(px, "lockToken")
+        //             ),
+        //             Expression.assign(
+        //                 Expression.identifier(lockTTLField),
+        //                 CallExpression.create({
+        //                     callee: Expression.identifier("Sql.date.addSeconds"),
+        //                     arguments: [CallExpression.create({
+        //                         callee: Expression.identifier("Sql.date.now")
+        //                     }),
+        //                     NumberLiteral.create({ value: 15 })
+        //                 ]
+        //                 })
+        //             )
+        //         ],
+        //         where: Expression.logicalAnd(Expression.equal(
+        //             Expression.identifier("id"),
+        //             Expression.member(px, "id")
+        //         ), Expression.logicalOr(
+        //             Expression.equal(
+        //                 Expression.identifier(lockTTLField),
+        //                 NullExpression.create({})
+        //             ),
+        //             Expression.lessOrEqual(
+        //                 Expression.identifier(lockTTLField),
+        //                 CallExpression.create({
+        //                     callee: Expression.identifier("Sql.date.now")
+        //                 })
+        //             )
+        //         ))
+        //     });
 
-            this.lockQuery = this.driver.compiler.compileToRawQuery(null, exp, px);
-        }
+        //     this.lockQuery = this.driver.compiler.compileToRawQuery(null, exp, px);
+        // }
 
-        const q = this.lockQuery;
+        // const q = this.lockQuery;
 
         const uuid = randomUUID();
 
