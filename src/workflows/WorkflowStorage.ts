@@ -6,12 +6,9 @@ import { CallExpression, Expression, NullExpression, NumberLiteral, UpdateStatem
 import DateTime from "../types/DateTime.js";
 import WorkflowClock from "./WorkflowClock.js";
 import RawQuery from "../compiler/RawQuery.js";
-import { WorkflowDbContext, WorkflowItem } from "./WorkflowDbContext.js";
+import { loadedFromDb, WorkflowDbContext, WorkflowItem } from "./WorkflowDbContext.js";
 import WorkflowTask from "./WorkflowTask.js";
 import Sql from "../sql/Sql.js";
-
-const loadedFromDb = Symbol("loadedFromDB");
-
 
 
 @RegisterSingleton
@@ -127,20 +124,15 @@ export default class WorkflowStorage {
 
     async save(state: Partial<WorkflowItem>) {
         const db = new WorkflowDbContext(this.driver);
-        const connection = db.connection;
-        await using tx = await connection.createTransaction();
         state.state ||= "queued";
         state.updated ??= DateTime.now;
         state.taskGroup ||= "default";
         // await db.saveChanges();
         if(state[loadedFromDb]) {
-            // await db.workflows.saveDirect({ mode: "update", changes: state });
             await db.workflows.statements.update(state);
         } else {
-            // await db.workflows.saveDirect({ mode: "upsert", changes: state });
-            await db.workflows.statements.upsert(state);
+            await db.workflows.statements.upsert(state, void 0, { id: state.id });
         }
-        await tx.commit();
     }
 
     async dequeue(taskGroup: string, signal?: AbortSignal) {

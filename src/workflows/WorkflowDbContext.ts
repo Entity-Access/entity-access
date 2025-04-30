@@ -6,6 +6,9 @@ import { RegisterScoped } from "../di/di.js";
 import EntityContext from "../model/EntityContext.js";
 import DateTime from "../types/DateTime.js";
 
+export const loadedFromDb = Symbol("loadedFromDB");
+
+
 @Table("Workflows")
 @Index({
     name: "IX_Workflows_Group",
