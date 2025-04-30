@@ -402,6 +402,9 @@ export default class WorkflowContext {
             workflow.eta = clock.utcNow.add(instance.preserveTime);
         } catch (error) {
             if (error instanceof ActivitySuspendedError) {
+
+                console.log(`Suspending ${workflow.id} for ${error.ttl}`);
+
                 // this will update last id...
                 workflow.eta = clock.utcNow.add(error.ttl);
                 workflow.lockedTTL = null;
