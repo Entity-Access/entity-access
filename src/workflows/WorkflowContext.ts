@@ -108,6 +108,7 @@ function bindStep(context: WorkflowContext, store: WorkflowItem, name: string, o
                 if (error instanceof ActivitySuspendedError) {
                     return;
                 }
+                console.error(error);
                 lastError = error;
                 step.error = error.stack ?? error.toString();
                 step.state = "failed";
