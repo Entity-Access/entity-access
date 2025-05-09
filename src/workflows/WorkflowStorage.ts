@@ -205,7 +205,13 @@ export default class WorkflowStorage {
                 lockedTTL: Sql.date.addSeconds(Sql.date.now(), 15),
                 lockToken: p.uuid
             }));
-        const all = items.map((x) => new WorkflowTask(x, db));
+        const all = [] as WorkflowTask[];
+        for (const item of items) {
+            if (!item.lockToken) {
+                continue;
+            }
+            all.push(new WorkflowTask(item, db));
+        }
         return all;
     }
 
