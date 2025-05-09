@@ -2,12 +2,15 @@
 import DateTime from "../types/DateTime.js";
 import { loadedFromDb, type WorkflowDbContext, type WorkflowItem } from "./WorkflowDbContext.js";
 
+const finalizeTasks = new FinalizationRegistry<{ timer }>(({ timer }: any) => clearInterval(timer));
+
 export default class WorkflowTask implements Disposable {
 
     timer: NodeJS.Timer;
 
     public readonly signal;
     private ac: AbortController;
+    private timerKey;
 
     constructor(
         public readonly item: WorkflowItem,
@@ -15,12 +18,15 @@ export default class WorkflowTask implements Disposable {
     ) {
         this.item[loadedFromDb] = true;
         this.timer = setInterval(this.renewLock, 3000);
+        this.timerKey = { timer: this.timer };
         this.ac = new AbortController();
         this.signal = this.ac.signal;
+        finalizeTasks.register(this, this.timerKey);
     }
 
     [Symbol.dispose]() {
         clearInterval(this.timer);
+        finalizeTasks.unregister(this.timerKey);
         const { id, lockToken } = this.item;
         if (lockToken) {
             this.context.workflows.statements.update({ lockedTTL: null, lockToken: null}, { id, lockToken})
@@ -29,14 +35,21 @@ export default class WorkflowTask implements Disposable {
     }
 
     renewLock = () => {
-        const { id, lockToken, lockedTTL } = this.item;
-        const now = DateTime.now;
-        if (DateTime.from(lockedTTL).msSinceEpoch < now.msSinceEpoch) {
-            this.ac.abort(new Error("Timed out"));
-            return;
-        }
+        try {
+            const { id, lockToken, lockedTTL } = this.item;
+            if (!lockedTTL) {
+                return;
+            }
+            const now = DateTime.now;
+            if (DateTime.from(lockedTTL).msSinceEpoch < now.msSinceEpoch) {
+                this.ac.abort(new Error("Timed out"));
+                return;
+            }
 
-        this.context.workflows.statements.update({ lockedTTL: now.addSeconds(15) }, {id, lockToken})
-            .catch(console.error);
+            this.context.workflows.statements.update({ lockedTTL: now.addSeconds(15) }, {id, lockToken})
+                .catch(console.error);
+        } catch (error) {
+            console.error(error);
+        }
     };
 }
