@@ -111,14 +111,30 @@ export default class WorkflowStorage {
      */
     async delete(id) {
         const db = new WorkflowDbContext(this.driver);
+
+        // if parent workflows exist
+        // change eta to recent ones...
+        const hasPendingChildren = await db.workflows.where({ id }, (p) => (x) => x.parentID === p.id && x.isWorkflow === true)
+            .limit(1000)
+            .update(void 0, (p) => (x) => ({
+                eta: Sql.date.addMinutes(Sql.date.now(),-1)
+            }));
+
+        if (hasPendingChildren) {
+            return;
+        }
+
         await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
-            .limit(100)
+            .limit(1000)
             .delete({ id }, (p) => (x) => x.parentID === p.id);
+
         if (await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id).some()) {
             return;
         }
+
         await db.workflows.asQuery()
             .delete({ id}, (p) => (x) => x.id === p.id);
+
         return true;
     }
 
