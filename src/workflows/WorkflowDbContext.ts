@@ -102,7 +102,7 @@ export class WorkflowItem {
         inverseProperty: (x) => x.children,
         foreignKeyConstraint: {
             name: "FC_Workflows_Parent_ID",
-            cascade: "delete"
+            onDelete: "cascade"
         }
     })
     public parentID: string;

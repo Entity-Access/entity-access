@@ -148,7 +148,7 @@ export class UserProfile {
         inverseProperty: (u) => u.profile,
         foreignKeyConstraint: {
             name: "FC_UserProfiles_User",
-            cascade: "delete"
+            onDelete: "cascade"
         }
     })
     public profileID: number;
@@ -374,7 +374,7 @@ export class OrderItem {
         property: (orderItem) => orderItem.order,
         inverseProperty: (order) => order.orderItems,
         foreignKeyConstraint: {
-            cascade: "delete"
+            onDelete: "cascade"
         }
     })
     public orderID: number;

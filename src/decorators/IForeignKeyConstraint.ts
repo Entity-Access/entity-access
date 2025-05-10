@@ -11,7 +11,7 @@ export interface IForeignKeyConstraint {
     validate?: boolean;
     index?: boolean;
 
-    cascade?: "delete" | "restrict" | "set-null" | "set-default";
+    onDelete?: "cascade" | "restrict" | "set-null" | "set-default";
 
     fkMap?: FKType[];
 }

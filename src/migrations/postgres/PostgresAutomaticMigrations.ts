@@ -182,8 +182,8 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                 ${constraint.fkMap.map((x) => x.relatedKeyColumn.columnName).join(",")}
             ) `;
 
-        switch(constraint.cascade) {
-            case "delete":
+        switch(constraint.onDelete) {
+            case "cascade":
                 text += " ON DELETE CASCADE";
                 break;
             case "set-null":
