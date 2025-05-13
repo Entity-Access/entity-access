@@ -98,6 +98,8 @@ export default class ChangeSet {
             } else {
                 this.identityMap.set(jsonKey, entity, type);
             }
+        } else {
+            (entity as any).$type = type.name;
         }
         entry = new ChangeEntry({
             type,
