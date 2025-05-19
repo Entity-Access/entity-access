@@ -178,15 +178,15 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
         const fkCheck = constraint.fkMap
             .map((x) => `${x.fkColumn.entityType.name}.${x.fkColumn.columnName} = ${x.relatedKeyColumn.entityType.name}.${x.relatedKeyColumn.columnName}`)
-            .join(" AND ")
+            .join(" AND ");
 
         const fkSet = (v) => constraint.fkMap
-            .map((x) => `${x.fkColumn.entityType.name}.${x.fkColumn.columnName} = ${v}`)
-            .join(", ")
+            .map((x) => `${x.fkColumn.columnName} = ${v}`)
+            .join(", ");
 
         let prepare = null as string;
 
-        let prepareWhere = ` NOT EXISTS (SELECT 1 FROM ${constraint.fkMap[0].relatedKeyColumn.entityType.name} WHERE ${fkCheck});`;
+        const prepareWhere = ` NOT EXISTS (SELECT 1 FROM ${constraint.fkMap[0].relatedKeyColumn.entityType.name} WHERE ${fkCheck});`;
 
         let text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
             foreign key (${constraint.fkMap.map((r) => `${r.fkColumn.columnName}`).join(",")})
