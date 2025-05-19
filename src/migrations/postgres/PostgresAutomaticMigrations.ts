@@ -176,6 +176,18 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
         const driver = context.connection;
 
+        const fkCheck = constraint.fkMap
+            .map((x) => `${x.fkColumn.entityType.name}.${x.fkColumn.columnName} = ${x.relatedKeyColumn.entityType.name}.${x.relatedKeyColumn.columnName}`)
+            .join(" AND ")
+
+        const fkSet = (v) => constraint.fkMap
+            .map((x) => `${x.fkColumn.entityType.name}.${x.fkColumn.columnName} = ${v}`)
+            .join(", ")
+
+        let prepare = null as string;
+
+        let prepareWhere = ` NOT EXISTS (SELECT 1 FROM ${constraint.fkMap[0].relatedKeyColumn.entityType.name} WHERE ${fkCheck});`;
+
         let text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
             foreign key (${constraint.fkMap.map((r) => `${r.fkColumn.columnName}`).join(",")})
             references ${constraint.fkMap[0].relatedKeyColumn.entityType.name}(
@@ -184,12 +196,15 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
         switch(constraint.onDelete) {
             case "cascade":
+                prepare = `DELETE FROM ${name} WHERE ${prepareWhere}`;
                 text += " ON DELETE CASCADE";
                 break;
             case "set-null":
+                prepare = `UPDATE ${name} SET ${fkSet("null")} WHERE ${prepareWhere}`;
                 text += " ON DELETE SET NULL";
                 break;
             case "set-default":
+                prepare = `UPDATE ${name} SET ${fkSet("default")} WHERE ${prepareWhere}`;
                 text += " ON DELETE SET DEFAULT";
                 break;
             case "restrict":
@@ -198,6 +213,13 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         }
 
         try {
+
+            await using tx = await driver.createTransaction();
+            if (prepare && !constraint.doNotClearExisting ) {
+                // console.log(prepare);
+                await driver.executeQuery(prepare);
+                // console.log(text);
+            }
             await driver.executeQuery(text);
         } catch (error) {
             // we will simply ignore this
