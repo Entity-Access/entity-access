@@ -216,11 +216,10 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
             await using tx = await driver.createTransaction();
             if (prepare && !constraint.doNotClearExisting ) {
-                console.log(prepare);
                 await driver.executeQuery(prepare);
-                console.log(text);
             }
             await driver.executeQuery(text);
+            await tx.commit();
         } catch (error) {
             // we will simply ignore this
             console.warn(`Failed adding constraint ${constraint.name}`);
