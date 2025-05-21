@@ -414,7 +414,7 @@ export abstract class BaseDriver {
         for (const key in check) {
             if (Object.prototype.hasOwnProperty.call(check, key)) {
                 const element = check[key];
-                const column = Expression.identifier(type.getField(key).columnName);
+                const column = type.getField(key).quotedColumnNameExp;
                 const condition = Expression.equal(column, Expression.constant(element));
                 where = where
                     ? Expression.logicalAnd(where, condition)
@@ -445,8 +445,8 @@ export abstract class BaseDriver {
             for (const key in test) {
                 if (Object.prototype.hasOwnProperty.call(test, key)) {
                     const element = test[key];
-                    const { columnName } = type.getField(key);
-                    const compare = Expression.equal(Expression.identifier(columnName), Expression.constant(element));
+                    const { quotedColumnNameExp } = type.getField(key);
+                    const compare = Expression.equal(quotedColumnNameExp, Expression.constant(element));
                     where = where
                         ? Expression.logicalAnd(where, compare)
                         : compare;
@@ -472,7 +472,7 @@ export abstract class BaseDriver {
                 if (value === void 0 || iterator.generated) {
                     continue;
                 }
-                fields.push(Expression.identifier(iterator.columnName));
+                fields.push(iterator.quotedColumnNameExp);
                 values.push(Expression.constant(value));
             }
             return InsertStatement.create({
@@ -499,7 +499,7 @@ export abstract class BaseDriver {
                 continue;
             }
             const assign = Expression.assign(
-                Expression.identifier(iterator.columnName),
+                iterator.quotedColumnNameExp,
                 Expression.constant(value)
             );
             if (iterator.key) {
@@ -517,8 +517,8 @@ export abstract class BaseDriver {
             for (const key in test) {
                 if (Object.prototype.hasOwnProperty.call(test, key)) {
                     const element = test[key];
-                    const { columnName } = type.getField(key);
-                    keys.push(Expression.equal(Expression.identifier(columnName), Expression.constant(element)));
+                    const { quotedColumnNameExp } = type.getField(key);
+                    keys.push(Expression.equal(quotedColumnNameExp, Expression.constant(element)));
                 }
             }
         }
@@ -559,16 +559,15 @@ export abstract class BaseDriver {
         const fields = [] as Identifier[];
         const values = [] as Constant[];
         for (const iterator of type.columns) {
-            const literal = Identifier.create({ value: iterator.columnName });
             if (iterator.generated) {
-                returnFields.push(literal);
+                returnFields.push(iterator.quotedColumnNameExp);
                 continue;
             }
             const value = entity[iterator.name];
             if (value === void 0) {
                 continue;
             }
-            fields.push(literal);
+            fields.push(iterator.quotedColumnNameExp);
             values.push(Constant.create({ value }));
         }
 
@@ -598,7 +597,7 @@ export abstract class BaseDriver {
                 continue;
             }
             set.push(BinaryExpression.create({
-                left: Expression.identifier(key.columnName),
+                left: key.quotedColumnNameExp,
                 operator: "=",
                 right: Constant.create({ value: change.newValue ?? null })
             }));
@@ -606,7 +605,7 @@ export abstract class BaseDriver {
         let where = null as Expression;
         for (const iterator of entry.type.keys) {
             const compare = BinaryExpression.create({
-                left: Expression.identifier(iterator.columnName),
+                left: iterator.quotedColumnNameExp,
                 operator: "=",
                 right: Constant.create({ value: entry.entity[iterator.name]})
             });
@@ -633,7 +632,7 @@ export abstract class BaseDriver {
                 return null;
             }
             const compare = BinaryExpression.create({
-                left: Expression.identifier(iterator.columnName),
+                left: iterator.quotedColumnNameExp,
                 operator: "=",
                 right: Constant.create({ value: key })
             });
