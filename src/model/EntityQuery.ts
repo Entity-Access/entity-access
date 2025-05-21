@@ -479,8 +479,8 @@ export default class EntityQuery<T = any>
             returnUpdated = [];
             for (const iterator of this.type.columns) {
                 returnUpdated.push(Expression.as(
-                    Expression.identifier(iterator.columnName),
-                    Expression.quotedIdentifier(iterator.name)
+                    iterator.quotedColumnNameExp,
+                    iterator.quotedNameExp
                 ));
             }
         }
