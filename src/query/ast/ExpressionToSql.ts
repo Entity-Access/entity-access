@@ -176,27 +176,6 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     }
 
     visitCallExpression(e: CallExpression): ITextQuery {
-        // let us check if we are using any of array extension methods...
-        // .some alias .any
-        // .find alias .firstOrDefault
-        // if (e.callee.type === "MemberExpression") {
-        //     const me = e.callee as MemberExpression;
-        //     if (me.target.type === "CallExpression") {
-        //         // nested...
-        //         const ce = me.target as CallExpression;
-        //         const cme = ce.callee as MemberExpression;
-        //         if(cme.property.type !== "Identifier") {
-        //             throw new EntityAccessError("Invalid expression");
-        //         }
-        //         const property = cme.property as Identifier;
-        //         if(property.value !== "filter") {
-        //             throw new EntityAccessError("Invalid expression");
-        //         }
-
-        //         filter = e;
-        //         e = cme.target as CallExpression;
-        //     }
-        // }
 
         const targetProperty = this.getPropertyChain(e.callee as ExpressionType);
         if (targetProperty) {
@@ -430,7 +409,9 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 //     chain[0] = namingConvention(chain[0]);
                 // }
 
-                return [ QueryParameter.create(() => name) , "." , chain.map((x) => x.member).join(".")];
+                const quote = this.compiler.quote;
+
+                return [ QueryParameter.create(() => name) , "." , chain.map((x) => quote(x.member)).join(".")];
             }
         }
 

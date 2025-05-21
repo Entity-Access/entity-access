@@ -10,40 +10,40 @@ export default function () {
 
     let r = compiler.execute({ name }, (p) => (x) => x.firstName === p.name);
 
-    assert.equal(`x.firstName = $1`, r.text);
+    assert.equal(`x."firstName" = $1`, r.text);
 
     r = compiler.execute({ name }, (p) => (x) => x.firstName === p.name && x.lastName !== p.name);
 
-    assert.equal(`(x.firstName = $1) AND (x.lastName <> $2)`, r.text);
+    assert.equal(`(x."firstName" = $1) AND (x."lastName" <> $2)`, r.text);
 
     r = compiler.execute({ name }, (p) => (x) => (x.firstName === p.name || x.middleName === p.name) && x.lastName !== p.name);
 
-    assert.equal(`((x.firstName = $1) OR (x.middleName = $2)) AND (x.lastName <> $3)`, r.text);
+    assert.equal(`((x."firstName" = $1) OR (x."middleName" = $2)) AND (x."lastName" <> $3)`, r.text);
 
     r = compiler.execute({ name }, (p) => (x) => x.lastName !== p.name || (x.firstName === p.name || x.middleName === p.name));
 
-    assert.equal(`(x.lastName <> $1) OR ((x.firstName = $2) OR (x.middleName = $3))`, r.text);
+    assert.equal(`(x."lastName" <> $1) OR ((x."firstName" = $2) OR (x."middleName" = $3))`, r.text);
 
     const sqlServerCompiler = new QueryCompiler({});
     r = sqlServerCompiler.execute({ name }, (p) => (x) => x.firstName === p.name && x.lastName !== p.name);
 
-    assert.equal(`(x.firstName = $1) AND (x.lastName <> $2)`, r.text);
+    assert.equal(`(x."firstName" = $1) AND (x."lastName" <> $2)`, r.text);
 
     r = compiler.execute({ name }, (p) => (x) => ( x.firstName ?? x.lastName ) === p.name);
 
-    assert.equal(`COALESCE(x.firstName, x.lastName) = $1`, r.text);
+    assert.equal(`COALESCE(x."firstName", x."lastName") = $1`, r.text);
 
     r = compiler.execute({ name }, (p) => (x) => Sql.text.like(x.firstName, p.name));
 
-    assert.equal(`(x.firstName LIKE $1)`, r.text);
+    assert.equal(`(x."firstName" LIKE $1)`, r.text);
 
     r = compiler.execute({ days: 1 }, (p) => (x) => Sql.date.addDays(x.birthDate, p.days));
 
-    assert.equal(`(x.birthDate + ($1 * interval '1 day'))`, r.text);
+    assert.equal(`(x."birthDate" + ($1 * interval '1 day'))`, r.text);
 
     r = compiler.execute({name}, (p) => (x) => Sql.text.startsWith(x.firstName, p.name));
 
-    assert.equal(`starts_with(x.firstName, $1)`, r.text);
+    assert.equal(`starts_with(x."firstName", $1)`, r.text);
     assert.equal("Akash", r.values[0]);
 
     const code = "1235";
@@ -52,14 +52,14 @@ export default function () {
         (p) => (x: KeyCode) =>
             x.code === Sql.cast.asNumber(p.code) && x.key === Sql.cast.asText(p.key) );
 
-    assert.equal(`(x.code = ($1 ::numeric)) AND (x.key = ($2 ::text))`, r.text);
+    assert.equal(`(x."code" = ($1 ::numeric)) AND (x."key" = ($2 ::text))`, r.text);
 
 
     r = compiler.execute({}, (p) => (x) => `a`);
     assert.equal(`'a'`, r.text);
 
     r = compiler.execute({}, (p) => (x) => `${x.firstName} ${x.lastName}`);
-    assert.equal(`CONCAT(x.firstName,' ',x.lastName)`, r.text);
+    assert.equal(`CONCAT(x."firstName",' ',x."lastName")`, r.text);
 }
 
 type KeyCode = { name: string, code: number, key: string };

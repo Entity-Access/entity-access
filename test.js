@@ -145,13 +145,19 @@ let failed = 0;
 
 for (const { error, name } of results) {
     if (error) {
-        exitCode = 1;
-        failed++;
-        console.error(`${name} failed`);
-        console.error(error?.stack ?? error);
         continue;
     }
     console.log(`${name} executed.`);
+}
+
+for (const { error, name } of results) {
+    if (!error) {
+        continue;
+    }
+    exitCode = 1;
+    failed++;
+    console.error(`${name} failed`);
+    console.error(error?.stack ?? error);
 }
 
 if (exitCode === 0) {

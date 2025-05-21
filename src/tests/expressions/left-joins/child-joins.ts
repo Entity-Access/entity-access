@@ -14,7 +14,7 @@ FROM products AS p1
 WHERE EXISTS (SELECT
 1
 FROM order_items AS o
-WHERE (o.product_id = $1) AND (p1.product_id = o.product_id))`;
+WHERE (o."product_id" = $1) AND (p1."product_id" = o."product_id"))`;
 
 const sql2 = `SELECT
 p1."product_id",
@@ -26,10 +26,10 @@ FROM products AS p1
 WHERE EXISTS (SELECT
 1
 FROM order_items AS o
-WHERE (o.product_id = $1) AND (p1.product_id = o.product_id)) AND EXISTS (SELECT
+WHERE (o."product_id" = $1) AND (p1."product_id" = o."product_id")) AND EXISTS (SELECT
 1
 FROM order_items AS o1
-WHERE (o1.amount > $2) AND (p1.product_id = o1.product_id))`;
+WHERE (o1."amount" > $2) AND (p1."product_id" = o1."product_id"))`;
 
 const sql3 = `SELECT
 p1."product_id",
@@ -41,11 +41,11 @@ FROM products AS p1
 WHERE EXISTS (SELECT
 1
 FROM order_items AS o
-WHERE (o.product_id = $1) AND (p1.product_id = o.product_id)) AND EXISTS (SELECT
+WHERE (o."product_id" = $1) AND (p1."product_id" = o."product_id")) AND EXISTS (SELECT
 1
 FROM order_items AS o1
- INNER JOIN orders AS o2 ON o1.order_id = o2.order_id
-WHERE (o2.order_date > $2) AND (p1.product_id = o1.product_id))`;
+ INNER JOIN orders AS o2 ON o1."order_id" = o2."order_id"
+WHERE (o2."order_date" > $2) AND (p1."product_id" = o1."product_id"))`;
 
 const productJoin = `SELECT
 p1."product_id",
@@ -54,8 +54,8 @@ p1."owner_id",
 p1."status",
 p1."product_description"
 FROM products AS p1
- LEFT JOIN users AS u ON p1.owner_id = u.user_id
-WHERE u.date_created > $1`;
+ LEFT JOIN users AS u ON p1."owner_id" = u."user_id"
+WHERE u."date_created" > $1`;
 
 
 const join2 = `SELECT
@@ -65,8 +65,8 @@ o1."product_id",
 o1."price_id",
 o1."amount"
 FROM order_items AS o1
- LEFT JOIN products AS p ON o1.product_id = p.product_id
-WHERE (o1.product_id = $1) OR (p.owner_id = $2)`;
+ LEFT JOIN products AS p ON o1."product_id" = p."product_id"
+WHERE (o1."product_id" = $1) OR (p."owner_id" = $2)`;
 
 const notExp = `SELECT
 p1."product_id",
@@ -77,10 +77,10 @@ p1."product_description"
 FROM products AS p1
 WHERE EXISTS
     (SELECT 1 FROM order_items AS o
-        WHERE (o.product_id = $1) AND (p1.product_id = o.product_id)) AND
+        WHERE (o."product_id" = $1) AND (p1."product_id" = o."product_id")) AND
         NOT (EXISTS (SELECT 1 FROM order_items AS o1
-                INNER JOIN orders AS o2 ON o1.order_id = o2.order_id
-                    WHERE (o2.order_date > $2) AND (p1.product_id = o1.product_id)))
+                INNER JOIN orders AS o2 ON o1."order_id" = o2."order_id"
+                    WHERE (o2."order_date" > $2) AND (p1."product_id" = o1."product_id")))
 `;
 
 export default function() {
@@ -127,5 +127,5 @@ export default function() {
 WHERE EXISTS (SELECT
     1
     FROM order_items AS o
-WHERE (o.product_id = $1) AND (p1.product_id = o.product_id))) AS s`, r.text);
+WHERE (o."product_id" = $1) AND (p1."product_id" = o."product_id"))) AS s`, r.text);
 }
