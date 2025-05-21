@@ -78,11 +78,11 @@ export default class EntityQuery<T = any>
                     const propertyName = iterator.alias.value;
                     const column = type.getField(propertyName);
                     if (column) {
-                        fields.push(Expression.member(selectStatement.sourceParameter, Expression.quotedIdentifier(column.columnName)));
+                        fields.push(Expression.member(selectStatement.sourceParameter, column.quotedColumnNameExp));
                         modelFields.push(
                             Expression.member(
                             sourceParameter,
-                            Expression.quotedIdentifier(column.columnName))
+                            column.quotedColumnNameExp)
                         );
                         continue;
                     }
@@ -329,8 +329,8 @@ export default class EntityQuery<T = any>
         let where: Expression;
         for (const iterator of this.type.keys) {
             const compare = Expression.equal(
-                Expression.member(sp, Expression.quotedIdentifier(iterator.columnName)),
-                Expression.member(as, Expression.quotedIdentifier(iterator.columnName))
+                Expression.member(sp, iterator.quotedColumnNameExp),
+                Expression.member(as, iterator.quotedColumnNameExp)
             );
             where = where ? Expression.logicalAnd(where, compare) : compare;
         }
@@ -458,20 +458,20 @@ export default class EntityQuery<T = any>
             const eAs = iterator as ExpressionAs;
             const { field } = this.type.getProperty(eAs.alias.value);
             fieldMap.add(field.columnName);
-            set.push(Expression.assign(Expression.quotedIdentifier(field.columnName), Expression.member(as, Expression.quotedIdentifier(eAs.alias.value))));
+            set.push(Expression.assign(field.quotedColumnNameExp, Expression.member(as, Expression.quotedIdentifier(eAs.alias.value))));
         }
 
         let where = null as Expression;
         for (const iterator of this.type.keys) {
             const compare = Expression.equal(
-                Expression.member(as, Expression.quotedIdentifier(iterator.columnName)),
-                Expression.member(sp, Expression.quotedIdentifier(iterator.columnName))
+                Expression.member(as, iterator.quotedColumnNameExp),
+                Expression.member(sp, iterator.quotedColumnNameExp)
             );
             where = where ? Expression.logicalAnd(where, compare) : compare;
             if (fieldMap.has(iterator.columnName)) {
                 continue;
             }
-            this.selectStatement.fields.push(Expression.member(this.selectStatement.sourceParameter, Expression.quotedIdentifier(iterator.columnName)));
+            this.selectStatement.fields.push(Expression.member(this.selectStatement.sourceParameter, iterator.quotedColumnNameExp));
         }
 
         let returnUpdated = null as ExpressionAs[];

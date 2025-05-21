@@ -7,6 +7,7 @@ import EntityType from "../entity-query/EntityType.js";
 import { IStringTransformer } from "../query/ast/IStringTransformer.js";
 import { IEntityRelation } from "../decorators/IColumn.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
+import { Expression } from "../query/ast/Expressions.js";
 
 const driverModelCache = Symbol("driverModelCache");
 
@@ -28,6 +29,8 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, compil
         column.entityType = t;
         column.quotedColumnName = quote(column.columnName);
         column.quotedName = quote(column.name);
+        column.quotedColumnNameExp = Expression.quotedIdentifier(column.columnName);
+        column.quotedNameExp = Expression.quotedIdentifier(column.name);
         t.addColumn(column);
     }
     t.indexes.push(... original.indexes.map((i) => ({ ... i, columns: [ ... i.columns.map((c) => ( { ... c}))] })));
