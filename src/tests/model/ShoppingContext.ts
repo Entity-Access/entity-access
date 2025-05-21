@@ -42,6 +42,18 @@ export class ShoppingContext extends EntityContext {
     public messages = this.model.register(UserMessage);
 
     public archivedMessages = this.model.register(ArchivedUserMessage);
+
+    public cachedItems = this.model.register(CachedItem);
+}
+
+@Table("CachedItems")
+export class CachedItem {
+
+    @Column({ key: true, dataType: "Char", length: 200 })
+    key: string;
+
+    @Column({ dataType: "Char"})
+    data: string;
 }
 
 @Table("Users")
