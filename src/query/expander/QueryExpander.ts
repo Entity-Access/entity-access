@@ -133,8 +133,8 @@ export class QueryExpander {
                 const joinColumn = relatedKeyColumn;
                 const relatedColumn = fkColumn;
                 const joinOn = Expression.equal(
-                    Expression.member(joinParameter, Expression.identifier(joinColumn.columnName)),
-                    Expression.member(select.sourceParameter, Expression.identifier(relatedColumn.columnName))
+                    Expression.member(joinParameter, joinColumn.quotedColumnNameExp),
+                    Expression.member(select.sourceParameter, relatedColumn.quotedColumnNameExp)
                 );
                 where = where ? Expression.logicalAnd(where, joinOn) : joinOn;
             }
@@ -212,9 +212,9 @@ export class QueryExpander {
         for (const { fkColumn, relatedKeyColumn } of relation.fkMap) {
             const joinOn = Expression.equal(
                 Expression.member(selectJoinParameter,
-                    Expression.identifier(fkColumn.columnName)),
+                    fkColumn.quotedColumnNameExp),
                 Expression.member(select.sourceParameter,
-                    Expression.identifier(relatedKeyColumn.columnName))
+                    relatedKeyColumn.quotedColumnNameExp)
             );
             where = where ? Expression.logicalAnd(where, joinOn) : joinOn;
         }
