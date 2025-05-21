@@ -67,8 +67,8 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         }
 
         for (const iterator of nonKeyColumns) {
-            const columnName = iterator.quotedColumnName;
-            let def = `IF COL_LENGTH(${ SqlServerLiteral.escapeLiteral(name)}, ${ SqlServerLiteral.escapeLiteral(columnName)}) IS NULL ALTER TABLE ${name} ADD ${columnName} `;
+            const { quotedColumnName, columnName } = iterator;
+            let def = `IF COL_LENGTH(${ SqlServerLiteral.escapeLiteral(name)}, ${ SqlServerLiteral.escapeLiteral(columnName)}) IS NULL ALTER TABLE ${name} ADD ${quotedColumnName} `;
 
             if (iterator.computed) {
                 def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
