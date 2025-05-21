@@ -264,7 +264,7 @@ export class EntitySource<T = any> {
         Object.setPrototypeOf(returnEntity, this.model.typeClass.prototype);
 
         for (const iterator of this.model.columns) {
-            returnFields.push(Expression.identifier(iterator.columnName));
+            returnFields.push(iterator.quotedColumnNameExp);
         }
 
         if (mode === "selectOrInsert" || mode === "upsert") {

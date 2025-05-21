@@ -550,7 +550,7 @@ export default class EntityQuery<T = any>
                             const column = type.getColumn((me.property as Identifier).value);
                             if (column) {
                                 fields.push(Expression.as(
-                                    Expression.member(select.sourceParameter, column.columnName)
+                                    Expression.member(select.sourceParameter, column.quotedColumnNameExp)
                                     , Expression.quotedIdentifier(column.name)));
                                 continue;
                             }
