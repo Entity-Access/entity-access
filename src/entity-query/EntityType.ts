@@ -129,7 +129,7 @@ export default class EntityType {
     }
 
     public getFieldMap(p: ParameterExpression) {
-        return this.columns.map((x) => Expression.as( Expression.member( p, x.columnName ), Expression.quotedIdentifier(x.name)));
+        return this.columns.map((x) => Expression.as( Expression.member( p, x.quotedColumnNameExp ), Expression.quotedIdentifier(x.name)));
     }
 
 
@@ -223,7 +223,7 @@ export default class EntityType {
         const source = this.fullyQualifiedName;
         as ??= Expression.parameter(this.name[0] + "1", this);
         as.model = this;
-        const fields = this.columns.map((c) => Expression.member(as, c.columnName));
+        const fields = this.columns.map((c) => Expression.member(as, c.quotedColumnNameExp));
         this.selectAll = SelectStatement.create({
             source,
             model: this,
