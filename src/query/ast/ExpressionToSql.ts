@@ -308,16 +308,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         for (const { fkColumn, relatedKeyColumn } of relation.relation.relatedRelation.fkMap) {
             const targetKey = MemberExpression.create({
                 target: parameter,
-                property: Identifier.create({
-                    value: relatedKeyColumn.columnName
-                })
+                property: relatedKeyColumn.quotedColumnNameExp
             });
 
             const relatedKey = MemberExpression.create({
                 target: select.sourceParameter,
-                property: Identifier.create({
-                    value: fkColumn.columnName
-                })
+                property: fkColumn.quotedColumnNameExp
             });
             const join = Expression.equal(targetKey, relatedKey);
             where = where
@@ -363,16 +359,12 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
 
             const targetKey = MemberExpression.create({
                 target: parameter,
-                property: Identifier.create({
-                    value: relatedKeyColumn.columnName
-                })
+                property: relatedKeyColumn.quotedColumnNameExp
             });
 
             const relatedKey = MemberExpression.create({
                 target: param1,
-                property: Identifier.create({
-                    value: fkColumn.columnName
-                })
+                property: fkColumn.quotedColumnNameExp
             });
 
             const join = Expression.equal(targetKey, relatedKey);
@@ -816,7 +808,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 const { relation, field } = peModel.getProperty(id.value);
                 if (field) {
                     // we need to replace field with column name...
-                    return Expression.member(target, field.columnName);
+                    return Expression.member(target, field.quotedColumnNameExp);
                 }
                 if (relation) {
 
@@ -854,8 +846,8 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                                 const peColumn = relation.isInverseRelation ? relatedKeyColumn : fkColumn;
                                 const joinColumn = relation.isInverseRelation ? fkColumn : relatedKeyColumn;
                                 const joinOn = Expression.equal(
-                                    Expression.member(pe, peColumn.columnName),
-                                    Expression.member(joinParameter, joinColumn.columnName));
+                                    Expression.member(pe, peColumn.quotedColumnNameExp),
+                                    Expression.member(joinParameter, joinColumn.quotedColumnNameExp));
                                 where = where
                                     ? Expression.logicalAnd(where, joinOn)
                                     : joinOn;
