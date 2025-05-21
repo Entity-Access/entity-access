@@ -45,11 +45,11 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
     async createIndexes(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
             const filter = iterator.nullable
-                ? `${ iterator.columnName} IS NOT NULL`
+                ? `${ iterator.quotedColumnName} IS NOT NULL`
                 : "";
             const indexDef: IIndex = {
                 name: `IX_${type.name}_${iterator.name}`,
-                columns: [{ name: iterator.columnName, descending: iterator.indexOrder !== "ascending"}],
+                columns: [{ name: iterator.quotedColumnName, descending: iterator.indexOrder !== "ascending"}],
                 filter
             };
             await this.migrateIndex(context, indexDef, type);
@@ -67,7 +67,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         }
 
         for (const iterator of nonKeyColumns) {
-            const columnName = iterator.columnName;
+            const columnName = iterator.quotedColumnName;
             let def = `IF COL_LENGTH(${ SqlServerLiteral.escapeLiteral(name)}, ${ SqlServerLiteral.escapeLiteral(columnName)}) IS NULL ALTER TABLE ${name} ADD ${columnName} `;
 
             if (iterator.computed) {
@@ -106,7 +106,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const fields = [];
 
         for (const iterator of keys) {
-            let def = iterator.columnName + " ";
+            let def = iterator.quotedColumnName + " ";
             if (iterator.generated) {
                 switch(iterator.generated) {
                     case "identity":
@@ -122,7 +122,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         await driver.executeQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
             CREATE TABLE ${name} (${fields.join(",")}
-            , CONSTRAINT PK_${name} PRIMARY KEY(${keys.map((x) => x.columnName)})
+            , CONSTRAINT PK_${name} PRIMARY KEY(${keys.map((x) => x.quotedColumnName)})
             );
         END`);
 
@@ -183,9 +183,9 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const driver = context.connection;
 
         let text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
-            foreign key (${constraint.fkMap.map((x) => x.fkColumn.columnName).join(",")})
+            foreign key (${constraint.fkMap.map((x) => x.fkColumn.quotedColumnName).join(",")})
             references ${constraint.fkMap[0].relatedKeyColumn.entityType.name}(
-                ${constraint.fkMap.map((x) => x.relatedKeyColumn.columnName).join(",")}
+                ${constraint.fkMap.map((x) => x.relatedKeyColumn.quotedColumnName).join(",")}
             ) `;
 
         switch(constraint.onDelete) {
