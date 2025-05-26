@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import ICheckConstraint from "../../decorators/ICheckConstraint.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
@@ -181,6 +182,14 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         }
 
         const driver = context.connection;
+
+        // sql server does not allow self referencing FK
+        // so we will not create it
+
+        if (constraint.fkMap.some((f) => f.relatedKeyColumn.entityType === type)) {
+            console.warn(`FK ${name} not set as Sql server does not allow recursive FK constraint.`);
+            return;
+        }
 
         let text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} 
             foreign key (${constraint.fkMap.map((x) => x.fkColumn.quotedColumnName).join(",")})
