@@ -67,4 +67,8 @@ export type ISqlType =
     /**
      * Byte Array - var binary
      */
-    "ByteArray";
+    "ByteArray" |
+
+    /** Geometry - for SQL Server and other geometry compatible databases*/
+    "Geometry"
+    ;
