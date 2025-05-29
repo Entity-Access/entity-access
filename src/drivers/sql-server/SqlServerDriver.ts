@@ -156,8 +156,8 @@ export class SqlServerConnection extends BaseConnection {
                     ELSE '() => ' + COLUMN_DEFAULT
                 END as [default]
                 FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = $0
-            AND TABLE_NAME = $1
+            WHERE TABLE_SCHEMA = $
+            AND TABLE_NAME = $
         `;
         return this.executeQuery({ text, values: [schema, table] });
     }
