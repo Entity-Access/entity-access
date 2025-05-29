@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+import EntityAccessError from "../../common/EntityAccessError.js";
+import IColumnSchema from "../../common/IColumnSchema.js";
 import ObjectPool, { IPooledObject } from "../../common/ObjectPool.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
@@ -215,6 +217,10 @@ class PostgreSqlConnection extends BaseConnection {
 
     public automaticMigrations(): Migrations {
         return new PostgresAutomaticMigrations(this.compiler);
+    }
+
+    getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+        throw new EntityAccessError("Not implemented");
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {

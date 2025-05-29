@@ -1,4 +1,5 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
+import IColumnSchema from "../../common/IColumnSchema.js";
 
 // Making sure that Symbol.dispose is not undefined
 import "../../common/IDisposable.js";
@@ -202,6 +203,9 @@ export abstract class BaseConnection {
         await tx.begin();
         return tx;
     }
+
+    abstract getSchema(schema: string, table: string): Promise<IColumnSchema[]>;
+
 
     protected abstract createDbTransaction(): Promise<EntityTransaction>;
 
