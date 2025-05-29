@@ -131,25 +131,31 @@ export class SqlServerConnection extends BaseConnection {
     getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
         const text = `
             SELECT 
-            COLUMN_NAME as [name],
-            CASE DATA_TYPE
-                WHEN 'bit' THEN 'Boolean'
-                WHEN 'int' Then 'Int'
-                WHEN 'bigint' THEN 'BigInt'
-                WHEN 'date' then 'DateTime'
-                WHEN 'datetime' then 'DateTime'
-                WHEN 'datetime2' then 'DateTime'
-                WHEN 'real' then 'Float'
-                WHEN 'double' then 'Double'
-                WHEN 'decimal' then 'Decimal'
-                WHEN 'identity' then 'UUID'
-                WHEN 'varbinary' then 'ByteArray'
-                WHEN 'geometry' then 'Geometry'
-                ELSE 'Char'
-            END as [dataType],
-            CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END as [nullable],
-            CHARACTER_MAXIMUM_LENGTH as [length]
-            FROM INFORMATION_SCHEMA.COLUMNS
+                COLUMN_NAME as [name],
+                CASE DATA_TYPE
+                    WHEN 'bit' THEN 'Boolean'
+                    WHEN 'int' Then 'Int'
+                    WHEN 'bigint' THEN 'BigInt'
+                    WHEN 'date' then 'DateTime'
+                    WHEN 'datetime' then 'DateTime'
+                    WHEN 'datetime2' then 'DateTime'
+                    WHEN 'real' then 'Float'
+                    WHEN 'double' then 'Double'
+                    WHEN 'decimal' then 'Decimal'
+                    WHEN 'identity' then 'UUID'
+                    WHEN 'varbinary' then 'ByteArray'
+                    WHEN 'geometry' then 'Geometry'
+                    ELSE 'Char'
+                END as [dataType],
+                CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END as [nullable],
+                CHARACTER_MAXIMUM_LENGTH as [length],
+                CASE COLUMN_DEFAULT
+                    WHEN 'getutcdate()' then '() => Sql.date.now()'
+                    wHEN '(getutcdate())' then '() => Sql.date.now()'
+                    WHEN NULL THEN ''
+                    ELSE '() => ' + COLUMN_DEFAULT
+                END as [default]
+                FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = $0
             AND TABLE_NAME = $1
         `;
