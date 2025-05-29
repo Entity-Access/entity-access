@@ -128,7 +128,7 @@ export class SqlServerConnection extends BaseConnection {
         super(driver);
     }
 
-    getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+    async getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
         const text = `
             SELECT 
                 COLUMN_NAME as [name],
@@ -159,7 +159,8 @@ export class SqlServerConnection extends BaseConnection {
             WHERE TABLE_SCHEMA = $1
             AND TABLE_NAME = $2
         `;
-        return this.executeQuery({ text, values: [schema, table] });
+        const r = await this.executeQuery({ text, values: [schema, table] });
+        return r.rows;
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
