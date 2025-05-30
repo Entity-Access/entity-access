@@ -5,4 +5,5 @@ export default interface IColumnSchema {
     nullable: boolean;
     default: string;
     key: boolean;
+    computed?: any;
 }

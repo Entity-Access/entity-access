@@ -130,7 +130,7 @@ export class SqlServerConnection extends BaseConnection {
 
     async getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
         const text = `
-            SELECT 
+                        SELECT
                 COLUMN_NAME as [name],
                 CASE DATA_TYPE
                     WHEN 'bit' THEN 'Boolean'
@@ -159,7 +159,8 @@ export class SqlServerConnection extends BaseConnection {
                         AND DATA_TYPE = 'bit' THEN '() => true'
                     WHEN COLUMN_DEFAULT is NULL THEN ''
                     ELSE '() => ' + COLUMN_DEFAULT
-                END as [default]
+                END as [default],
+                ColumnProperty(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME,'IsComputed') as [computed]
                 FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = $1
             AND TABLE_NAME = $2
