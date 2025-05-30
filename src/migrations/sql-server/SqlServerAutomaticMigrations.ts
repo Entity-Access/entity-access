@@ -67,9 +67,16 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
+        const columns =  await driver.getSchema(type.schema, type.name);
+
+        const columnSet = new Set(columns.map((x) => x.name.toLowerCase()));
+
         for (const iterator of nonKeyColumns) {
             const { quotedColumnName, columnName } = iterator;
-            let def = `IF COL_LENGTH(${ SqlServerLiteral.escapeLiteral(name)}, ${ SqlServerLiteral.escapeLiteral(columnName)}) IS NULL ALTER TABLE ${name} ADD ${quotedColumnName} `;
+            if (columnSet.has(columnName.toLocaleLowerCase())) {
+                continue;
+            }
+            let def = `ALTER TABLE ${name} ADD ${quotedColumnName} `;
 
             if (iterator.computed) {
                 def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
