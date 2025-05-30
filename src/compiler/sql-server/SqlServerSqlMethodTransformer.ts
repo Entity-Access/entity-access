@@ -19,6 +19,17 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `AVG(${a})`;
         },
     },
+        spatial: {
+        point(x, y, srid) {
+            if (srid === void 0) {
+                return prepareAny `Point(${x}, ${y}, 4326)`;
+            }
+            return prepareAny `Point(${x}, ${y}, ${srid})`;
+        },
+        distance(x, y) {
+            return prepareAny `${x}.STDistance(${y})`;
+        },
+    },
     window: {
         rank: {
             orderBy(order) {

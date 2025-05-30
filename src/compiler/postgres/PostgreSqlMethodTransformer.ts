@@ -23,6 +23,18 @@ export const PostgreSqlHelper: ISqlHelpers = {
         },
     },
 
+    spatial: {
+        point(x, y, srid) {
+            if (srid === void 0) {
+                return prepareAny `ST_Point(${x}, ${y}, 4326)`;
+            }
+            return prepareAny `ST_Point(${x}, ${y}, ${srid})`;
+        },
+        distance(x, y) {
+            return prepareAny `ST_Distance(${x}, ${y})`;
+        },
+    },
+
     window: {
         rank: {
             orderBy(order) {
