@@ -157,7 +157,7 @@ export class SqlServerConnection extends BaseConnection {
                         AND DATA_TYPE = 'bit' THEN '() => false'
                     WHEN (COLUMN_DEFAULT = '(1)' OR COLUMN_DEFAULT = '((1))')
                         AND DATA_TYPE = 'bit' THEN '() => true'
-                    WHEN COLUMN_DEFAULT = NULL THEN ''
+                    WHEN COLUMN_DEFAULT is NULL THEN ''
                     ELSE '() => ' + COLUMN_DEFAULT
                 END as [default]
                 FROM INFORMATION_SCHEMA.COLUMNS
