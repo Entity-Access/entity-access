@@ -149,10 +149,15 @@ export class SqlServerConnection extends BaseConnection {
                 END as [dataType],
                 CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END as [nullable],
                 CHARACTER_MAXIMUM_LENGTH as [length],
-                CASE COLUMN_DEFAULT
-                    WHEN 'getutcdate()' then '() => Sql.date.now()'
-                    wHEN '(getutcdate())' then '() => Sql.date.now()'
-                    WHEN NULL THEN ''
+                CASE 
+                    WHEN COLUMN_DEFAULT = 'getutcdate()' then '() => Sql.date.now()'
+                    WHEN COLUMN_DEFAULT = '(getutcdate())' then '() => Sql.date.now()'
+                    WHEN COLUMN_DEFAULT = '(newid())' then '() => Sql.crypto.randomUUID()'
+                    WHEN (COLUMN_DEFAULT = '(0)' OR COLUMN_DEFAULT = '((0))')
+                        AND DATA_TYPE = 'bit' THEN '() => false'
+                    WHEN (COLUMN_DEFAULT = '(1)' OR COLUMN_DEFAULT = '((1))')
+                        AND DATA_TYPE = 'bit' THEN '() => true'
+                    WHEN COLUMN_DEFAULT = NULL THEN ''
                     ELSE '() => ' + COLUMN_DEFAULT
                 END as [default]
                 FROM INFORMATION_SCHEMA.COLUMNS
