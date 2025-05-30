@@ -73,7 +73,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         for (const iterator of nonKeyColumns) {
             const { quotedColumnName, columnName } = iterator;
-            if (columnSet.has(columnName.toLocaleLowerCase())) {
+            if (columnSet.has(columnName.toLowerCase())) {
                 continue;
             }
             let def = `ALTER TABLE ${name} ADD ${quotedColumnName} `;
