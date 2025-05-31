@@ -10,6 +10,7 @@ import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry, { IChange } from "../../model/changes/ChangeEntry.js";
 import { BinaryExpression, Constant, DeleteStatement, Expression, Identifier, InsertStatement, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { Query } from "../../query/Query.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;
@@ -188,6 +189,10 @@ export abstract class BaseConnection {
         return result;
     }
 
+    public toQuery(query: Query) {
+        const { compiler } = this.driver;
+        return query.toQuery(compiler.namingConvention, compiler.quote);
+    }
 
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
