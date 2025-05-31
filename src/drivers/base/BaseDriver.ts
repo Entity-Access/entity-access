@@ -191,7 +191,7 @@ export abstract class BaseConnection {
 
     public createQuery(query: Query) {
         const { compiler } = this.driver;
-        return query.toQuery(compiler.namingConvention, compiler.quote);
+        return query.toQuery(void 0, compiler.quote);
     }
 
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
