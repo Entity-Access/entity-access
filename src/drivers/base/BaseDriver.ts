@@ -189,7 +189,7 @@ export abstract class BaseConnection {
         return result;
     }
 
-    public toQuery(query: Query) {
+    public createQuery(query: Query) {
         const { compiler } = this.driver;
         return query.toQuery(compiler.namingConvention, compiler.quote);
     }
