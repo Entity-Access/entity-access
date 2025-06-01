@@ -61,6 +61,7 @@ export interface ISql {
     spatial: {
         point(x: number, y: number, srid?: number): IGeometry;
         distance(x: IGeometry, y: IGeometry): number;
+        location(p: {latitude: number, longitude: number}): IGeometry;
     },
     json: {
         isJson(text: string): boolean;
