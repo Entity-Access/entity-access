@@ -49,6 +49,8 @@ export default abstract class PostgresMigrations extends Migrations {
                 return "jsonb";
             case "UUID":
                 return "uuid";
+            case "Geometry":
+                return "geometry";
         }
         const a: never = iterator.dataType;
         throw new Error("Not Defined");

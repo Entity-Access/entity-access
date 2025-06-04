@@ -215,7 +215,7 @@ class OrderItem {
         inverseProperty: (product) => product.orderItems,
         foreignKeyContraint: {
                 name: "FK_OrderItems_ProductID",
-                cascade: "restrict"
+                onDelete: "restrict"
         }
     })
     productID: number;
@@ -226,7 +226,7 @@ class OrderItem {
         inverseProperty: (order) => order.orderItems,
         foreignKeyContraint: {
                 name: "FK_OrderItems_OrderID",
-                cascade: "delete"
+                onDelete: "delete"
         }
     })
     orderID: number;
@@ -448,6 +448,53 @@ is loadded in the memory.
 
     await tx.commit();
 
+```
+
+## Direct Statements
+Entity Context provides direct statements to save/retrieve entities without loading them into change context.
+
+### Select
+```typescript
+   const msg = await context.messages.statements.select({
+       messageID
+   });
+```
+
+### Insert
+```typescript
+    const msg = await context.messages.statements.insert({
+       from,
+       to,
+       subject,
+       body
+    });
+```
+
+### Update
+```typescript
+   await context.messages.statements
+        .update(
+            /** Changes */
+            { archived: true },
+            /** key */
+            { messageID }
+        )
+```
+
+### Upsert
+```typescript
+   await context.messages.statements
+        .upsert(
+            /** Changes */
+            { read: 1 },
+            /** Apply update for an existing entity */
+            (existing) => ({
+                ... existing,
+                read: existing.read + 1
+            })
+            /** key */
+            { messageID }
+        )
 ```
 
 ## Provide Custom Sql Methods...

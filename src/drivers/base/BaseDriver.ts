@@ -1,4 +1,5 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
+import IColumnSchema from "../../common/IColumnSchema.js";
 
 // Making sure that Symbol.dispose is not undefined
 import "../../common/IDisposable.js";
@@ -9,6 +10,7 @@ import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import ChangeEntry, { IChange } from "../../model/changes/ChangeEntry.js";
 import { BinaryExpression, Constant, DeleteStatement, Expression, Identifier, InsertStatement, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
+import { Query } from "../../query/Query.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;
@@ -187,6 +189,10 @@ export abstract class BaseConnection {
         return result;
     }
 
+    public createQuery(query: Query) {
+        const { compiler } = this.driver;
+        return query.toQuery(void 0, compiler.quote);
+    }
 
     public abstract executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader>;
 
@@ -202,6 +208,9 @@ export abstract class BaseConnection {
         await tx.begin();
         return tx;
     }
+
+    abstract getSchema(schema: string, table: string): Promise<IColumnSchema[]>;
+
 
     protected abstract createDbTransaction(): Promise<EntityTransaction>;
 

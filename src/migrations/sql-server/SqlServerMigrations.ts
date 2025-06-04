@@ -53,6 +53,8 @@ export default abstract class SqlServerMigrations extends Migrations {
                 return "jsonb";
             case "UUID":
                 return "UniqueIdentifier";
+            case "Geometry":
+                return "geometry";
         }
         const a: never = iterator.dataType;
         throw new Error("Not Defined");

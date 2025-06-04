@@ -35,6 +35,7 @@
         "PGPORT",
         "PGUSER",
         "quasis",
+        "srid",
         "sysdatabases",
         "varbinary"
     ]

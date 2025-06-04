@@ -2,6 +2,16 @@ import DateTime from "../types/DateTime.js";
 
 class GUID {}
 
+interface IGeometry {
+    x: number;
+    y: number;
+    srid: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface IGeography extends IGeometry {
+}
+
 export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;
@@ -47,6 +57,11 @@ export interface ISql {
     math: {
         min<T>(... a: T[]): T,
         max<T>(... a: T[]): T,
+    },
+    spatial: {
+        point(x: number, y: number, srid?: number): IGeometry;
+        distance(x: IGeometry, y: IGeometry): number;
+        location(p: {latitude: number, longitude: number}): IGeometry;
     },
     json: {
         isJson(text: string): boolean;

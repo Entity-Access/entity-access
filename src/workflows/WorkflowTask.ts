@@ -36,7 +36,8 @@ export default class WorkflowTask implements Disposable {
 
     renewLock = () => {
         try {
-            const { id, lockToken, lockedTTL } = this.item;
+            const { id, lockToken } = this.item;
+            let { lockedTTL } = this.item;
             if (!lockedTTL) {
                 return;
             }
@@ -45,8 +46,8 @@ export default class WorkflowTask implements Disposable {
                 this.ac.abort(new Error("Timed out"));
                 return;
             }
-
-            this.context.workflows.statements.update({ lockedTTL: now.addSeconds(15) }, {id, lockToken})
+            lockedTTL = this.item.lockedTTL = now.addSeconds(15);
+            this.context.workflows.statements.update({ lockedTTL }, {id, lockToken})
                 .catch(console.error);
         } catch (error) {
             console.error(error);

@@ -9,6 +9,7 @@ import { SqlServerLiteral } from "./SqlServerLiteral.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 import EntityType from "../../entity-query/EntityType.js";
 import DateTime from "../../types/DateTime.js";
+import IColumnSchema from "../../common/IColumnSchema.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
@@ -125,6 +126,47 @@ export class SqlServerConnection extends BaseConnection {
 
     constructor(driver, private config: ISqlServerConnectionString) {
         super(driver);
+    }
+
+    async getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+        const text = `
+                        SELECT
+                COLUMN_NAME as [name],
+                CASE DATA_TYPE
+                    WHEN 'bit' THEN 'Boolean'
+                    WHEN 'int' Then 'Int'
+                    WHEN 'bigint' THEN 'BigInt'
+                    WHEN 'date' then 'DateTime'
+                    WHEN 'datetime' then 'DateTime'
+                    WHEN 'datetime2' then 'DateTime'
+                    WHEN 'real' then 'Float'
+                    WHEN 'double' then 'Double'
+                    WHEN 'decimal' then 'Decimal'
+                    WHEN 'identity' then 'UUID'
+                    WHEN 'varbinary' then 'ByteArray'
+                    WHEN 'geometry' then 'Geometry'
+                    ELSE 'Char'
+                END as [dataType],
+                CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END as [nullable],
+                CHARACTER_MAXIMUM_LENGTH as [length],
+                CASE 
+                    WHEN COLUMN_DEFAULT = 'getutcdate()' then '() => Sql.date.now()'
+                    WHEN COLUMN_DEFAULT = '(getutcdate())' then '() => Sql.date.now()'
+                    WHEN COLUMN_DEFAULT = '(newid())' then '() => Sql.crypto.randomUUID()'
+                    WHEN (COLUMN_DEFAULT = '(0)' OR COLUMN_DEFAULT = '((0))')
+                        AND DATA_TYPE = 'bit' THEN '() => false'
+                    WHEN (COLUMN_DEFAULT = '(1)' OR COLUMN_DEFAULT = '((1))')
+                        AND DATA_TYPE = 'bit' THEN '() => true'
+                    WHEN COLUMN_DEFAULT is NULL THEN ''
+                    ELSE '() => ' + COLUMN_DEFAULT
+                END as [default],
+                ColumnProperty(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME,'IsComputed') as [computed]
+                FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = $1
+            AND TABLE_NAME = $2
+        `;
+        const r = await this.executeQuery({ text, values: [schema, table] });
+        return r.rows;
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
