@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import EntityAccessError from "../common/EntityAccessError.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import Inject, { RegisterSingleton, ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
@@ -213,10 +213,9 @@ export default class WorkflowContext {
         if (id) {
             tries = 3;
         } else {
-            id = randomUUID();
+            id = `${type.name}-${BigInt(`0x${randomBytes(8).toString("hex")}`).toString(36)}-${Date.now().toString(36)}`;
             while(await this.storage.getWorkflow(id) !== null) {
-                console.log(`Generating UUID again ${id}`);
-                id = randomUUID();
+                id = `${type.name}-${BigInt(`0x${randomBytes(8).toString("hex")}`).toString(36)}-${Date.now().toString(36)}`;
             }
         }
 
