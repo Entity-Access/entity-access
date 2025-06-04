@@ -136,6 +136,8 @@ export interface IWorkflowResult<T> {
     state: "done" | "failed" | "queued";
     error: string;
     extra?: string;
+    updated?: DateTime;
+    queued?: DateTime;
 }
 
 export interface IWorkflowThrottleGroup {
@@ -187,7 +189,9 @@ export default class WorkflowContext {
                 state: s.state,
                 output: s.output ? JSON.parse(s.output): null,
                 error: s.error,
-                extra: s.extra
+                extra: s.extra,
+                queued: s.queued,
+                updated: s.updated
             };
         }
         return null;
@@ -413,7 +417,7 @@ export default class WorkflowContext {
                 workflow.lockedTTL = null;
                 workflow.lockToken = null;
                 await this.storage.save(workflow);
-                this.log(`Workflow ${workflow.id} suspended till ${workflow.eta}`);
+                this.log(`Workflow ${workflow.id} suspended till ${workflow.eta?.toJSON()}`);
                 return;
             }
             error = error.stack ?? error.toString();
