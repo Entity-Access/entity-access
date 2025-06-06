@@ -59,7 +59,13 @@ export interface ISql {
         max<T>(... a: T[]): T,
     },
     spatial: {
-        point(x: number, y: number, srid?: number): IGeometry;
+        /**
+         * POINT(latitude, longitude, 4326) or POINT(x, y, 4326)
+         * @param latitudeOrX latitude or x
+         * @param longitudeOrY longitude or x
+         * @param srid default should be 4326
+         */
+        point(latitudeOrX: number, longitudeOrY: number, srid?: number): IGeometry;
         distance(x: IGeometry, y: IGeometry): number;
         location(p: {latitude: number, longitude: number}): IGeometry;
     },
