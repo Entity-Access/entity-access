@@ -1,6 +1,7 @@
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
 import ICheckConstraint from "../decorators/ICheckConstraint.js";
+import { IColumn } from "../decorators/IColumn.js";
 import type { IForeignKeyConstraint } from "../decorators/IForeignKeyConstraint.js";
 import type { IIndex } from "../decorators/IIndex.js";
 import type EntityType from "../entity-query/EntityType.js";
@@ -16,7 +17,15 @@ export default abstract class Migrations {
         name = "default",
         historyTableName = "migrations",
         seed,
-    }: { version?: string, name?: string, historyTableName?: string, seed?: (c: EntityContext) => Promise<any>} = {} ) {
+        createIndexForForeignKeys = true
+    }: {
+        version?: string,
+        name?: string,
+        historyTableName?:
+        string,
+        seed?: (c: EntityContext) => Promise<any>,
+        createIndexForForeignKeys?: boolean
+    } = {} ) {
         const { model } = context;
         const postMigration = [] as (() => Promise<void>)[];
 
@@ -68,6 +77,16 @@ export default abstract class Migrations {
             }
 
             for (const { isInverseRelation , foreignKeyConstraint, relatedTypeClass } of type.relations) {
+
+                if (createIndexForForeignKeys) {
+                    postMigration.push(() =>
+                        this.createIndexForForeignKeys(context, type, type.nonKeys.filter((x) =>
+                            x.fkRelation
+                            && (!x.key || type.keys.indexOf(x) !== 0)
+                            && !x.fkRelation?.doNotCreateIndex))
+                    );
+                }
+
                 if (isInverseRelation) {
                     continue;
                 }
@@ -119,6 +138,8 @@ export default abstract class Migrations {
     }
 
     abstract ensureVersionTable(context: EntityContext, table: string): Promise<any>;
+
+    abstract createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]): Promise<void>;
 
     async commitVersion(context: EntityContext, name, version, table) {
         const { quote, escapeLiteral } = this.compiler;

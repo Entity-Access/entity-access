@@ -36,14 +36,9 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         await this.createColumns(driver, type, nonKeyColumns);
 
-        await this.createIndexes(context, type, nonKeyColumns.filter((x) =>
-            x.fkRelation
-            && (!x.key || type.keys.indexOf(x) !== 0)
-            && !x.fkRelation?.doNotCreateIndex));
-
     }
 
-    async createIndexes(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
+    async createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
             const filter = iterator.nullable
                 ? `${ iterator.quotedColumnName} IS NOT NULL`
