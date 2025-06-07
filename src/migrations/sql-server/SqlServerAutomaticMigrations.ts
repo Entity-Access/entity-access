@@ -62,7 +62,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
-        const columns =  await driver.getSchema(type.schema || "dbo", type.name);
+        const columns =  await driver.getColumnSchema(type.schema || "dbo", type.name);
 
         const columnSet = new Set(columns.map((x) => x.name.toLowerCase()));
 

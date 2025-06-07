@@ -59,8 +59,15 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
+        const columns =  await driver.getColumnSchema(type.schema || "public", type.name);
+
+        const columnSet = new Set(columns.map((x) => x.name));
+
         for (const iterator of nonKeyColumns) {
-            const columnName = iterator.columnName;
+            const { columnName } = iterator;
+            if (columnSet.has(columnName)) {
+                continue;
+            }
             let def = `ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS ${columnName} `;
             def += this.getColumnDefinition(iterator);
 

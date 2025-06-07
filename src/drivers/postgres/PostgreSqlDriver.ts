@@ -219,8 +219,35 @@ class PostgreSqlConnection extends BaseConnection {
         return new PostgresAutomaticMigrations(this.compiler);
     }
 
-    getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
-        throw new EntityAccessError("Not implemented");
+    async getColumnSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+        const text = `
+        select 
+            column_name as "columnName",
+            case data_type
+                when 'bigint' then 'BigInt'
+                when 'boolean' then 'Boolean'
+                when 'timestamp' then 'DateTime'
+                when 'timestamp with time zone' then 'DateTime'
+                when 'timestamp without time zone' then 'DateTime'
+                when 'integer' then 'Int'
+                when 'real' then 'Double'
+                when 'numeric' then 'Decimal'
+                else 'Char' end as "dataType",
+            case
+                when is_nullable = 'YES' then true
+                else false end as "nullable",
+            character_maximum_length as "length",
+            case
+                when is_identity = 'YES' then 'identity'
+                else null end as "identity",
+            case
+                when is_generated = 'YES' then '() => 1'
+                else null end as "computed"
+            from information_schema.columns
+            where table_schema = $1
+            and table_name = $2`;
+        const r = await this.executeQuery({ text, values: [ schema, table ]});
+        return r.rows;
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {

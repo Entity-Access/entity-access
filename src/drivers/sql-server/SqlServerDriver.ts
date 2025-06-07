@@ -128,7 +128,7 @@ export class SqlServerConnection extends BaseConnection {
         super(driver);
     }
 
-    async getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+    async getColumnSchema(schema: string, table: string): Promise<IColumnSchema[]> {
         const text = `
                         SELECT
                 COLUMN_NAME as [name],
