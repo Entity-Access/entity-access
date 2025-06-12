@@ -91,20 +91,21 @@ export default abstract class Migrations {
                 await this.migrateIndexInternal(context, index, type);
             }
 
-            for (const { isInverseRelation , foreignKeyConstraint, relatedTypeClass } of type.relations) {
+            if (createIndexForForeignKeys) {
+                postMigration.push(() =>
+                    this.createIndexForForeignKeys(context, type, type.nonKeys.filter((x) =>
+                        x.fkRelation
+                        && (!x.key || type.keys.indexOf(x) !== 0)
+                        && !x.fkRelation?.doNotCreateIndex))
+                );
+            }
 
-                if (createIndexForForeignKeys) {
-                    postMigration.push(() =>
-                        this.createIndexForForeignKeys(context, type, type.nonKeys.filter((x) =>
-                            x.fkRelation
-                            && (!x.key || type.keys.indexOf(x) !== 0)
-                            && !x.fkRelation?.doNotCreateIndex))
-                    );
-                }
+            for (const { isInverseRelation , foreignKeyConstraint, relatedTypeClass } of type.relations) {
 
                 if (isInverseRelation) {
                     continue;
                 }
+
                 if (!foreignKeyConstraint) {
                     continue;
                 }
