@@ -9,3 +9,15 @@ export default interface IColumnSchema {
     ownerName?: string;
     ownerType?: string;
 }
+
+export interface IIndexSchema {
+    name: string;
+}
+
+export interface IConstraintSchema {
+    name: string;
+}
+
+export interface IForeignKeyConstraintSchema {
+    name: string;
+}

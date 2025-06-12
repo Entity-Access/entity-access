@@ -11,6 +11,7 @@ import DateTime from "../../types/DateTime.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
+import ExistingSchema from "../base/ExistingSchema.js";
 export interface IPgSqlConnectionString extends IDbConnectionString {
 
     user?: string, // default process.env.PGUSER || process.env.USER
@@ -218,38 +219,6 @@ class PostgreSqlConnection extends BaseConnection {
 
     public automaticMigrations(context: EntityContext): Migrations {
         return new PostgresAutomaticMigrations(context);
-    }
-
-    async getColumnSchema(schema: string): Promise<IColumnSchema[]> {
-        const text = `
-        select 
-            column_name as "columnName",
-            case data_type
-                when 'bigint' then 'BigInt'
-                when 'boolean' then 'Boolean'
-                when 'timestamp' then 'DateTime'
-                when 'timestamp with time zone' then 'DateTime'
-                when 'timestamp without time zone' then 'DateTime'
-                when 'integer' then 'Int'
-                when 'real' then 'Double'
-                when 'numeric' then 'Decimal'
-                else 'Char' end as "dataType",
-            case
-                when is_nullable = 'YES' then true
-                else false end as "nullable",
-            character_maximum_length as "length",
-            case
-                when is_identity = 'YES' then 'identity'
-                else null end as "identity",
-            case
-                when is_generated = 'YES' then '() => 1'
-                else null end as "computed",
-            table_name as "ownerName",
-            'table' as "ownerType"
-            from information_schema.columns
-            where table_schema = $1`;
-        const r = await this.executeQuery({ text, values: [ schema ]});
-        return r.rows;
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {

@@ -12,6 +12,7 @@ import ChangeEntry, { IChange } from "../../model/changes/ChangeEntry.js";
 import type EntityContext from "../../model/EntityContext.js";
 import { BinaryExpression, Constant, DeleteStatement, Expression, Identifier, InsertStatement, ReturnUpdated, SelectStatement, TableLiteral, UpdateStatement, UpsertStatement, ValuesStatement } from "../../query/ast/Expressions.js";
 import { Query } from "../../query/Query.js";
+import type ExistingSchema from "./ExistingSchema.js";
 
 export interface IRecord {
     [key: string]: string | boolean | number | Date | Uint8Array | Blob;
@@ -209,9 +210,6 @@ export abstract class BaseConnection {
         await tx.begin();
         return tx;
     }
-
-    abstract getColumnSchema(schema: string): Promise<IColumnSchema[]>;
-
 
     protected abstract createDbTransaction(): Promise<EntityTransaction>;
 

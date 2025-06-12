@@ -4,10 +4,10 @@ import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection } from "../../drivers/base/BaseDriver.js";
+import ExistingSchema from "../../drivers/base/ExistingSchema.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
-import ExistingSchema from "../ExistingSchema.js";
 import SqlServerMigrations from "./SqlServerMigrations.js";
 
 export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
@@ -23,20 +23,6 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         END`);
     }
 
-    async migrateTable(context: EntityContext, type: EntityType) {
-
-
-        // create table if not exists...
-        const nonKeyColumns = type.nonKeys;
-        const keys = type.keys;
-
-        const driver = context.connection;
-
-        await this.createTable(driver, type, keys);
-
-        await this.createColumns(driver, type, nonKeyColumns);
-
-    }
 
     async createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
@@ -48,61 +34,43 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
                 columns: [{ name: iterator.quotedColumnName, descending: iterator.indexOrder !== "ascending"}],
                 filter
             };
-            await this.migrateIndex(context, indexDef, type);
+            await this.migrateIndexInternal(context, indexDef, type);
         }
     }
 
-    async createColumns(driver: BaseConnection, type: EntityType, nonKeyColumns: IColumn[]) {
+    async createColumn(type: EntityType, iterator: IColumn) {
+
+        const { quotedColumnName } = iterator;
 
         const name = type.schema
-        ? type.schema + "." + type.name
-        : type.name;
+            ? type.schema + "." + type.name
+            : type.name;
 
-        if (nonKeyColumns.length > 1) {
-            nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        }
+        let def = `ALTER TABLE ${name} ADD ${quotedColumnName} `;
 
-        const columns =  await ExistingSchema.getSchema(driver, type.schema || "dbo", type.name);
-
-        const columnSet = new Set(columns.map((x) => x.name.toLowerCase()));
-
-        for (const iterator of nonKeyColumns) {
-            const { quotedColumnName, columnName } = iterator;
-            if (columnSet.has(columnName.toLowerCase())) {
-                continue;
-            }
-            let def = `ALTER TABLE ${name} ADD ${quotedColumnName} `;
-
-            if (iterator.computed) {
-                def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
-                await this.executeQuery(def + ";");
-                continue;
-            }
-
-            def += this.getColumnDefinition(iterator);
-            if (iterator.nullable === true) {
-                def += " NULL ";
-            } else {
-                def += " NOT NULL ";
-            }
-            if (iterator.computed) {
-                def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
-            }
-            if (typeof iterator.default === "string") {
-                def += " DEFAULT " + iterator.default;
-            }
+        if (iterator.computed) {
+            def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
             await this.executeQuery(def + ";");
+            return;
         }
+
+        def += this.getColumnDefinition(iterator);
+        if (iterator.nullable === true) {
+            def += " NULL ";
+        } else {
+            def += " NOT NULL ";
+        }
+        if (iterator.computed) {
+            def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
+        }
+        if (typeof iterator.default === "string") {
+            def += " DEFAULT " + iterator.default;
+        }
+        await this.executeQuery(def + ";");
 
     }
 
-    async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
-
-        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name);
-
-        if (columns.length) {
-            return;
-        }
+    async createTable(type: EntityType, keys: IColumn[]) {
 
         const name = type.schema
             ? type.schema + "." + type.name
@@ -138,6 +106,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
     }
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
+
         const driver = context.connection;
         const name = type.schema
             ? type.schema + "." + type.name
