@@ -3,11 +3,11 @@ import ICheckConstraint from "../../decorators/ICheckConstraint.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
-import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
+import { BaseConnection } from "../../drivers/base/BaseDriver.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
 import EntityType from "../../entity-query/EntityType.js";
-import EntityContext from "../../model/EntityContext.js";
-import Migrations from "../Migrations.js";
+import type EntityContext from "../../model/EntityContext.js";
+import ExistingSchema from "../ExistingSchema.js";
 import SqlServerMigrations from "./SqlServerMigrations.js";
 
 export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
@@ -36,14 +36,9 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         await this.createColumns(driver, type, nonKeyColumns);
 
-        await this.createIndexes(context, type, nonKeyColumns.filter((x) =>
-            x.fkRelation
-            && (!x.key || type.keys.indexOf(x) !== 0)
-            && !x.fkRelation?.doNotCreateIndex));
-
     }
 
-    async createIndexes(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
+    async createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
             const filter = iterator.nullable
                 ? `${ iterator.quotedColumnName} IS NOT NULL`
@@ -67,7 +62,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
-        const columns =  await driver.getSchema(type.schema || "dbo", type.name);
+        const columns =  await ExistingSchema.getSchema(driver, type.schema || "dbo", type.name);
 
         const columnSet = new Set(columns.map((x) => x.name.toLowerCase()));
 
@@ -80,7 +75,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
             if (iterator.computed) {
                 def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
-                await driver.executeQuery(def + ";");
+                await this.executeQuery(def + ";");
                 continue;
             }
 
@@ -96,12 +91,18 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             if (typeof iterator.default === "string") {
                 def += " DEFAULT " + iterator.default;
             }
-            await driver.executeQuery(def + ";");
+            await this.executeQuery(def + ";");
         }
 
     }
 
     async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
+
+        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name);
+
+        if (columns.length) {
+            return;
+        }
 
         const name = type.schema
             ? type.schema + "." + type.name
@@ -128,7 +129,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             fields.push(def);
         }
 
-        await driver.executeQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
+        await this.executeQuery(`IF OBJECT_ID(${ SqlServerLiteral.escapeLiteral(name)}) IS NULL BEGIN
             CREATE TABLE ${name} (${fields.join(",")}
             , CONSTRAINT PK_${name} PRIMARY KEY(${keys.map((x) => x.quotedColumnName)})
             );
@@ -154,7 +155,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             query += ` WHERE (${index.filter})`;
         }
         query += `\nEND`;
-        await driver.executeQuery(query);
+        await this.executeQuery(query);
     }
 
     async constraintExists(context: EntityContext, name: string, schema: string, type: EntityType) {
@@ -169,7 +170,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
         const driver = context.connection;
 
-        const r = await driver.executeQuery(text);
+        const r = await this.executeQuery(text);
         if (r.rows?.length === 0) {
             if (r.rows["c1"] > 0) {
                 return true;
@@ -220,7 +221,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         }
 
         try {
-            await driver.executeQuery(text);
+            await this.executeQuery(text);
         } catch (error) {
             // we will simply ignore this
             console.warn(`Failed adding constraint ${constraint.name}`);
@@ -243,7 +244,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} CHECK (${constraint.filter})`;
 
         try {
-            await driver.executeQuery(text);
+            await this.executeQuery(text);
         } catch (error) {
             // we will simply ignore this
             console.warn(`Failed adding constraint ${constraint.name}`);

@@ -6,4 +6,6 @@ export default interface IColumnSchema {
     default: string;
     key: boolean;
     computed?: any;
+    ownerName?: string;
+    ownerType?: string;
 }

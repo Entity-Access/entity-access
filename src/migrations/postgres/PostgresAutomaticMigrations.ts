@@ -5,8 +5,8 @@ import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js
 import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EntityType from "../../entity-query/EntityType.js";
-import EntityContext from "../../model/EntityContext.js";
-import Migrations from "../Migrations.js";
+import type EntityContext from "../../model/EntityContext.js";
+import ExistingSchema from "../ExistingSchema.js";
 import PostgresMigrations from "./PostgresMigrations.js";
 
 export default class PostgresAutomaticMigrations extends PostgresMigrations {
@@ -33,14 +33,9 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
         await this.createColumns(driver, type, nonKeyColumns);
 
-        await this.createIndexes(context, type, nonKeyColumns.filter((x) =>
-            x.fkRelation
-            && (!x.key || type.keys.indexOf(x) !== 0)
-            && !x.fkRelation?.doNotCreateIndex));
-
     }
 
-    async createIndexes(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
+    async createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
             const filter = iterator.nullable
                 ? `${iterator.columnName} IS NOT NULL`
@@ -64,8 +59,15 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
+        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name, true);
+
+        const columnSet = new Set(columns.map((x) => x.name));
+
         for (const iterator of nonKeyColumns) {
-            const columnName = iterator.columnName;
+            const { columnName } = iterator;
+            if (columnSet.has(columnName)) {
+                continue;
+            }
             let def = `ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS ${columnName} `;
             def += this.getColumnDefinition(iterator);
 
@@ -81,12 +83,18 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                 def += " DEFAULT " + iterator.default;
             }
 
-            await driver.executeQuery(def + ";");
+            await this.executeQuery(def + ";");
         }
 
     }
 
     async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
+
+        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name, true);
+
+        if (columns.length) {
+            return;
+        }
 
         const name = type.schema
             ? type.schema + "." + type.name
@@ -117,7 +125,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             fields.push(def);
         }
 
-        await driver.executeQuery(`CREATE TABLE IF NOT EXISTS ${name} (${fields.join(",")}
+        await this.executeQuery(`CREATE TABLE IF NOT EXISTS ${name} (${fields.join(",")}
         ,CONSTRAINT PK_${name} PRIMARY KEY (${keys.map((x) => x.columnName).join(",")})
         )`);
 
@@ -140,7 +148,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         if (index.filter) {
             query += ` WHERE (${index.filter})`;
         }
-        await driver.executeQuery(query);
+        await this.executeQuery(query);
     }
 
     async constraintExists(context: EntityContext, name: string, schema: string, table = "referential_constraints") {
@@ -157,7 +165,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
         const driver = context.connection;
 
-        const r = await driver.executeQuery({ text, values });
+        const r = await this.executeQuery({ text, values });
         if (r.rows?.length) {
             return true;
         }
@@ -216,9 +224,9 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
             await using tx = await driver.createTransaction();
             if (constraint.clearExisting && prepare) {
-                await driver.executeQuery(prepare);
+                await this.executeQuery(prepare);
             }
-            await driver.executeQuery(text);
+            await this.executeQuery(text);
             await tx.commit();
         } catch (error) {
             // we will simply ignore this
@@ -243,7 +251,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         const text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} CHECK (${constraint.filter})`;
 
         try {
-            await driver.executeQuery(text);
+            await this.executeQuery(text);
         } catch (error) {
             // we will simply ignore this
             console.warn(`Failed adding constraint ${constraint.name}`);

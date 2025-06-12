@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import EntityAccessError from "../common/EntityAccessError.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import Inject, { RegisterSingleton, ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
@@ -136,6 +136,8 @@ export interface IWorkflowResult<T> {
     state: "done" | "failed" | "queued";
     error: string;
     extra?: string;
+    updated?: DateTime;
+    queued?: DateTime;
 }
 
 export interface IWorkflowThrottleGroup {
@@ -187,7 +189,9 @@ export default class WorkflowContext {
                 state: s.state,
                 output: s.output ? JSON.parse(s.output): null,
                 error: s.error,
-                extra: s.extra
+                extra: s.extra,
+                queued: s.queued,
+                updated: s.updated
             };
         }
         return null;
@@ -209,10 +213,9 @@ export default class WorkflowContext {
         if (id) {
             tries = 3;
         } else {
-            id = randomUUID();
+            id = `${type.name}-${BigInt(`0x${randomBytes(8).toString("hex")}`).toString(36)}-${Date.now().toString(36)}`;
             while(await this.storage.getWorkflow(id) !== null) {
-                console.log(`Generating UUID again ${id}`);
-                id = randomUUID();
+                id = `${type.name}-${BigInt(`0x${randomBytes(8).toString("hex")}`).toString(36)}-${Date.now().toString(36)}`;
             }
         }
 
@@ -413,7 +416,7 @@ export default class WorkflowContext {
                 workflow.lockedTTL = null;
                 workflow.lockToken = null;
                 await this.storage.save(workflow);
-                this.log(`Workflow ${workflow.id} suspended till ${workflow.eta}`);
+                this.log(`Workflow ${workflow.id} suspended till ${workflow.eta?.toJSON()}`);
                 return;
             }
             error = error.stack ?? error.toString();

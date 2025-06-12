@@ -6,6 +6,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
+import EntityContext from "../../model/EntityContext.js";
 import DateTime from "../../types/DateTime.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
@@ -215,12 +216,40 @@ class PostgreSqlConnection extends BaseConnection {
     }
 
 
-    public automaticMigrations(): Migrations {
-        return new PostgresAutomaticMigrations(this.compiler);
+    public automaticMigrations(context: EntityContext): Migrations {
+        return new PostgresAutomaticMigrations(context);
     }
 
-    getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
-        throw new EntityAccessError("Not implemented");
+    async getColumnSchema(schema: string): Promise<IColumnSchema[]> {
+        const text = `
+        select 
+            column_name as "columnName",
+            case data_type
+                when 'bigint' then 'BigInt'
+                when 'boolean' then 'Boolean'
+                when 'timestamp' then 'DateTime'
+                when 'timestamp with time zone' then 'DateTime'
+                when 'timestamp without time zone' then 'DateTime'
+                when 'integer' then 'Int'
+                when 'real' then 'Double'
+                when 'numeric' then 'Decimal'
+                else 'Char' end as "dataType",
+            case
+                when is_nullable = 'YES' then true
+                else false end as "nullable",
+            character_maximum_length as "length",
+            case
+                when is_identity = 'YES' then 'identity'
+                else null end as "identity",
+            case
+                when is_generated = 'YES' then '() => 1'
+                else null end as "computed",
+            table_name as "ownerName",
+            'table' as "ownerType"
+            from information_schema.columns
+            where table_schema = $1`;
+        const r = await this.executeQuery({ text, values: [ schema ]});
+        return r.rows;
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {

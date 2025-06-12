@@ -10,6 +10,7 @@ import TimedCache from "../../common/cache/TimedCache.js";
 import EntityType from "../../entity-query/EntityType.js";
 import DateTime from "../../types/DateTime.js";
 import IColumnSchema from "../../common/IColumnSchema.js";
+import type EntityContext from "../../model/EntityContext.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
@@ -128,7 +129,7 @@ export class SqlServerConnection extends BaseConnection {
         super(driver);
     }
 
-    async getSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+    async getColumnSchema(schema: string): Promise<IColumnSchema[]> {
         const text = `
                         SELECT
                 COLUMN_NAME as [name],
@@ -160,12 +161,13 @@ export class SqlServerConnection extends BaseConnection {
                     WHEN COLUMN_DEFAULT is NULL THEN ''
                     ELSE '() => ' + COLUMN_DEFAULT
                 END as [default],
-                ColumnProperty(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME,'IsComputed') as [computed]
+                ColumnProperty(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME,'IsComputed') as [computed],
+                TABLE_NAME as [ownerName],
+                'table' as [ownerType]
                 FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = $1
-            AND TABLE_NAME = $2
         `;
-        const r = await this.executeQuery({ text, values: [schema, table] });
+        const r = await this.executeQuery({ text, values: [schema] });
         return r.rows;
     }
 
@@ -237,8 +239,8 @@ export class SqlServerConnection extends BaseConnection {
         return value;
     }
 
-    public automaticMigrations(): Migrations {
-        return new SqlServerAutomaticMigrations(this.sqlQueryCompiler);
+    public automaticMigrations(context: EntityContext): Migrations {
+        return new SqlServerAutomaticMigrations(context);
     }
 
     protected async createDbTransaction(): Promise<EntityTransaction> {

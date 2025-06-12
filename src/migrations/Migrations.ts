@@ -1,28 +1,52 @@
+import Logger, { ConsoleLogger } from "../common/Logger.js";
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
 import ICheckConstraint from "../decorators/ICheckConstraint.js";
+import { IColumn } from "../decorators/IColumn.js";
 import type { IForeignKeyConstraint } from "../decorators/IForeignKeyConstraint.js";
 import type { IIndex } from "../decorators/IIndex.js";
+import type { BaseConnection, IQuery, IQueryResult } from "../drivers/base/BaseDriver.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type EntityContext from "../model/EntityContext.js";
 import type EntityQuery from "../model/EntityQuery.js";
+import ExistingSchema from "./ExistingSchema.js";
 
 export default abstract class Migrations {
 
-    constructor(protected compiler: QueryCompiler) {}
+    logger: Logger;
 
-    public async migrate(context: EntityContext , {
+    constructor(
+        private context: EntityContext,
+        private connection: BaseConnection = context.connection,
+        protected compiler: QueryCompiler = context.driver.compiler
+    ) {
+
+    }
+
+    public async migrate({
         version,
         name = "default",
         historyTableName = "migrations",
+        log = new ConsoleLogger(false),
         seed,
-    }: { version?: string, name?: string, historyTableName?: string, seed?: (c: EntityContext) => Promise<any>} = {} ) {
+        createIndexForForeignKeys = true
+    }: {
+        version?: string,
+        name?: string,
+        historyTableName?: string,
+        log?: Logger,
+        seed?: (c: EntityContext) => Promise<any>,
+        createIndexForForeignKeys?: boolean
+    } = {} ) {
+        const { context } = this;
         const { model } = context;
+        this.logger = log ?? context.logger;
         const postMigration = [] as (() => Promise<void>)[];
 
         if (version) {
             // check if we have already stored this version...
             if(await this.hasVersion(context, name, version, historyTableName)) {
+                // eslint-disable-next-line no-console
                 console.warn(`Skipping migration, migration already exists for ${version}`);
                 return false;
             }
@@ -68,6 +92,16 @@ export default abstract class Migrations {
             }
 
             for (const { isInverseRelation , foreignKeyConstraint, relatedTypeClass } of type.relations) {
+
+                if (createIndexForForeignKeys) {
+                    postMigration.push(() =>
+                        this.createIndexForForeignKeys(context, type, type.nonKeys.filter((x) =>
+                            x.fkRelation
+                            && (!x.key || type.keys.indexOf(x) !== 0)
+                            && !x.fkRelation?.doNotCreateIndex))
+                    );
+                }
+
                 if (isInverseRelation) {
                     continue;
                 }
@@ -120,6 +154,8 @@ export default abstract class Migrations {
 
     abstract ensureVersionTable(context: EntityContext, table: string): Promise<any>;
 
+    abstract createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]): Promise<void>;
+
     async commitVersion(context: EntityContext, name, version, table) {
         const { quote, escapeLiteral } = this.compiler;
 
@@ -163,5 +199,11 @@ export default abstract class Migrations {
     abstract migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint);
 
     abstract migrateCheckConstraint(context: EntityContext, checkConstraint: ICheckConstraint, type: EntityType);
+
+    protected executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
+        const text = typeof command === "string" ? command : command.text;
+        this.logger?.log(text);
+        return this.connection.executeQuery(command, signal);
+    }
 
 }

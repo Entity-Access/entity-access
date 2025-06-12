@@ -20,5 +20,5 @@ async function migrate(this: TestConfig) {
 
     await context.connection.ensureDatabase();
 
-    return await context.connection.automaticMigrations().migrate(context, { version: "v1" });
+    return await context.connection.automaticMigrations(context).migrate({ log: null, version: "v1" });
 }
