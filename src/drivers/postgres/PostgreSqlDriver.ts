@@ -221,39 +221,6 @@ class PostgreSqlConnection extends BaseConnection {
         return new PostgresAutomaticMigrations(context);
     }
 
-    async getExistingSchema(schema: string) {
-        const text = `
-        select 
-            column_name as "columnName",
-            case data_type
-                when 'bigint' then 'BigInt'
-                when 'boolean' then 'Boolean'
-                when 'timestamp' then 'DateTime'
-                when 'timestamp with time zone' then 'DateTime'
-                when 'timestamp without time zone' then 'DateTime'
-                when 'integer' then 'Int'
-                when 'real' then 'Double'
-                when 'numeric' then 'Decimal'
-                else 'Char' end as "dataType",
-            case
-                when is_nullable = 'YES' then true
-                else false end as "nullable",
-            character_maximum_length as "length",
-            case
-                when is_identity = 'YES' then 'identity'
-                else null end as "identity",
-            case
-                when is_generated = 'YES' then '() => 1'
-                else null end as "computed",
-            table_name as "ownerName",
-            'table' as "ownerType"
-            from information_schema.columns
-            where table_schema = $1`;
-        const r = await this.executeQuery({ text, values: [ schema ]});
-        const columns =  r.rows;
-        return new ExistingSchema(false, columns, [], []);
-    }
-
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
         return new DbReader(command, this, signal);
     }

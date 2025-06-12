@@ -20,10 +20,6 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         )`);
     }
 
-    getSchema(type: EntityType): Promise<ExistingSchema> {
-            return ExistingSchema.getSchema(this.connection, type.schema || "public");
-    }
-
     async createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
             const filter = iterator.nullable

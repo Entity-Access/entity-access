@@ -211,8 +211,6 @@ export abstract class BaseConnection {
         return tx;
     }
 
-    abstract getExistingSchema(schema: string): Promise<ExistingSchema>;
-
     protected abstract createDbTransaction(): Promise<EntityTransaction>;
 
 }

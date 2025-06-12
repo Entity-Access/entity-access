@@ -1,29 +1,27 @@
 import CIMap from "../../common/CIMap.js";
-import IColumnSchema, { IConstraintSchema, IIndexSchema } from "../../common/IColumnSchema.js";
+import IColumnSchema, { IConstraintSchema, IForeignKeyConstraintSchema, IIndexSchema } from "../../common/IColumnSchema.js";
 import { BaseConnection } from "./BaseDriver.js";
 
 export default class ExistingSchema {
 
-    static async getSchema(driver: BaseConnection, schema: string) {
-        let s = this.cache.get(schema);
-        if (!s) {
-            s = await driver.getExistingSchema(schema);
-            this.cache.set(schema, s);
-        }
-        return s;
-    }
-
-    private static cache = new CIMap<ExistingSchema>();
-
     public readonly tables: Map<string, Map<string, IColumnSchema>>;
     public readonly indexes: Map<string, IIndexSchema>;
     public readonly constraints: Map<string, IConstraintSchema>;
+    public readonly foreignKeys: Map<string, IForeignKeyConstraintSchema>;
 
     constructor(
-        private caseInsensitive = false,
-        columns: IColumnSchema[],
-        indexes: IIndexSchema[],
-        constraints: IConstraintSchema[]
+        caseInsensitive = false,
+        {
+            columns,
+            indexes,
+            constraints,
+            foreignKeys
+         }: {
+            columns: IColumnSchema[],
+            indexes?: IIndexSchema[],
+            constraints?: IConstraintSchema[],
+            foreignKeys?: IForeignKeyConstraintSchema[]
+        }
     ) {
 
         this.tables = caseInsensitive
@@ -54,6 +52,14 @@ export default class ExistingSchema {
 
         for (const constraint of constraints) {
             this.constraints.set(constraint.name, constraint);
+        }
+
+        this.foreignKeys = caseInsensitive
+            ? new CIMap<IForeignKeyConstraintSchema>()
+            : new Map<string, IForeignKeyConstraintSchema>();
+
+        for (const fk of foreignKeys) {
+            this.foreignKeys.set(fk.name, fk);
         }
     }
 

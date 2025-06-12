@@ -17,3 +17,7 @@ export interface IIndexSchema {
 export interface IConstraintSchema {
     name: string;
 }
+
+export interface IForeignKeyConstraintSchema {
+    name: string;
+}

@@ -1,3 +1,4 @@
+import CIMap from "../common/CIMap.js";
 import Logger, { ConsoleLogger } from "../common/Logger.js";
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
@@ -14,6 +15,8 @@ import type EntityQuery from "../model/EntityQuery.js";
 export default abstract class Migrations {
 
     logger: Logger;
+
+    protected schemaCache = new Map<string, ExistingSchema>();
 
     constructor(
         private context: EntityContext,
@@ -252,7 +255,18 @@ export default abstract class Migrations {
 
     abstract migrateCheckConstraint(context: EntityContext, checkConstraint: ICheckConstraint, type: EntityType);
 
-    abstract getSchema(type: EntityType): Promise<ExistingSchema>;
+    public async getSchema(type: EntityType): Promise<ExistingSchema> {
+        const schema = type.schema || "__ default + __ schema ";
+        let s = this.schemaCache.get(schema);
+        if (s) {
+            return s;
+        }
+        s = await this.getExistingSchema(type);
+        this.schemaCache.set(schema, s);
+        return s;
+    }
+
+    protected abstract getExistingSchema(type: EntityType): Promise<ExistingSchema>;
 
     protected executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
         const text = typeof command === "string" ? command : command.text;

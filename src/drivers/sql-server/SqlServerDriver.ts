@@ -130,49 +130,6 @@ export class SqlServerConnection extends BaseConnection {
         super(driver);
     }
 
-    async getExistingSchema(schema: string) {
-        const text = `
-                        SELECT
-                COLUMN_NAME as [name],
-                CASE DATA_TYPE
-                    WHEN 'bit' THEN 'Boolean'
-                    WHEN 'int' Then 'Int'
-                    WHEN 'bigint' THEN 'BigInt'
-                    WHEN 'date' then 'DateTime'
-                    WHEN 'datetime' then 'DateTime'
-                    WHEN 'datetime2' then 'DateTime'
-                    WHEN 'real' then 'Float'
-                    WHEN 'double' then 'Double'
-                    WHEN 'decimal' then 'Decimal'
-                    WHEN 'identity' then 'UUID'
-                    WHEN 'varbinary' then 'ByteArray'
-                    WHEN 'geometry' then 'Geometry'
-                    ELSE 'Char'
-                END as [dataType],
-                CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END as [nullable],
-                CHARACTER_MAXIMUM_LENGTH as [length],
-                CASE 
-                    WHEN COLUMN_DEFAULT = 'getutcdate()' then '() => Sql.date.now()'
-                    WHEN COLUMN_DEFAULT = '(getutcdate())' then '() => Sql.date.now()'
-                    WHEN COLUMN_DEFAULT = '(newid())' then '() => Sql.crypto.randomUUID()'
-                    WHEN (COLUMN_DEFAULT = '(0)' OR COLUMN_DEFAULT = '((0))')
-                        AND DATA_TYPE = 'bit' THEN '() => false'
-                    WHEN (COLUMN_DEFAULT = '(1)' OR COLUMN_DEFAULT = '((1))')
-                        AND DATA_TYPE = 'bit' THEN '() => true'
-                    WHEN COLUMN_DEFAULT is NULL THEN ''
-                    ELSE '() => ' + COLUMN_DEFAULT
-                END as [default],
-                ColumnProperty(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME,'IsComputed') as [computed],
-                TABLE_NAME as [ownerName],
-                'table' as [ownerType]
-                FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = $1
-        `;
-        const r = await this.executeQuery({ text, values: [schema] });
-        const columns = r.rows;
-        return new ExistingSchema(true, columns, [], []);
-    }
-
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
         command = toQuery(command);
         let rq = await this.newRequest(signal);

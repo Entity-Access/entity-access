@@ -23,11 +23,6 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         END`);
     }
 
-    getSchema(type: EntityType): Promise<ExistingSchema> {
-        return ExistingSchema.getSchema(this.connection, type.schema || "dbo");
-    }
-
-
 
     async createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
         for (const iterator of fkColumns) {
