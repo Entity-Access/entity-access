@@ -38,25 +38,19 @@ export default class ExistingSchema {
             list.set(c.name, c);
         }
 
-        this.indexes = caseInsensitive
-            ? new CIMap<IIndexSchema>()
-            : new Map<string, IIndexSchema>();
+        this.indexes = new CIMap<IIndexSchema>();
 
         for (const index of indexes) {
             this.indexes.set(index.name, index);
         }
 
-        this.constraints = caseInsensitive
-            ? new CIMap<IConstraintSchema>()
-            : new Map<string, IConstraintSchema>();
+        this.constraints = new CIMap<IConstraintSchema>();
 
         for (const constraint of constraints) {
             this.constraints.set(constraint.name, constraint);
         }
 
-        this.foreignKeys = caseInsensitive
-            ? new CIMap<IForeignKeyConstraintSchema>()
-            : new Map<string, IForeignKeyConstraintSchema>();
+        this.foreignKeys = new CIMap<IForeignKeyConstraintSchema>();
 
         for (const fk of foreignKeys) {
             this.foreignKeys.set(fk.name, fk);

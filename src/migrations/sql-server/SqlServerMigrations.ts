@@ -12,7 +12,7 @@ export default abstract class SqlServerMigrations extends Migrations {
 
         const schema = type.schema || "dbo";
 
-        const text = `
+        let text = `
                         SELECT
                 COLUMN_NAME as [name],
                 CASE DATA_TYPE
@@ -49,9 +49,44 @@ export default abstract class SqlServerMigrations extends Migrations {
                 FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = $1
         `;
-        const r = await this.executeQuery({ text, values: [schema] });
-        const columns = r.rows;
-        return new ExistingSchema(true, { columns });
+        let r = await this.executeQuery({ text, values: [schema] });
+        const columns = r.rows ?? [];
+
+        text = `
+            SELECT 
+                ind.name as [name]
+            FROM 
+                sys.indexes ind 
+            INNER JOIN 
+                sys.tables t ON ind.object_id = t.object_id
+            INNER JOIN
+                sys.schemas s ON t.schema_id = s.schema_id
+            WHERE
+                s.name = $1`;
+        r = await this.executeQuery({ text, values: [schema] });
+        const indexes = r.rows ?? [];
+
+        text = `
+            SELECT 
+                CONSTRAINT_NAME as [name]
+            FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+            WHERE
+                CONSTRAINT_TYPE <> 'Foreign Key'
+                AND TABLE_SCHEMA=$1`;
+        r = await this.executeQuery({ text, values: [schema] });
+        const constraints = r.rows ?? [];
+
+        text = `
+            SELECT 
+                CONSTRAINT_NAME as [name]
+            FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+            WHERE
+                CONSTRAINT_TYPE = 'Foreign Key'
+                AND TABLE_SCHEMA=$1`;
+        r = await this.executeQuery({ text, values: [schema] });
+        const foreignKeys = r.rows ?? [];
+
+        return new ExistingSchema(true, { columns, indexes, constraints, foreignKeys });
     }
 
     protected getColumnDefinition(iterator: IColumn) {

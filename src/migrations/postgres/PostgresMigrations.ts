@@ -12,7 +12,7 @@ export default abstract class PostgresMigrations extends Migrations {
 
         let text = `
         select 
-            column_name as "columnName",
+            column_name as "name",
             case data_type
                 when 'bigint' then 'BigInt'
                 when 'boolean' then 'Boolean'

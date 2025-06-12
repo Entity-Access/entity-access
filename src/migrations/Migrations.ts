@@ -96,9 +96,6 @@ export default abstract class Migrations {
             }
 
             for (const index of type.indexes) {
-                if (schema.indexes.has(index.name)) {
-                    continue;
-                }
                 await this.migrateIndexInternal(context, index, type);
             }
 
@@ -132,7 +129,9 @@ export default abstract class Migrations {
                 //     foreignKeyConstraint.refColumns.push(relatedEntity.getProperty(iterator.name).field);
                 // }
 
-
+                if(schema.foreignKeys.has(foreignKeyConstraint.name)) {
+                    continue;
+                }
                 postMigration.push(() => this.migrateForeignKey(context, foreignKeyConstraint));
             }
         }
@@ -186,6 +185,13 @@ export default abstract class Migrations {
 
         index = { ... index };
 
+        const schema = await this.getSchema(type);
+
+        if (schema.indexes.has(index.name)) {
+            return;
+        }
+
+
         for (const column of index.columns) {
             const c = type.getProperty(column.name);
             if (c.field) {
@@ -213,8 +219,6 @@ export default abstract class Migrations {
         const nonKeyColumns = type.nonKeys;
         const keys = type.keys;
 
-        const driver = context.connection;
-
         if (!schema.tables.has(type.name)) {
             await this.createTable(type, keys);
         }
@@ -240,7 +244,7 @@ export default abstract class Migrations {
             if (table?.has(iterator.columnName)) {
                 continue;
             }
-            this.createColumn(type, iterator);
+            await this.createColumn(type, iterator);
         }
 
     }

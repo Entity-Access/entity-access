@@ -30,11 +30,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                 columns: [{ name: iterator.columnName, descending: iterator.indexOrder !== "ascending"}],
                 filter
             };
-            const schema = await this.getSchema(type);
-            if (schema.indexes.has(indexDef.name)) {
-                continue;
-            }
-            await this.migrateIndex(context, indexDef, type);
+            await this.migrateIndexInternal(context, indexDef, type);
         }
     }
 
