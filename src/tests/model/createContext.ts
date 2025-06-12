@@ -14,7 +14,7 @@ export async function createContext(driver: BaseDriver, events?: ContextEvents) 
 
     await context.connection.ensureDatabase();
 
-    await context.connection.automaticMigrations().migrate(context);
+    await context.connection.automaticMigrations(context).migrate();
 
     await seed(context);
 

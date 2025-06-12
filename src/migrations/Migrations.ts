@@ -4,15 +4,20 @@ import ICheckConstraint from "../decorators/ICheckConstraint.js";
 import { IColumn } from "../decorators/IColumn.js";
 import type { IForeignKeyConstraint } from "../decorators/IForeignKeyConstraint.js";
 import type { IIndex } from "../decorators/IIndex.js";
+import type { BaseConnection, IQuery, IQueryResult } from "../drivers/base/BaseDriver.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type EntityContext from "../model/EntityContext.js";
 import type EntityQuery from "../model/EntityQuery.js";
 
 export default abstract class Migrations {
 
-    constructor(protected compiler: QueryCompiler) {}
+    constructor(
+        private context: EntityContext,
+        private connection: BaseConnection = context.connection,
+        protected compiler: QueryCompiler = context.driver.compiler
+    ) {}
 
-    public async migrate(context: EntityContext , {
+    public async migrate({
         version,
         name = "default",
         historyTableName = "migrations",
@@ -26,12 +31,14 @@ export default abstract class Migrations {
         seed?: (c: EntityContext) => Promise<any>,
         createIndexForForeignKeys?: boolean
     } = {} ) {
+        const { context } = this;
         const { model } = context;
         const postMigration = [] as (() => Promise<void>)[];
 
         if (version) {
             // check if we have already stored this version...
             if(await this.hasVersion(context, name, version, historyTableName)) {
+                // eslint-disable-next-line no-console
                 console.warn(`Skipping migration, migration already exists for ${version}`);
                 return false;
             }
@@ -184,5 +191,11 @@ export default abstract class Migrations {
     abstract migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint);
 
     abstract migrateCheckConstraint(context: EntityContext, checkConstraint: ICheckConstraint, type: EntityType);
+
+    protected executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
+        const text = typeof command === "string" ? command : command.text;
+        this.context.logger?.log(text);
+        return this.connection.executeQuery(command, signal);
+    }
 
 }

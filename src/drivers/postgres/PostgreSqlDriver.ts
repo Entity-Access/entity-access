@@ -6,6 +6,7 @@ import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
 import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutomaticMigrations.js";
+import EntityContext from "../../model/EntityContext.js";
 import DateTime from "../../types/DateTime.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
@@ -215,8 +216,8 @@ class PostgreSqlConnection extends BaseConnection {
     }
 
 
-    public automaticMigrations(): Migrations {
-        return new PostgresAutomaticMigrations(this.compiler);
+    public automaticMigrations(context: EntityContext): Migrations {
+        return new PostgresAutomaticMigrations(context);
     }
 
     async getColumnSchema(schema: string, table: string): Promise<IColumnSchema[]> {

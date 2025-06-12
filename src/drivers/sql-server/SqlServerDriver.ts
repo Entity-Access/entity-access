@@ -10,6 +10,7 @@ import TimedCache from "../../common/cache/TimedCache.js";
 import EntityType from "../../entity-query/EntityType.js";
 import DateTime from "../../types/DateTime.js";
 import IColumnSchema from "../../common/IColumnSchema.js";
+import type EntityContext from "../../model/EntityContext.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
@@ -237,8 +238,8 @@ export class SqlServerConnection extends BaseConnection {
         return value;
     }
 
-    public automaticMigrations(): Migrations {
-        return new SqlServerAutomaticMigrations(this.sqlQueryCompiler);
+    public automaticMigrations(context: EntityContext): Migrations {
+        return new SqlServerAutomaticMigrations(context);
     }
 
     protected async createDbTransaction(): Promise<EntityTransaction> {
