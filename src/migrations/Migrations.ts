@@ -1,3 +1,4 @@
+import Logger, { ConsoleLogger } from "../common/Logger.js";
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
 import ICheckConstraint from "../decorators/ICheckConstraint.js";
@@ -11,28 +12,34 @@ import type EntityQuery from "../model/EntityQuery.js";
 
 export default abstract class Migrations {
 
+    logger: Logger;
+
     constructor(
         private context: EntityContext,
         private connection: BaseConnection = context.connection,
         protected compiler: QueryCompiler = context.driver.compiler
-    ) {}
+    ) {
+
+    }
 
     public async migrate({
         version,
         name = "default",
         historyTableName = "migrations",
+        log = new ConsoleLogger(false),
         seed,
         createIndexForForeignKeys = true
     }: {
         version?: string,
         name?: string,
-        historyTableName?:
-        string,
+        historyTableName?: string,
+        log?: Logger,
         seed?: (c: EntityContext) => Promise<any>,
         createIndexForForeignKeys?: boolean
     } = {} ) {
         const { context } = this;
         const { model } = context;
+        this.logger = log ?? context.logger;
         const postMigration = [] as (() => Promise<void>)[];
 
         if (version) {
@@ -194,7 +201,7 @@ export default abstract class Migrations {
 
     protected executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
         const text = typeof command === "string" ? command : command.text;
-        this.context.logger?.log(text);
+        this.logger?.log(text);
         return this.connection.executeQuery(command, signal);
     }
 

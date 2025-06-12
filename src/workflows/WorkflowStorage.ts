@@ -234,7 +234,7 @@ export default class WorkflowStorage {
     async seed(version?) {
         const db = new WorkflowDbContext(this.driver);
         await db.connection.ensureDatabase();
-        await db.connection.automaticMigrations(db).migrate({ version, name: "workflows" });
+        await db.connection.automaticMigrations(db).migrate({ log: null, version, name: "workflows" });
     }
 
 }
