@@ -11,6 +11,7 @@ import EntityType from "../../entity-query/EntityType.js";
 import DateTime from "../../types/DateTime.js";
 import IColumnSchema from "../../common/IColumnSchema.js";
 import type EntityContext from "../../model/EntityContext.js";
+import ExistingSchema from "../base/ExistingSchema.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
@@ -129,7 +130,7 @@ export class SqlServerConnection extends BaseConnection {
         super(driver);
     }
 
-    async getColumnSchema(schema: string): Promise<IColumnSchema[]> {
+    async getExistingSchema(schema: string) {
         const text = `
                         SELECT
                 COLUMN_NAME as [name],
@@ -168,7 +169,8 @@ export class SqlServerConnection extends BaseConnection {
             WHERE TABLE_SCHEMA = $1
         `;
         const r = await this.executeQuery({ text, values: [schema] });
-        return r.rows;
+        const columns = r.rows;
+        return new ExistingSchema(true, columns, [], []);
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {

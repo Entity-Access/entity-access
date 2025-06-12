@@ -6,10 +6,10 @@ import { IColumn } from "../decorators/IColumn.js";
 import type { IForeignKeyConstraint } from "../decorators/IForeignKeyConstraint.js";
 import type { IIndex } from "../decorators/IIndex.js";
 import type { BaseConnection, IQuery, IQueryResult } from "../drivers/base/BaseDriver.js";
+import ExistingSchema from "../drivers/base/ExistingSchema.js";
 import type EntityType from "../entity-query/EntityType.js";
 import type EntityContext from "../model/EntityContext.js";
 import type EntityQuery from "../model/EntityQuery.js";
-import ExistingSchema from "./ExistingSchema.js";
 
 export default abstract class Migrations {
 
@@ -17,7 +17,7 @@ export default abstract class Migrations {
 
     constructor(
         private context: EntityContext,
-        private connection: BaseConnection = context.connection,
+        protected connection: BaseConnection = context.connection,
         protected compiler: QueryCompiler = context.driver.compiler
     ) {
 
@@ -76,18 +76,26 @@ export default abstract class Migrations {
                 }
             }
 
+            const schema = await this.getSchema(type);
+
             await this.migrateTable(context, type);
 
             // create constraints
             for (const iterator of type.checkConstraints) {
+                if (schema.constraints.has(iterator.name)) {
+                    continue;
+                }
                 const source = context.query(type.typeClass) as EntityQuery<any>;
-                const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${iterator.filter}` as any);
+                const { textQuery } = this.compiler.compileToSql(source, `(p) => ${iterator.filter}` as any);
                 const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
                 iterator.filter = textQuery.join("").replace(r, "") as any;
                 await this.migrateCheckConstraint(context, iterator, type);
             }
 
             for (const index of type.indexes) {
+                if (schema.indexes.has(index.name)) {
+                    continue;
+                }
                 await this.migrateIndexInternal(context, index, type);
             }
 
@@ -120,6 +128,7 @@ export default abstract class Migrations {
                 // for (const iterator of refColumns) {
                 //     foreignKeyConstraint.refColumns.push(relatedEntity.getProperty(iterator.name).field);
                 // }
+
 
                 postMigration.push(() => this.migrateForeignKey(context, foreignKeyConstraint));
             }
@@ -193,13 +202,57 @@ export default abstract class Migrations {
 
     }
 
-    abstract migrateIndex(context: EntityContext, index: IIndex, type: EntityType);
+    async migrateTable(context: EntityContext, type: EntityType) {
 
-    abstract migrateTable(context: EntityContext, type: EntityType): Promise<any>;
+        const schema = await this.getSchema(type);
+
+        // create table if not exists...
+        const nonKeyColumns = type.nonKeys;
+        const keys = type.keys;
+
+        const driver = context.connection;
+
+        if (!schema.tables.has(type.name)) {
+            await this.createTable(type, keys);
+        }
+
+        await this.createColumns(type, nonKeyColumns);
+
+    }
+
+    async createColumns(type: EntityType, nonKeyColumns: IColumn[]) {
+        const name = type.schema
+            ? type.schema + "." + type.name
+            : type.name;
+
+        if (nonKeyColumns.length > 1) {
+            nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        }
+
+        const schema = await this.getSchema(type);
+
+        const table = schema.tables.get(type.name);
+
+        for (const iterator of nonKeyColumns) {
+            if (table?.has(iterator.columnName)) {
+                continue;
+            }
+            this.createColumn(type, iterator);
+        }
+
+    }
+
+    abstract createTable(type: EntityType, keys: IColumn[]);
+
+    abstract createColumn(type: EntityType, column: IColumn);
+
+    abstract migrateIndex(context: EntityContext, index: IIndex, type: EntityType);
 
     abstract migrateForeignKey(context: EntityContext, constraint: IForeignKeyConstraint);
 
     abstract migrateCheckConstraint(context: EntityContext, checkConstraint: ICheckConstraint, type: EntityType);
+
+    abstract getSchema(type: EntityType): Promise<ExistingSchema>;
 
     protected executeQuery(command: IQuery, signal?: AbortSignal): Promise<IQueryResult> {
         const text = typeof command === "string" ? command : command.text;

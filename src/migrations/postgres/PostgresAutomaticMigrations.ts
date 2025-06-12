@@ -4,9 +4,9 @@ import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
+import ExistingSchema from "../../drivers/base/ExistingSchema.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
-import ExistingSchema from "../ExistingSchema.js";
 import PostgresMigrations from "./PostgresMigrations.js";
 
 export default class PostgresAutomaticMigrations extends PostgresMigrations {
@@ -20,19 +20,8 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         )`);
     }
 
-    async migrateTable(context: EntityContext, type: EntityType) {
-
-
-        // create table if not exists...
-        const nonKeyColumns = type.nonKeys;
-        const keys = type.keys;
-
-        const driver = context.connection;
-
-        await this.createTable(driver, type, keys);
-
-        await this.createColumns(driver, type, nonKeyColumns);
-
+    getSchema(type: EntityType): Promise<ExistingSchema> {
+            return ExistingSchema.getSchema(this.connection, type.schema || "public");
     }
 
     async createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]) {
@@ -45,56 +34,43 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                 columns: [{ name: iterator.columnName, descending: iterator.indexOrder !== "ascending"}],
                 filter
             };
+            const schema = await this.getSchema(type);
+            if (schema.indexes.has(indexDef.name)) {
+                continue;
+            }
             await this.migrateIndex(context, indexDef, type);
         }
     }
 
-    async createColumns(driver: BaseConnection, type: EntityType, nonKeyColumns: IColumn[]) {
+    async createColumn(type: EntityType, iterator: IColumn) {
 
         const name = type.schema
-        ? type.schema + "." + type.name
-        : type.name;
+            ? type.schema + "." + type.name
+            : type.name;
 
-        if (nonKeyColumns.length > 1) {
-            nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const { quotedColumnName } = iterator;
+
+
+        let def = `ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS ${quotedColumnName} `;
+        def += this.getColumnDefinition(iterator);
+
+        if (iterator.nullable !== true) {
+            def += " NOT NULL ";
         }
 
-        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name, true);
-
-        const columnSet = new Set(columns.map((x) => x.name));
-
-        for (const iterator of nonKeyColumns) {
-            const { columnName } = iterator;
-            if (columnSet.has(columnName)) {
-                continue;
-            }
-            let def = `ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS ${columnName} `;
-            def += this.getColumnDefinition(iterator);
-
-            if (iterator.nullable !== true) {
-                def += " NOT NULL ";
-            }
-
-            if (iterator.generated === "computed") {
-                def += ` GENERATED ALWAYS AS (${iterator.computed}) ${iterator.stored ? "STORED" : ""} \r\n\t`;
-            }
-
-            if (typeof iterator.default === "string") {
-                def += " DEFAULT " + iterator.default;
-            }
-
-            await this.executeQuery(def + ";");
+        if (iterator.generated === "computed") {
+            def += ` GENERATED ALWAYS AS (${iterator.computed}) ${iterator.stored ? "STORED" : ""} \r\n\t`;
         }
+
+        if (typeof iterator.default === "string") {
+            def += " DEFAULT " + iterator.default;
+        }
+
+        await this.executeQuery(def + ";");
 
     }
 
-    async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
-
-        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name, true);
-
-        if (columns.length) {
-            return;
-        }
+    async createTable(type: EntityType, keys: IColumn[]) {
 
         const name = type.schema
             ? type.schema + "." + type.name
@@ -132,10 +108,10 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
     }
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
-        const driver = context.connection;
+
         const name = type.schema
-        ? type.schema + "." + type.name
-        : type.name;
+            ? type.schema + "." + type.name
+            : type.name;
         const indexName =  index.name;
         const columns = [];
         for (const column of index.columns) {

@@ -11,6 +11,7 @@ import DateTime from "../../types/DateTime.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
 import pg from "pg";
 import Cursor from "pg-cursor";
+import ExistingSchema from "../base/ExistingSchema.js";
 export interface IPgSqlConnectionString extends IDbConnectionString {
 
     user?: string, // default process.env.PGUSER || process.env.USER
@@ -220,7 +221,7 @@ class PostgreSqlConnection extends BaseConnection {
         return new PostgresAutomaticMigrations(context);
     }
 
-    async getColumnSchema(schema: string): Promise<IColumnSchema[]> {
+    async getExistingSchema(schema: string) {
         const text = `
         select 
             column_name as "columnName",
@@ -249,7 +250,8 @@ class PostgreSqlConnection extends BaseConnection {
             from information_schema.columns
             where table_schema = $1`;
         const r = await this.executeQuery({ text, values: [ schema ]});
-        return r.rows;
+        const columns =  r.rows;
+        return new ExistingSchema(false, columns, [], []);
     }
 
     public async executeReader(command: IQuery, signal?: AbortSignal): Promise<IDbReader> {
