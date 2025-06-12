@@ -9,6 +9,7 @@ import type { BaseConnection, IQuery, IQueryResult } from "../drivers/base/BaseD
 import type EntityType from "../entity-query/EntityType.js";
 import type EntityContext from "../model/EntityContext.js";
 import type EntityQuery from "../model/EntityQuery.js";
+import ExistingSchema from "./ExistingSchema.js";
 
 export default abstract class Migrations {
 

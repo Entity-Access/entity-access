@@ -220,7 +220,7 @@ class PostgreSqlConnection extends BaseConnection {
         return new PostgresAutomaticMigrations(context);
     }
 
-    async getColumnSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+    async getColumnSchema(schema: string): Promise<IColumnSchema[]> {
         const text = `
         select 
             column_name as "columnName",
@@ -243,11 +243,12 @@ class PostgreSqlConnection extends BaseConnection {
                 else null end as "identity",
             case
                 when is_generated = 'YES' then '() => 1'
-                else null end as "computed"
+                else null end as "computed",
+            table_name as "ownerName",
+            'table' as "ownerType"
             from information_schema.columns
-            where table_schema = $1
-            and table_name = $2`;
-        const r = await this.executeQuery({ text, values: [ schema, table ]});
+            where table_schema = $1`;
+        const r = await this.executeQuery({ text, values: [ schema ]});
         return r.rows;
     }
 

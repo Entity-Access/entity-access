@@ -7,6 +7,7 @@ import { BaseConnection } from "../../drivers/base/BaseDriver.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
+import ExistingSchema from "../ExistingSchema.js";
 import SqlServerMigrations from "./SqlServerMigrations.js";
 
 export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
@@ -61,7 +62,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
-        const columns =  await driver.getColumnSchema(type.schema || "dbo", type.name);
+        const columns =  await ExistingSchema.getSchema(driver, type.schema || "dbo", type.name);
 
         const columnSet = new Set(columns.map((x) => x.name.toLowerCase()));
 
@@ -96,6 +97,12 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
     }
 
     async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
+
+        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name);
+
+        if (columns.length) {
+            return;
+        }
 
         const name = type.schema
             ? type.schema + "." + type.name

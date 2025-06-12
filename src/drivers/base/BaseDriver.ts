@@ -210,7 +210,7 @@ export abstract class BaseConnection {
         return tx;
     }
 
-    abstract getColumnSchema(schema: string, table: string): Promise<IColumnSchema[]>;
+    abstract getColumnSchema(schema: string): Promise<IColumnSchema[]>;
 
 
     protected abstract createDbTransaction(): Promise<EntityTransaction>;

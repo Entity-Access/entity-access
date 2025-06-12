@@ -6,6 +6,7 @@ import { IIndex } from "../../decorators/IIndex.js";
 import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
+import ExistingSchema from "../ExistingSchema.js";
 import PostgresMigrations from "./PostgresMigrations.js";
 
 export default class PostgresAutomaticMigrations extends PostgresMigrations {
@@ -58,7 +59,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
 
-        const columns =  await driver.getColumnSchema(type.schema || "public", type.name);
+        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name, true);
 
         const columnSet = new Set(columns.map((x) => x.name));
 
@@ -88,6 +89,12 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
     }
 
     async createTable(driver: BaseConnection, type: EntityType, keys: IColumn[]) {
+
+        const columns = await ExistingSchema.getSchema(driver, type.schema || "public", type.name, true);
+
+        if (columns.length) {
+            return;
+        }
 
         const name = type.schema
             ? type.schema + "." + type.name

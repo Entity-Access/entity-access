@@ -129,7 +129,7 @@ export class SqlServerConnection extends BaseConnection {
         super(driver);
     }
 
-    async getColumnSchema(schema: string, table: string): Promise<IColumnSchema[]> {
+    async getColumnSchema(schema: string): Promise<IColumnSchema[]> {
         const text = `
                         SELECT
                 COLUMN_NAME as [name],
@@ -161,12 +161,13 @@ export class SqlServerConnection extends BaseConnection {
                     WHEN COLUMN_DEFAULT is NULL THEN ''
                     ELSE '() => ' + COLUMN_DEFAULT
                 END as [default],
-                ColumnProperty(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME,'IsComputed') as [computed]
+                ColumnProperty(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME,'IsComputed') as [computed],
+                TABLE_NAME as [ownerName],
+                'table' as [ownerType]
                 FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = $1
-            AND TABLE_NAME = $2
         `;
-        const r = await this.executeQuery({ text, values: [schema, table] });
+        const r = await this.executeQuery({ text, values: [schema] });
         return r.rows;
     }
 
