@@ -63,17 +63,13 @@ export default abstract class PostgresMigrations extends Migrations {
         const indexes = r.rows;
 
         text = `
-           SELECT
-            tc.constraint_name as "name"
-        FROM information_schema.table_constraints AS tc 
-        JOIN information_schema.key_column_usage AS kcu
-            ON tc.constraint_name = kcu.constraint_name
-            AND tc.table_schema = kcu.table_schema
-        JOIN information_schema.constraint_column_usage AS ccu
-            ON ccu.constraint_name = tc.constraint_name
-			WHERE
-                tc.constraint_type <> 'FOREIGN KEY'
-                AND tc.table_schema = $1`;
+           SELECT con.conName as "name"
+       FROM pg_catalog.pg_constraint con
+            INNER JOIN pg_catalog.pg_class rel
+                       ON rel.oid = con.conRelId
+            INNER JOIN pg_catalog.pg_namespace nsp
+                       ON nsp.oid = conNamespace
+	   WHERE nsp.nspName = $1`;
 
         r = await this.executeQuery({ text, values });
         const constraints = r.rows;
