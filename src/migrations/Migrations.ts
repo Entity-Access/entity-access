@@ -207,7 +207,7 @@ export default abstract class Migrations {
             index.filter = textQuery.join("").replace(r, "");
         }
 
-        this.migrateIndex(context, index, type);
+        await this.migrateIndex(context, index, type);
 
     }
 
