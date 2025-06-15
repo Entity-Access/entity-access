@@ -21,6 +21,8 @@ async function  hash(text) {
     return sha256.update(text).digest("base64");
 }
 
+const newID = () => randomBytes(8).readBigUInt64BE().toString(36);
+
 const align = (d: DateTime) => {
     let time = d.msSinceEpoch;
     time = Math.floor(time / 100) * 100;
@@ -213,9 +215,9 @@ export default class WorkflowContext {
         if (id) {
             tries = 3;
         } else {
-            id = `${type.name}-${BigInt(`0x${randomBytes(8).toString("hex")}`).toString(36)}-${Date.now().toString(36)}`;
+            id = `${type.name}-${newID()}-${Date.now().toString(36)}`;
             while(await this.storage.getWorkflow(id) !== null) {
-                id = `${type.name}-${BigInt(`0x${randomBytes(8).toString("hex")}`).toString(36)}-${Date.now().toString(36)}`;
+                id = `${type.name}-${newID()}-${Date.now().toString(36)}`;
             }
         }
 
