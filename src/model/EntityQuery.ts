@@ -435,7 +435,7 @@ export default class EntityQuery<T = any>
                         break;
                 }
                 return { ... select, fields };
-            }).getUpdateStatement(void 0, void 0, returnEntity);
+            }).getUpdateStatement(p, void 0, returnEntity);
         }
 
         const as = Expression.parameter("s1", this.type);
