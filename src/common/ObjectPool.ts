@@ -151,7 +151,7 @@ export default class ObjectPool<T> {
                 return;
             }
             this.total--;
-            this.logger?.(`Pooled item ${pooledItem} destoryed.`);
+            this.logger?.(`Pooled item ${pooledItem} destroyed.`);
             void this.destroy(pooledItem)?.catch(console.error);
         };
         this.logger?.(`Pooled item ${pooledItem} acquired.`);

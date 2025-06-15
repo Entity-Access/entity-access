@@ -21,7 +21,7 @@ setInterval(() => {
                 cacheSet.delete(element);
                 return;
             }
-            // @ts-expect-error
+            // @ts-expect-error private
             cache.clearExpired(now);
         });
     }
@@ -44,18 +44,6 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
     private map: Map<TKey,ICachedItem> = new Map();
 
     private weakRef;
-
-    private deleteItem = ([key, item]) => {
-        this.map.delete(key);
-        this.deletedEvent.dispatch(key);
-        try {
-            if (item.dispose) {
-                item.dispose(item.value)?.catch?.(console.error);
-            }
-        } catch {
-            // do nothing
-        }
-    }
 
     constructor(private ttl = 15000, private maxTTL = ttl * 4) {
         const r = new WeakRef(this);
@@ -136,16 +124,27 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         return item.value;
     }
 
+    private deleteItem = ([key, item]) => {
+        this.map.delete(key);
+        this.deletedEvent.dispatch(key);
+        try {
+            if (item.dispose) {
+                item.dispose(item.value)?.catch?.(console.error);
+            }
+        } catch {
+            // do nothing
+        }
+    };
+
     private clearExpired(max = Date.now()): void {
 
         for(const entry of this.map.entries()) {
             const value = entry[1];
             if (value.expire > max && value.maxExpire > max) {
-                continue;   
+                continue;
             }
             setImmediate(this.deleteItem, entry);
         }
-
     }
 
 }
