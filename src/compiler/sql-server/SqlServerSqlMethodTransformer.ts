@@ -18,6 +18,12 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         avg(a) {
             return prepareAny `AVG(${a})`;
         },
+        min(a) {
+            return prepareAny `MIN(${a})`;
+        },
+        max(a) {
+            return prepareAny `MAX(${a})`;
+        },
     },
         spatial: {
         point(x, y, srid) {

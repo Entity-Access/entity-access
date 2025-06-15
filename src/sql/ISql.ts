@@ -18,7 +18,9 @@ export interface ISql {
     coll: {
         sum(a: number[]): number;
         count(a: any[]): number;
-        avg(a: number[]): number
+        avg(a: number[]): number,
+        min(a: number[]): number;
+        max(a: number[]): number;
     },
     window: {
         rowNumber: {

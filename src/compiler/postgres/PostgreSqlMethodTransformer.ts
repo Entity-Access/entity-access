@@ -21,6 +21,12 @@ export const PostgreSqlHelper: ISqlHelpers = {
         avg(a) {
             return prepareAny `AVG(${a})`;
         },
+        min(a) {
+            return prepareAny `MIN(${a})`;
+        },
+        max(a) {
+            return prepareAny `MAX(${a})`;
+        },
     },
 
     spatial: {
