@@ -95,7 +95,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         return item.value as T;
     }
 
-    getOrCreateAsync(
+    async getOrCreateAsync(
         key: TKey,
         factory: (k: TKey) => Promise<T>,
         ttl: number = this.ttl,
@@ -121,7 +121,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         } else {
             item.expire += ttl;
         }
-        return item.value;
+        return await item.value;
     }
 
     private deleteItem = ([key, item]) => {
