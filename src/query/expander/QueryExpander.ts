@@ -12,7 +12,7 @@ import { NotSupportedError } from "../parser/NotSupportedError.js";
 export class QueryExpander {
     static expand(context: EntityContext, select: SelectStatement, p, filter: boolean) {
         const qe = new QueryExpander(context, select, filter);
-        const expression = ArrowToExpression.transform(`(_____________________x) => ${p}` as any);
+        const expression =context.driver.compiler.transform(`(_____________________x) => ${p}` as any);
         qe.expandNode("", select, select.model, expression.body as ExpressionType);
         return qe.include;
     }

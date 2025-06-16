@@ -4,13 +4,8 @@ import { BabelVisitor } from "./BabelVisitor.js";
 import * as bpe from "@babel/types";
 import Restructure from "./Restructure.js";
 import { NotSupportedError } from "./NotSupportedError.js";
-import TimedCache from "../../common/cache/TimedCache.js";
 
 type IQueryFragment = string | { name?: string, value?: any };
-
-const parsedCache = new TimedCache<string, bpe.Node>();
-
-const parameterCacheSymbol = Symbol("parameterCacheSymbol");
 
 const defaultObject = {};
 
@@ -25,10 +20,8 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
      */
     public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression, outerParameter?: ParameterExpression) {
         const key = fx.toString();
-        const node = parsedCache.getOrCreate(key, fx, (k, f) => {
-            const rs = new Restructure();
-            return rs.visit(parseExpression(f.toString()));
-        });
+        const rs = new Restructure();
+        const node = rs.visit(parseExpression(key));
         return this.transformUncached(node, target, outerParameter);
     }
 
@@ -40,70 +33,65 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
      * @param target parameter to replace
      * @returns transformed node
      */
-    private static transformUncached(node: bpe.Node, tx?: ParameterExpression, outerParameter?: ParameterExpression): { params: Map<string, any>, body: Expression, target: ParameterExpression } {
+    private static transformUncached(node: bpe.Node, target?: ParameterExpression, outerParameter?: ParameterExpression): { params: ParameterExpression[], body: Expression, target: ParameterExpression } {
 
-        const cache = node[parameterCacheSymbol] ??= new TimedCache<ParameterExpression,bpe.Node>();
+        if (node.type !== "ArrowFunctionExpression") {
+            throw new Error("Expecting an arrow function");
+        }
 
-        return cache.getOrCreate(tx ?? defaultObject, tx, (_, target) => {
+        const paramSet = new Map<string, any>();
 
-            if (node.type !== "ArrowFunctionExpression") {
-                throw new Error("Expecting an arrow function");
+        let firstOuterParam = null;
+
+        const params = [];
+
+        for (const iterator of node.params) {
+            if (iterator.type !== "Identifier") {
+                throw new Error("Expecting an identifier");
             }
-
-            const paramSet = new Map<string, any>();
-
-            let firstOuterParam = null;
-
-            const params = [];
-
-            for (const iterator of node.params) {
-                if (iterator.type !== "Identifier") {
-                    throw new Error("Expecting an identifier");
-                }
-                if (!firstOuterParam && outerParameter) {
-                    firstOuterParam = iterator.name;
-                    paramSet.set(iterator.name, outerParameter);
-                    params.push(outerParameter);
-                    continue;
-                }
-                const p1 = ParameterExpression.create({ name: iterator.name });
-                paramSet.set(iterator.name, p1);
-                params.push(p1);
+            if (!firstOuterParam && outerParameter) {
+                firstOuterParam = iterator.name;
+                paramSet.set(iterator.name, outerParameter);
+                params.push(outerParameter);
+                continue;
             }
+            const p1 = ParameterExpression.create({ name: iterator.name });
+            paramSet.set(iterator.name, p1);
+            params.push(p1);
+        }
 
-            if (outerParameter && firstOuterParam) {
-                paramSet.set(firstOuterParam, outerParameter);
+        if (outerParameter && firstOuterParam) {
+            paramSet.set(firstOuterParam, outerParameter);
+        }
+
+        let body = node.body;
+        if (body.type !== "ArrowFunctionExpression") {
+            throw new Error("Expecting an arrow function");
+        }
+
+        const firstTarget = body.params[0];
+
+        let name = "____x";
+
+        if (firstTarget) {
+
+            if (firstTarget.type !== "Identifier") {
+                throw new Error("Expecting an identifier");
             }
-
-            let body = node.body;
-            if (body.type !== "ArrowFunctionExpression") {
-                throw new Error("Expecting an arrow function");
-            }
-
-            const firstTarget = body.params[0];
-
-            let name = "____x";
-
-            if (firstTarget) {
-
-                if (firstTarget.type !== "Identifier") {
-                    throw new Error("Expecting an identifier");
-                }
-                name = firstTarget.name;
-            }
+            name = firstTarget.name;
+        }
 
 
-            target ??= ParameterExpression.create({ name});
+        target ??= ParameterExpression.create({ name});
 
-            body = body.body;
+        body = body.body;
 
-            const visitor = new this(paramSet, target, name);
-            return {
-                params,
-                target,
-                body: visitor.visit(body)
-            };
-        });
+        const visitor = new this(paramSet, target, name);
+        return {
+            params,
+            target,
+            body: visitor.visit(body)
+        };
     }
 
     public readonly leftJoins: string[] = [];

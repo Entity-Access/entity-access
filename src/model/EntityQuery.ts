@@ -248,7 +248,7 @@ export default class EntityQuery<T = any>
 
         const pq = p as EntityQuery<any>;
 
-        const { body } = this.context.driver.compiler.arrowToExpression.transform(
+        const { body } = this.context.driver.compiler.transform(
             fx,
             this.selectStatement.sourceParameter,
             pq.selectStatement.sourceParameter
@@ -522,7 +522,7 @@ export default class EntityQuery<T = any>
 
                 const selectForInclude = { ... this.selectStatement };
 
-                this.context.driver.compiler.compileExpression(this, selectForInclude)
+                this.context.driver.compiler.compileExpression(this, selectForInclude);
 
                 // since we will be streaming results...
                 // it is important that we load all the

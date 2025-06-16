@@ -7,6 +7,7 @@ import { PostgreSqlMethodTransformer } from "./postgres/PostgreSqlMethodTransfor
 import EntityQuery from "../model/EntityQuery.js";
 import { NamingConventions } from "./NamingConventions.js";
 import RawQuery from "./RawQuery.js";
+import TimedCache from "../common/cache/TimedCache.js";
 
 export class CompiledQuery {
     constructor(
@@ -28,6 +29,8 @@ export default class QueryCompiler {
 
     public readonly sqlMethodTransformer: ISqlMethodTransformer;
 
+    private parserCache = new TimedCache<string, { params: ParameterExpression[], body: Expression, target: ParameterExpression }>();
+
     constructor(
         {
             arrowToExpression = ArrowToExpression,
@@ -47,20 +50,25 @@ export default class QueryCompiler {
         this.sqlMethodTransformer = sqlMethodTransformer;
     }
 
+    public transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression, outerParameter?: ParameterExpression) {
+        const key = `${fx.toString()}-${target?.id ?? '_'}-${outerParameter?.id ?? '_'}`;
+        return this.parserCache.getOrCreate(key, this, (k, self) => self.arrowToExpression.transform(fx, target, outerParameter));
+    }
+
     public execute<P = any, T = any>(parameters: P, fx: (p: P) => (x: T) => any, source?: EntityQuery) {
-        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.sourceParameter);
+        const { params, target , body } = this.transform(fx, source?.selectStatement.sourceParameter);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const query = exp.visit(body);
         return this.invoke(query, parameters);
     }
 
     public compile(source: EntityQuery, fx: (p) => (x) => any) {
-        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.sourceParameter);
+        const { params, target , body } = this.transform(fx, source?.selectStatement.sourceParameter);
         return { params, target, body };
     }
 
     public compileToSql( source: EntityQuery , fx: (p) => (x) => any) {
-        const { params, target , body } = this.arrowToExpression.transform(fx, source?.selectStatement.sourceParameter);
+        const { params, target , body } = this.transform(fx, source?.selectStatement.sourceParameter);
         const exp = new this.expressionToSql(source, params[0], target, this);
         const textQuery = exp.visit(body);
         return new CompiledQuery(exp.root,exp.target,textQuery);
