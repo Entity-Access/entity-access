@@ -265,7 +265,11 @@ export default abstract class Migrations {
         if (s) {
             return s;
         }
+        // disable logging...
+        const old = this.logger;
+        this.logger = null;
         s = await this.getExistingSchema(type);
+        this.logger = old;
         this.schemaCache.set(schema, s);
         return s;
     }
