@@ -23,13 +23,14 @@ sql.map.register(DateTime, sql.DateTime2);
 sql.map.register(DateTime, sql.DateTimeOffset);
 sql.map.register(DateTime, sql.SmallDateTime);
 
+const sqlQueryCompiler = new SqlServerQueryCompiler();
+
 export default class SqlServerDriver extends BaseDriver {
 
     get compiler(): QueryCompiler {
-        return this.sqlQueryCompiler;
+        Object.defineProperty(this, "compiler", { value: sqlQueryCompiler, configurable: true });
+        return sqlQueryCompiler;
     }
-
-    private sqlQueryCompiler = new SqlServerQueryCompiler();
 
     constructor(private readonly config: ISqlServerConnectionString) {
         super(config);

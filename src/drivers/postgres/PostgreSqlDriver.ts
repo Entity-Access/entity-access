@@ -97,13 +97,14 @@ class DbReader implements IDbReader {
     }
 }
 
+const postGresQueryCompiler = new QueryCompiler();
+
 export default class PostgreSqlDriver extends BaseDriver {
 
     public get compiler() {
-        return this.myCompiler;
+        Object.defineProperty(this, "compiler", { value: postGresQueryCompiler, configurable: true });
+        return postGresQueryCompiler;
     }
-
-    private myCompiler = new QueryCompiler();
 
     private pool: ObjectPool<pg.Client>;
 
