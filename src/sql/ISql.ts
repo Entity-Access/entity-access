@@ -81,6 +81,9 @@ export interface ISql {
         isNotObject(text: string): boolean;
         isNotScalar(text: string): boolean;
     },
+    regex: {
+        like(text: string, pattern: string, flags?: string): boolean;
+    },
     text: {
         concat(... fragments: string[]): string;
         concatImmutable(... fragments: string[]): string;

@@ -192,6 +192,14 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `(ISJSON(${text}, SCALAR) = 0)`;
         },
     },
+    regex: {
+        like(text, pattern, flags) {
+            if (flags === void 0) {
+                return prepareAny `RegExp_Like(${text}, ${pattern})`;
+            }
+            return prepareAny `RegExp_Like(${text}, ${pattern}, ${flags})`;
+        },
+    },
     text: {
         collate(text, collation) {
             const sanitize = (t) => t.replace(/[\W_]+/g,"");

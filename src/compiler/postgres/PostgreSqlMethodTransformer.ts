@@ -198,6 +198,14 @@ export const PostgreSqlHelper: ISqlHelpers = {
             return prepareAny `${text} IS NOT JSON SCALAR`;
         },
     },
+    regex: {
+        like(text, pattern, flags) {
+            if (flags === void 0) {
+                return prepareAny `RegExp_Like(${text}, ${pattern})`;
+            }
+            return prepareAny `RegExp_Like(${text}, ${pattern}, ${flags})`;
+        },
+    },
     text: {
         collate(text, collation) {
             return prepareAny `${text} COLLATE "${onlyAlphaNumeric(collation)}"`;
