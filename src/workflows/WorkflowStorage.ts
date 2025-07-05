@@ -25,6 +25,17 @@ export default class WorkflowStorage {
 
     }
 
+    getPendingWorkflowCount({ taskGroup = void 0 } = { }) {
+        const db = new WorkflowDbContext(this.driver);
+        let q = db.workflows.where(void 0, (p) => (x) => x.isWorkflow === true
+            && x.state === "queued"
+        );
+        if (taskGroup) {
+            q = q.where({ taskGroup}, (p) => (x) => x.taskGroup === p.taskGroup);
+        }
+        return q.count();
+    }
+
     async getNextEta(throttle: { group: string, maxPerSecond: number }) {
 
         const db = new WorkflowDbContext(this.driver);

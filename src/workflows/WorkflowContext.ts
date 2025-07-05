@@ -316,6 +316,10 @@ export default class WorkflowContext {
         // console.log(... a);
     }
 
+    public getPendingCount({ taskGroup = void 0} = { }) {
+        return this.storage.getPendingWorkflowCount({ taskGroup });
+    }
+
     public async processQueueOnce({ taskGroup = "default", signal = void 0 as AbortSignal } = {}) {
         const pending = await this.storage.dequeue(taskGroup, signal);
         // run...
