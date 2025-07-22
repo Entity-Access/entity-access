@@ -112,6 +112,7 @@ export class EntityStatements<T = any> {
             }
         }
         if (loadChangeEntry) {
+            Object.setPrototypeOf(entity, this.model.typeClass.prototype);
             const ce = this.context.changeSet.getEntry(entity, entity);
             return ce.entity as any;
         }
