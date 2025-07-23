@@ -9,7 +9,7 @@ export default interface IIndexDef<T = any> {
     name: string;
     columns: IndexedColumn<T>[];
     unique?: boolean;
-    include?: string[];
+    include?: ((x:T) => any)[];
     indexType?: string;
     filter?: (x: T) => boolean;
 }

@@ -23,7 +23,7 @@ export default function Index<T>(
         const i: IIndex = {
             name,
             unique,
-            include,
+            include: include ? include.map(NameParser.parseMember) : void 0,
             indexType,
             filter,
             columns
