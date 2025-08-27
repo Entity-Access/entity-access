@@ -492,6 +492,16 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                     return prepare `${right} IS NOT NULL`;
                 }
             }
+
+            switch(operator) {
+                case "!==":
+                case "!=":
+                    return prepare `${left} <> ${right}`;
+                case "===":
+                case "==":
+                    return prepare `${left} = ${right}`;
+            }
+
         } else {
             switch(operator) {
                 case "!==":
