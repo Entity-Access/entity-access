@@ -493,21 +493,43 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
                 }
             }
 
+            const [r1] = right;
             switch(operator) {
-                case "!==":
-                case "!=":
-                    return prepare `${left} <> ${right}`;
                 case "===":
                 case "==":
+                case "=":
+                    if (right.length === 1 && typeof r1 === "function") {
+                        const t = (p) => r1(p) === null
+                            ? [ ... left, " IS NULL"]
+                            : [ ... left, " = ", ... right.flatMap((x) => typeof x === "function" ? () => x(p) : x)];
+                        return [t];
+                    }
                     return prepare `${left} = ${right}`;
+                case "<>":
+                case "!==":
+                case "!=":
+                    if (right.length === 1 && typeof r1 === "function") {
+                        const t = (p) => r1(p) === null
+                            ? [ ... left, " IS NOT NULL"]
+                            : [ ... left, " <> ", ... right.flatMap((x) => typeof x === "function" ? () => x(p) : x)];
+                        return [t];
+                    }
+                    return prepare `${left} <> ${right}`;
             }
 
         } else {
             switch(operator) {
                 case "!==":
                 case "!=":
-                    operator = "<>";
-                    break;
+                case "<>":
+                    const [r1] = right;
+                    if (right.length === 1 && typeof r1 === "function") {
+                        const t = (p) => r1(p) === null
+                            ? [ ... left, " IS NOT NULL"]
+                            : [ ... left, " <> ", ... right.flatMap((x) => typeof x === "function" ? () => x(p) : x)];
+                        return [t];
+                    }
+                    return prepare `${left} <> ${right}`;
                 case "===":
                 case "==":
                     operator = "=";
