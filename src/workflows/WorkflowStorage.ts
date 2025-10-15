@@ -60,6 +60,10 @@ export default class WorkflowStorage {
             )
             .orderByDescending(void 0, (p) => (x) => x.queued)
             .first();
+        if (w) {
+            w.eta = DateTime.from(w.eta).addSeconds(throttle.deferSeconds);
+            await db.workflows.statements.update({ eta: w.eta }, { id: w.id });
+        }
         return w;
 
     }
