@@ -12,11 +12,18 @@ import Sql from "../sql/Sql.js";
 
 export type IWorkflowThrottleGroup = {
     group: string;
+    /**
+     * Throttling based on defer, the workflow will be scheduled in future
+     * only if current workflow in same throttle group is queued or running.
+     */
     deferSeconds?: number;
     maxPerSecond?: never;
 } | {
     group: string;
     deferSeconds?: never;
+    /**
+     * Throttled on based on maximum iterations per second.
+     */
     maxPerSecond?: number;
 };
 

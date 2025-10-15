@@ -227,16 +227,19 @@ export default class WorkflowContext {
         let throttleGroup = null;
 
         if (throttle) {
-            const { deferSeconds } = throttle;
+            const { deferSeconds, group } = throttle;
             if (deferSeconds) {
                 const lw = await this.storage.getLastEta(throttle);
                 if (lw) {
                     return lw.id;
                 }
+                eta = DateTime.now.addSeconds(deferSeconds);
+                queued = eta;
+                throttleGroup = group;
             } else {
                 eta = await this.storage.getNextEta(throttle);
                 queued = eta;
-                throttleGroup = throttle.group;
+                throttleGroup = group;
             }
         }
 
