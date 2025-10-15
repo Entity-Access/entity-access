@@ -1,10 +1,10 @@
 import { IClassOf } from "../decorators/IClassOf.js";
-import Inject from "../di/di.js";
 import DateTime from "../types/DateTime.js";
 import TimeSpan from "../types/TimeSpan.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
-import WorkflowContext, { IWorkflowThrottleGroup } from "./WorkflowContext.js";
+import type WorkflowContext from "./WorkflowContext.js";
 import { WorkflowRegistry } from "./WorkflowRegistry.js";
+import type { IWorkflowThrottleGroup } from "./WorkflowStorage.js";
 
 
 export function Activity(target, key) {

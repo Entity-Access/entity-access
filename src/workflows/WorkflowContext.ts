@@ -12,7 +12,7 @@ import TimeSpan from "../types/TimeSpan.js";
 import sleep from "../common/sleep.js";
 import Waiter from "./Waiter.js";
 import { WorkflowItem } from "./WorkflowDbContext.js";
-import WorkflowStorage from "./WorkflowStorage.js";
+import WorkflowStorage, { IWorkflowThrottleGroup } from "./WorkflowStorage.js";
 
 export const runChildSymbol = Symbol("runChild");
 
@@ -142,11 +142,6 @@ export interface IWorkflowResult<T> {
     queued?: DateTime;
 }
 
-export interface IWorkflowThrottleGroup {
-    group: string;
-    maxPerSecond: number;
-}
-
 export interface IWorkflowQueueParameter {
     id?: string;
     throwIfExists?: boolean;
@@ -232,9 +227,17 @@ export default class WorkflowContext {
         let throttleGroup = null;
 
         if (throttle) {
-            eta = await this.storage.getNextEta(throttle);
-            queued = eta;
-            throttleGroup = throttle.group;
+            const { deferSeconds } = throttle;
+            if (deferSeconds) {
+                const lw = await this.storage.getLastEta(throttle);
+                if (lw) {
+                    return lw.id;
+                }
+            } else {
+                eta = await this.storage.getNextEta(throttle);
+                queued = eta;
+                throttleGroup = throttle.group;
+            }
         }
 
         // this will ensure even empty workflow !!

@@ -10,6 +10,15 @@ import { loadedFromDb, WorkflowDbContext, WorkflowItem } from "./WorkflowDbConte
 import WorkflowTask from "./WorkflowTask.js";
 import Sql from "../sql/Sql.js";
 
+export type IWorkflowThrottleGroup = {
+    group: string;
+    deferSeconds?: number;
+    maxPerSecond?: never;
+} | {
+    group: string;
+    deferSeconds?: never;
+    maxPerSecond?: number;
+};
 
 @RegisterSingleton
 export default class WorkflowStorage {
@@ -36,9 +45,22 @@ export default class WorkflowStorage {
         return q.count();
     }
 
-    async getNextEta(throttle: { group: string, maxPerSecond: number }) {
+    async getLastEta(throttle: IWorkflowThrottleGroup) {
+        const db = new WorkflowDbContext(this.driver);
+        const w = await db.workflows.where(throttle, (p) => (x) => x.throttleGroup === p.group
+                && x.state !== "failed"
+                && x.state !== "done"
+            )
+            .orderByDescending(void 0, (p) => (x) => x.queued)
+            .first();
+        return w;
+
+    }
+
+    async getNextEta(throttle: IWorkflowThrottleGroup) {
 
         const db = new WorkflowDbContext(this.driver);
+
         const last = await db.workflows.where(throttle, (p) => (x) => x.throttleGroup === p.group
             && x.isWorkflow === true)
             .orderByDescending(void 0, (p) => (x) => x.queued)
