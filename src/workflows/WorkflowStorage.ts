@@ -53,15 +53,18 @@ export default class WorkflowStorage {
     }
 
     async getLastEta(throttle: IWorkflowThrottleGroup) {
+        const now = this.clock.utcNow;
         const db = new WorkflowDbContext(this.driver);
-        const w = await db.workflows.where(throttle, (p) => (x) => x.throttleGroup === p.group
+        const { group, deferSeconds } = throttle;
+        const w = await db.workflows.where({ group, now }, (p) => (x) => x.throttleGroup === p.group
                 && x.state !== "failed"
                 && x.state !== "done"
+                && x.eta >= Sql.cast.asDateTime(p.now)
             )
             .orderByDescending(void 0, (p) => (x) => x.queued)
             .first();
         if (w) {
-            w.eta = DateTime.from(w.eta).addSeconds(throttle.deferSeconds);
+            w.eta = DateTime.from(w.eta).addSeconds(deferSeconds);
             await db.workflows.statements.update({ eta: w.eta }, { id: w.id });
         }
         return w;
