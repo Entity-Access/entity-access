@@ -59,6 +59,7 @@ export default class WorkflowStorage {
         const w = await db.workflows.where({ group, now }, (p) => (x) => x.throttleGroup === p.group
                 && x.state !== "failed"
                 && x.state !== "done"
+                && x.isWorkflow === true
                 && x.eta >= Sql.cast.asDateTime(p.now)
             )
             .orderByDescending(void 0, (p) => (x) => x.queued)
