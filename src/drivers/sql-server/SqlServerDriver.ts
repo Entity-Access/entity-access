@@ -12,6 +12,7 @@ import DateTime from "../../types/DateTime.js";
 import IColumnSchema from "../../common/IColumnSchema.js";
 import type EntityContext from "../../model/EntityContext.js";
 import ExistingSchema from "../base/ExistingSchema.js";
+import ReaderQueue from "../base/ReaderQueue.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
@@ -243,19 +244,15 @@ export class SqlServerConnection extends BaseConnection {
 
 }
 
-class SqlReader implements IDbReader {
-
-    private pending: any[] = [];
-    private error: any = null;
-    private count: number = 0;
-    private ended = false;
-    private processPendingRows: (... a: any[]) => any;
+class SqlReader extends ReaderQueue implements IDbReader {
 
     constructor(
         private rq: sql.Request,
-        private command: { text: string, values?: any[]}) {}
+        private command: { text: string, values?: any[]}) {
+        super();
+    }
 
-    async *next(min?: number, s?: AbortSignal) {
+    begin(s?: AbortSignal) {
         const command = this.command;
         const rq = this.rq;
         s?.addEventListener("abort", () => {
@@ -265,45 +262,21 @@ class SqlReader implements IDbReader {
         rq.stream = true;
 
         rq.on("row", (row) => {
-            this.pending.push(row);
-            this.count++;
-            this.processPendingRows();
+            this.addItems([row]);
         });
 
         rq.on("error", (e) => {
-            this.error = new Error(`Failed executing ${command.text}\r\n${e.stack ?? e}`);
-            this.processPendingRows();
+            this.failed(new Error(`Failed executing ${command.text}\r\n${e.stack ?? e}`));
         });
 
         rq.on("done", () => {
-            this.ended = true;
-            this.processPendingRows();
+            this.end();
         });
 
         void rq.query((command as any).text);
-
-        do {
-            if (this.error) {
-                throw this.error;
-            }
-            if (this.pending.length > 0){
-                const copy = this.pending;
-                this.pending = [];
-                yield *copy;
-            }
-            if (this.ended) {
-                break;
-            }
-            await new Promise<any>((resolve, reject) => {
-                this.processPendingRows = resolve;
-            });
-        }  while(true);
     }
     dispose(): Promise<any> {
-        // if (!this.ended) {
-        //     this.rq.cancel();
-        // }
-        return Promise.resolve();
+        return this.drain();
     }
     [Symbol.asyncDispose]() {
         return this.dispose()?.catch((error) => console.error(error));
