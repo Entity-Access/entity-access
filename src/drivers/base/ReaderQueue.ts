@@ -18,8 +18,8 @@ export default abstract class ReaderQueue {
         this.begin(s);
         for(;;) {
             const items = await this.waitForItems(s);
+            this.queue = [];
             yield *items;
-            this.queue.length = 0;
             if (this.ended) {
                 return;
             }
