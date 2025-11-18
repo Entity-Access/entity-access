@@ -76,20 +76,21 @@ export default async function (this: TestConfig) {
 
     await storage.seed();
 
+
     const id = await c.queue(SendWorkflow, "a", {
         throttle: {
-            group: "a",
-            deferSeconds: 15
-        }
+            group: "a1",
+            deferSeconds: 60,
+        },
     });
 
     const result = await storage.getWorkflow(id);
 
     const next = await c.queue(SendWorkflow, "b", {
         throttle: {
-            group: "a",
-            deferSeconds: 15
-        }
+            group: "a1",
+            deferSeconds: 60
+        },
     });
 
     const resultNext = await storage.getWorkflow(next);
