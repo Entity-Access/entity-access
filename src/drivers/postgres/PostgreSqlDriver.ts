@@ -126,6 +126,7 @@ export default class PostgreSqlDriver extends BaseDriver {
             },
             subscribeForRemoval(po, clear) {
                 po.on("end", clear);
+                po.on("error", clear);
             },
         });
     }
