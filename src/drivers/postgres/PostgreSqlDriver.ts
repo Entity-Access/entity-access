@@ -293,7 +293,7 @@ class PostgreSqlConnection extends BaseConnection {
                 const pool = new Pool({ ... this.config,
                     max: 20,
                     idleTimeoutMillis: 5000,
-                    connectionTimeoutMillis: 3000,
+                    connectionTimeoutMillis: 15000,
                     maxUses: 7500
                  });
                 pool.on("error", (_error, _client) => {
