@@ -42,7 +42,7 @@
     "@types/pg-pool": "^2.0.6",
     "@typescript-eslint/eslint-plugin": "^6.7.3",
     "@typescript-eslint/parser": "^6.7.3",
-    "pg": "^8.11.1",
+    "pg": "^8.16.3",
     "pg-cursor": "^2.10.1",
     "pg-pool": "^3.10.1",
     "mssql": "^11.0.1",

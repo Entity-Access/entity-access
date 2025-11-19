@@ -1,7 +1,4 @@
 /* eslint-disable no-console */
-import EntityAccessError from "../../common/EntityAccessError.js";
-import IColumnSchema from "../../common/IColumnSchema.js";
-import ObjectPool, { IPooledObject } from "../../common/ObjectPool.js";
 import QueryCompiler from "../../compiler/QueryCompiler.js";
 import EntityType from "../../entity-query/EntityType.js";
 import Migrations from "../../migrations/Migrations.js";
@@ -9,10 +6,8 @@ import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutom
 import EntityContext from "../../model/EntityContext.js";
 import DateTime from "../../types/DateTime.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
-import pg, { Pool, PoolClient } from "pg";
-import PgPool from "pg-pool";
+import pg, { Pool, PoolClient} from "pg";
 import Cursor from "pg-cursor";
-import ExistingSchema from "../base/ExistingSchema.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 export interface IPgSqlConnectionString extends IDbConnectionString {
 
