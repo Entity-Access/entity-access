@@ -6,7 +6,7 @@ const finalizeTasks = new FinalizationRegistry<{ timer }>(({ timer }: any) => cl
 
 export default class WorkflowTask implements Disposable {
 
-    timer: NodeJS.Timer;
+    timer: NodeJS.Timeout;
 
     public readonly signal;
     private ac: AbortController;

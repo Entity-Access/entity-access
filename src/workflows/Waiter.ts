@@ -14,7 +14,10 @@ export default class Waiter {
 
     private static set = new Set<Waiter>();
 
-    constructor(private controller = new AbortController(), public readonly signal = controller.signal) {
+    constructor(
+        private controller = new AbortController(),
+        public readonly signal = controller.signal as AbortSignal
+    ) {
     }
 
     [Symbol.dispose]() {
