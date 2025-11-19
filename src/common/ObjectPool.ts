@@ -7,6 +7,8 @@ import sleep from "./sleep.js";
 // Making sure that Symbol.dispose is not undefined
 import "./IDisposable.js";
 
+const idleTimeout = Symbol.for("idleTimeout");
+
 interface IObjectPool<T> {
     factory?: () => T;
     asyncFactory?: () => Promise<T>;
@@ -30,10 +32,16 @@ interface IObjectPool<T> {
      */
     maxWait?: number;
 
+    /**
+     * Default is 10000 milliseconds
+     */
+    maxIdle?: number;
+
     logger?: (text: string) => void;
 }
 
 export type IPooledObject<T> = T & {
+    [idleTimeout]: NodeJS.Timeout;
     [Symbol.asyncDispose](): Promise<any>;
 };
 
@@ -73,10 +81,13 @@ export default class ObjectPool<T> {
 
     private logger: (text: string) => void;
 
+    private maxIdle: number;
+
     constructor({
         maxWait = 5000,
         poolSize = 20,
         maxSize = poolSize * 2,
+        maxIdle = Infinity,
         logger,
         asyncFactory,
         factory,
@@ -86,6 +97,7 @@ export default class ObjectPool<T> {
         this.maxSize = maxSize;
         this.maxWait = maxWait;
         this.poolSize = poolSize;
+        this.maxIdle = maxIdle;
         this.asyncFactory = asyncFactory;
         this.factory = factory;
         this.destroy = destroy;
@@ -156,6 +168,14 @@ export default class ObjectPool<T> {
         };
         this.logger?.(`Pooled item ${pooledItem} acquired.`);
         this.logger?.(`Item ${pooledItem} has disposable ${typeof pooledItem[Symbol.asyncDispose]}`);
+        if (this.maxIdle !== Infinity) {
+            const old = pooledItem[idleTimeout];
+            if (old) {
+                old.refresh();
+            } else {
+                pooledItem[idleTimeout] = setTimeout(() => this.destroy(pooledItem)?.catch(console.warn), this.maxIdle);
+            }
+        }
         return item as IPooledObject<T>;
     }
 }
