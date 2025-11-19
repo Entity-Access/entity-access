@@ -290,7 +290,12 @@ class PostgreSqlConnection extends BaseConnection {
         const key = config.host + "//" + config.database + "/" + config.user;
         const pgPool = await namedPool.getOrCreateAsync(key,
             () => {
-                const pool = new Pool(this.config);
+                const pool = new Pool({ ... this.config,
+                    max: 20,
+                    idleTimeoutMillis: 1000,
+                    connectionTimeoutMillis: 1000,
+                    maxUses: 7500
+                 });
                 pool.on("error", (_error, _client) => {
                     // do nothing...
                 });
