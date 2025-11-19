@@ -71,10 +71,6 @@ export default class SqlServerDriver extends BaseDriver {
         return { text, values };
     }
 
-    dispose() {
-        // do nothing
-    }
-
     newConnection(): BaseConnection {
         return new SqlServerConnection(this, this.config);
     }

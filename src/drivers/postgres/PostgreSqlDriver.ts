@@ -9,9 +9,11 @@ import PostgresAutomaticMigrations from "../../migrations/postgres/PostgresAutom
 import EntityContext from "../../model/EntityContext.js";
 import DateTime from "../../types/DateTime.js";
 import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDbReader, IQuery, toQuery } from "../base/BaseDriver.js";
-import pg from "pg";
+import pg, { Pool, PoolClient } from "pg";
+import PgPool from "pg-pool";
 import Cursor from "pg-cursor";
 import ExistingSchema from "../base/ExistingSchema.js";
+import TimedCache from "../../common/cache/TimedCache.js";
 export interface IPgSqlConnectionString extends IDbConnectionString {
 
     user?: string, // default process.env.PGUSER || process.env.USER
@@ -48,12 +50,14 @@ pg.types.setTypeParser(pg.types.builtins.TIMETZ, (n) =>
 
 pg.defaults.parseInputDatesAsUTC = true;
 
+const namedPool = new TimedCache<string, Pool>();
+
 // pg.types.setTypeParser(pg.types.builtins.NUMERIC, (n) => n ? Number(n) : 0);
 
 class DbReader implements IDbReader {
 
     cursor: Cursor<any>;
-    client: IPooledObject<pg.Client>;
+    client: PoolClient;
 
     constructor(
         private command: IQuery,
@@ -109,29 +113,27 @@ export default class PostgreSqlDriver extends BaseDriver {
         return postGresQueryCompiler;
     }
 
-    private pool: ObjectPool<pg.Client>;
-
     constructor(private readonly config: IPgSqlConnectionString) {
         super(config);
-        config.poolSize ??= 20;
-        this.pool = new ObjectPool({
-            poolSize: config.poolSize,
-            maxSize: (config.poolSize) * 10,
-            asyncFactory: async () => {
-                const c = new pg.Client(this.config);
-                await c.connect();
-                const row = await c.query("SELECT pg_backend_pid() as id");
-                c[pgID] = (row.rows as any).id;
-                return c;
-            },
-            destroy(item) {
-                return item.end();
-            },
-            subscribeForRemoval(po, clear) {
-                po.on("end", clear);
-                po.on("error", clear);
-            },
-        });
+        // config.poolSize ??= 20;
+        // this.pool = new ObjectPool({
+        //     poolSize: config.poolSize,
+        //     maxSize: (config.poolSize) * 10,
+        //     asyncFactory: async () => {
+        //         const c = new pg.Client(this.config);
+        //         await c.connect();
+        //         const row = await c.query("SELECT pg_backend_pid() as id");
+        //         c[pgID] = (row.rows as any).id;
+        //         return c;
+        //     },
+        //     destroy(item) {
+        //         return item.end();
+        //     },
+        //     subscribeForRemoval(po, clear) {
+        //         po.on("end", clear);
+        //         po.on("error", clear);
+        //     },
+        // });
     }
 
     insertQuery(type: EntityType, entity: any): { text: string; values: any[]; } {
@@ -167,18 +169,14 @@ export default class PostgreSqlDriver extends BaseDriver {
         return { text, values };
     }
 
-    dispose() {
-        this.pool?.dispose().catch(console.error);
-    }
-
     newConnection(): BaseConnection {
-        return new PostgreSqlConnection(this, this.pool);
+        return new PostgreSqlConnection(this);
     }
 }
 
 class PostgresTransaction extends EntityTransaction {
 
-    constructor(conn: PostgreSqlConnection, private tx: IPooledObject<pg.Client>) {
+    constructor(conn: PostgreSqlConnection, private tx: PoolClient) {
         super(conn);
     }
 
@@ -211,13 +209,13 @@ class PostgreSqlConnection extends BaseConnection {
         return this.transaction as any as boolean;
     }
 
-    private transaction: IPooledObject<pg.Client>;
+    private transaction: PoolClient;
 
     private get config() {
         return this.connectionString;
     }
 
-    constructor(driver: BaseDriver, private pool: ObjectPool<pg.Client>) {
+    constructor(driver: BaseDriver) {
         super(driver);
     }
 
@@ -293,11 +291,25 @@ class PostgreSqlConnection extends BaseConnection {
             return this.transaction;
         }
 
-        const client = await this.pool.acquire();
+        const { config }  = this;
+        const key = config.host + "//" + config.database + "/" + config.user;
+        const pgPool = await namedPool.getOrCreateAsync(key,
+            () => {
+                const pool = new Pool(this.config);
+                pool.on("error", (_error, _client) => {
+                    // do nothing...
+                });
+                return Promise.resolve(pool);
+            }, 15000, (x) => x.end().catch(console.warn));
+
+        const client = await pgPool.connect();
 
         if (signal) {
             signal.addEventListener("abort", () => this.kill(client[pgID]).catch((error) => console.error(error)));
         }
+
+        client[Symbol.asyncDispose] = () => client.release();
+
         return client;
     }
 

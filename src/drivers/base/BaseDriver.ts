@@ -244,9 +244,6 @@ export abstract class BaseDriver {
 
     abstract newConnection(): BaseConnection;
 
-    /** Must dispose ObjectPools */
-    abstract dispose();
-
     abstract insertQuery(type: EntityType, entity): { text: string, values: any[] };
 
     updateQuery(type: EntityType, entity: any, changes?: Map<IColumn, IChange>, keys?: any): { text: string; values: any[]; } {
