@@ -173,7 +173,7 @@ export default class ObjectPool<T> {
             if (old) {
                 old.refresh();
             } else {
-                pooledItem[idleTimeout] = setTimeout(() => this.destroy(pooledItem)?.catch(console.warn), this.maxIdle);
+                pooledItem[idleTimeout] = setTimeout(() => pooledItem[Symbol.asyncDispose]?.()?.catch(console.warn), this.maxIdle);
             }
         }
         return item as IPooledObject<T>;
