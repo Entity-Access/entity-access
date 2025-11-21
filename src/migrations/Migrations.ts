@@ -199,6 +199,10 @@ export default abstract class Migrations {
             }
         }
 
+        if (index.include) {
+            index.include = index.include.map((c) => type.getProperty(c).field.columnName);
+        }
+
         if (index.filter && typeof index.filter !== "string") {
             // parse..
             const source = context.query(type.typeClass) as EntityQuery<any>;

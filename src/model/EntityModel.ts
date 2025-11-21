@@ -33,7 +33,12 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, compil
         column.quotedNameExp = Expression.quotedIdentifier(column.name);
         t.addColumn(column);
     }
-    t.indexes.push(... original.indexes.map((i) => ({ ... i, columns: [ ... i.columns.map((c) => ( { ... c}))] })));
+    t.indexes.push(
+        ... original.indexes.map((i) => ({
+            ... i,
+            columns: [ ... i.columns.map((c) => ( { ... c}))],
+            include: i.include.map((c) => c),
+        })));
     t.checkConstraints.push(... original.checkConstraints.map((i) => ({ ... i})));
     // sort keys...
     if (t.keys.length > 1) {
