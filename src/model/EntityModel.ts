@@ -37,7 +37,7 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, compil
         ... original.indexes.map((i) => ({
             ... i,
             columns: [ ... i.columns.map((c) => ( { ... c}))],
-            include: i.include.map((c) => c),
+            include: i.include?.map((c) => c),
         })));
     t.checkConstraints.push(... original.checkConstraints.map((i) => ({ ... i})));
     // sort keys...
