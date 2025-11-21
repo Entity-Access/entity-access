@@ -3,8 +3,6 @@ import ICheckConstraint from "../../decorators/ICheckConstraint.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
-import { BaseConnection, BaseDriver } from "../../drivers/base/BaseDriver.js";
-import ExistingSchema from "../../drivers/base/ExistingSchema.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
 import PostgresMigrations from "./PostgresMigrations.js";
@@ -108,7 +106,21 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         const columns = [];
         for (const column of index.columns) {
             const columnName = column.name;
-            columns.push(`${columnName} ${column.descending ? "DESC" : "ASC"}`);
+            let operatorClass = "";
+            if (column.operatorClass && column.operatorClass !== "default") {
+                switch(column.operatorClass) {
+                    case "varchar_pattern":
+                        operatorClass = "varchar_pattern_ops";
+                        break;
+                    case "bpchar_pattern":
+                        operatorClass = "bpchar_pattern_ops";
+                        break;
+                    case "text_pattern":
+                        operatorClass = "text_pattern_ops";
+                        break;
+                }
+            }
+            columns.push(`${columnName} ${operatorClass} ${column.descending ? "DESC" : "ASC"}`);
         }
         let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX IF NOT EXISTS ${indexName} ON ${name} ( ${columns.join(", ")})`;
 

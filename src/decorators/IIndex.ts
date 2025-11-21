@@ -1,9 +1,12 @@
+export type operatorClasses = "varchar_pattern" | "text_pattern" | "bpchar_pattern" | "default" ;
+
 export interface IIndexedColumn {
     name: string;
     descending: boolean;
+    operatorClass?: operatorClasses;
 }
 
-export type IndexedColumn<T> = ((x: T) => any) | { name:((x: T) => any), descending: boolean};
+export type IndexedColumn<T> = ((x: T) => any) | { name:((x: T) => any), descending: boolean, operatorClass?: operatorClasses};
 
 export default interface IIndexDef<T = any> {
     name: string;

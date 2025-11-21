@@ -115,6 +115,10 @@ export class EmailAddress {
 }
 
 @Table("Categories")
+@Index({
+    name: "IX_Categories_Path",
+    columns: [ { name: (x) => x.path , descending: false, operatorClass: "varchar_pattern"}]
+})
 export class Category {
 
     @Column({ key: true, dataType: "Char", length: 200 })
