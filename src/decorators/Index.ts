@@ -34,7 +34,8 @@ export default function Index<T>(
                 : iterator;
             columns.push({
                 name: NameParser.parseMember(def.name),
-                descending: def.descending
+                descending: def.descending,
+                operatorClass: def.operatorClass
             });
         }
         model.indexes.push(i);
