@@ -110,9 +110,16 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             const columnName = column.name;
             columns.push(`${columnName} ${column.descending ? "DESC" : "ASC"}`);
         }
-        let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX IF NOT EXISTS ${indexName} ON ${name} ( ${columns.join(", ")})
-        ${index.unique ? "NULLS NOT DISTINCT" : ""}
-        `;
+        let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX IF NOT EXISTS ${indexName} ON ${name} ( ${columns.join(", ")})`;
+
+        if (index.include) {
+            query += ` INCLUDE (${index.include.join(",")})`;
+        }
+
+        if (index.unique) {
+            query += " NULLS NOT DISTINCT ";
+        }
+
         if (index.filter) {
             query += ` WHERE (${index.filter})`;
         }

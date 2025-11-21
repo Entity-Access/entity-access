@@ -120,6 +120,11 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         let query = `IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = '${indexName}' AND object_id = OBJECT_ID('${name}'))
         BEGIN   
             CREATE ${index.unique ? "UNIQUE" : ""} INDEX ${indexName} ON ${name} ( ${columns.join(", ")})`;
+
+        if (index.include) {
+            query += ` INCLUDE (${index.include.join(",")})`;
+        }
+
         if (index.filter) {
             query += ` WHERE (${index.filter})`;
         }

@@ -98,6 +98,7 @@ export class User {
 @Index({
     name: "IX_Unique_EmailAddress",
     columns: [{ name: (x) => x.address , descending: false }],
+    include: [ (x) => x.name ],
     unique: true
 })
 export class EmailAddress {
