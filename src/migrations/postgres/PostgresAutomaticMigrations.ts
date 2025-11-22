@@ -97,8 +97,8 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
     }
 
-    async dropIndex(indexName: string, tableName: string) {
-        await this.executeQuery(`DROP INDEX ${indexName} ON ${tableName};`);
+    async dropIndex(indexName: string) {
+        await this.executeQuery(`DROP INDEX ${indexName};`);
     }
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
