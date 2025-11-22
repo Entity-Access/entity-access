@@ -10,6 +10,7 @@ export type IndexedColumn<T> = ((x: T) => any) | { name:((x: T) => any), descend
 
 export default interface IIndexDef<T = any> {
     name: string;
+    dropNames?: string[];
     columns: IndexedColumn<T>[];
     unique?: boolean;
     include?: ((x:T) => any)[];
@@ -19,6 +20,7 @@ export default interface IIndexDef<T = any> {
 
 export interface IIndex{
     name: string;
+    dropNames?: string[];
     columns: IIndexedColumn[];
     unique?: boolean;
     include?: string[];

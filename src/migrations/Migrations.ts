@@ -168,6 +168,8 @@ export default abstract class Migrations {
 
     abstract createIndexForForeignKeys(context: EntityContext, type: EntityType, fkColumns: IColumn[]): Promise<void>;
 
+    abstract dropIndex(indexName: string, tableName: string): Promise<void>;
+
     async commitVersion(context: EntityContext, name, version, table) {
         const { quote, escapeLiteral } = this.compiler;
 
@@ -186,6 +188,14 @@ export default abstract class Migrations {
         index = { ... index };
 
         const schema = await this.getSchema(type);
+
+        if (index.dropNames) {
+            for (const dropName of index.dropNames) {
+                if (schema.indexes.has(dropName)) {
+                    await this.dropIndex(dropName, type.fullyQualifiedTableName);
+                }
+            }
+        }
 
         if (schema.indexes.has(index.name)) {
             return;

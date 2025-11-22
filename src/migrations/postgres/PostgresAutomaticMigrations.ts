@@ -97,6 +97,10 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
 
     }
 
+    async dropIndex(indexName: string, tableName: string) {
+        await this.executeQuery(`DROP INDEX ${indexName} ON ${tableName};`);
+    }
+
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
 
         const name = type.schema
@@ -135,6 +139,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         if (index.filter) {
             query += ` WHERE (${index.filter})`;
         }
+
         await this.executeQuery(query);
     }
 

@@ -10,6 +10,7 @@ export default function Index<T>(
     {
         name,
         columns: columnDefs,
+        dropNames,
         unique,
         include,
         indexType,
@@ -24,6 +25,7 @@ export default function Index<T>(
             name,
             unique,
             include: include ? include.map(NameParser.parseMember) : void 0,
+            dropNames,
             indexType,
             filter,
             columns

@@ -105,6 +105,11 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
     }
 
+    async dropIndex(indexName: string, tableName: string) {
+        await this.executeQuery(`DROP INDEX ${indexName} ON ${tableName};`);
+    }
+
+
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
 
         const driver = context.connection;
