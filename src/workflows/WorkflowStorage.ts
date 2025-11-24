@@ -63,7 +63,6 @@ export default class WorkflowStorage {
                 && x.eta >= Sql.cast.asDateTime(p.now)
             )
             .orderByDescending(void 0, (p) => (x) => x.queued)
-            .trace(console.log)
             .first();
         if (w) {
             w.eta = DateTime.from(w.eta).addSeconds(deferSeconds);
