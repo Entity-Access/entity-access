@@ -83,6 +83,8 @@ export interface ISql {
     },
     regex: {
         like(text: string, pattern: string, flags?: string): boolean;
+        replace(text: string, pattern: string, start: number, flags?: string): string;
+        replace(text: string, pattern: string, flags?: string): string;
     },
     text: {
         concat(... fragments: string[]): string;

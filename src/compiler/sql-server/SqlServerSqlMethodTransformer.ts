@@ -199,6 +199,12 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             }
             return prepareAny `RegExp_Like(${text}, ${pattern}, ${flags})`;
         },
+        replace(text, pattern, startOrFlags, flags?) {
+            if (flags === void 0) {
+                return prepareAny `RegExp_Replace(${text}, ${pattern}, ${startOrFlags})` as any;
+            }
+            return prepareAny `RegExp_Replace(${text}, ${pattern}, ${startOrFlags} + 1, ${flags})` as any;
+        }
     },
     text: {
         collate(text, collation) {
