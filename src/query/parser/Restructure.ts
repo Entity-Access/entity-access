@@ -24,10 +24,13 @@ export default class Restructure extends TransformVisitor {
         return node;
     }
 
-    // visitBinaryExpression(node: bpe.BinaryExpression): bpe.Node {
-    //     node.operator
-    //     return node;
-    // }
+    visitLogicalExpression(node: bpe.LogicalExpression): bpe.Node {
+        if (node.operator !== "||") {
+            return node;
+        }
+        // convert every second member to ?.
+        return node;
+    }
 
     visitTemplateElement(node: bpe.TemplateElement): bpe.Node {
         return node;
