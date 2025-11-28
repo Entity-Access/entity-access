@@ -3,6 +3,14 @@ import { BabelVisitor } from "./BabelVisitor.js";
 import { NotSupportedError } from "./NotSupportedError.js";
 import TransformVisitor from "./TransformVisitor.js";
 
+
+/**
+ * This class will restructure code from
+ * 1. ({ a } => a) to (p => p.a)
+ * 2. Turning (Negate)(literal) to (-literal) .. changing sign
+ * 3. ((x) => (x.joinedTable.x ..) || (...)) to ((x) => (x.joinedTable?.x))
+ *      `?.` will make join nullable and left join will be enforced.
+ */
 export default class Restructure extends TransformVisitor {
 
     private map: Map<string, bpe.Node> = new Map();
@@ -15,6 +23,11 @@ export default class Restructure extends TransformVisitor {
         }
         return node;
     }
+
+    // visitBinaryExpression(node: bpe.BinaryExpression): bpe.Node {
+    //     node.operator
+    //     return node;
+    // }
 
     visitTemplateElement(node: bpe.TemplateElement): bpe.Node {
         return node;
