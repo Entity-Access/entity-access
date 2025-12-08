@@ -227,14 +227,14 @@ export class SqlServerConnection extends BaseConnection {
     private newConnection(config = this.config) {
         const key = config.server + "//" + config.database + "/" + config.user;
         return namedPool.getOrCreateAsync(config.server + "://" + config.database,
-            () => {
+            async () => {
                 const pool = new sql.ConnectionPool(config);
                 const oldClose = pool.close;
                 pool.close = ((c) => {
                     namedPool.delete(key);
                     return oldClose.call(pool, c);
                 }) as any;
-                return pool.connect();
+                return await pool.connect();
             }, 15000, (x) => x.close());
 
     }
