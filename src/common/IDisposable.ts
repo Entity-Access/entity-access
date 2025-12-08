@@ -1,4 +1,7 @@
 /* eslint-disable no-console */
+
+import EALogger from "./EALogger.js";
+
 // @ts-expect-error readonly
 Symbol.dispose ??= Symbol("@@disposable");
 // @ts-expect-error readonly
@@ -13,5 +16,5 @@ export interface IDisposable {
 
 export function disposeDisposable(d: IDisposable) {
     const f = (d[Symbol.dispose] ?? d[Symbol.asyncDispose]) as (...a: any) => any;
-    f?.call(d)?.catch((error) => console.error(error.stack ?? error));
+    f?.call(d)?.catch((error) => EALogger.error(error.stack ?? error));
 }

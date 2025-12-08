@@ -1,4 +1,5 @@
 import { RegisterSingleton } from "../di/di.js";
+import EALogger from "./EALogger.js";
 import { IDisposable } from "./IDisposable.js";
 
 /* eslint-disable no-console */
@@ -52,7 +53,7 @@ export class ConsoleLogger extends Logger {
     }
 
     error(a) {
-        console.error(a.stack ?? a);
+        EALogger.error(a.stack ?? a);
         return this;
     }
 

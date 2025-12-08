@@ -2,6 +2,7 @@
 import assert from "assert";
 import ObjectPool from "../../common/ObjectPool.js";
 import sleep from "../../common/sleep.js";
+import EALogger from "../../common/EALogger.js";
 
 
 export default async function () {
@@ -68,7 +69,7 @@ export default async function () {
 
         // free last after few milliseconds
         setTimeout(() => {
-            last[Symbol.asyncDispose]().catch(console.error);
+            last[Symbol.asyncDispose]().catch(EALogger.error);
         }, 10);
 
         // this should not fail

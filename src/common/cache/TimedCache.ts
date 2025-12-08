@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import CustomEvent from "../CustomEvent.js";
+import EALogger from "../EALogger.js";
 import EventSet from "../EventSet.js";
 
 export interface ICachedItem {
@@ -66,7 +67,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         this.deletedEvent.dispatch(key);
         try {
             if (item.dispose) {
-                item.dispose(item.value)?.catch?.(console.error);
+                item.dispose(item.value)?.catch?.(EALogger.error);
             }
         } catch {
             // do nothing
@@ -129,7 +130,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         this.deletedEvent.dispatch(key);
         try {
             if (item.dispose) {
-                item.dispose(item.value)?.catch?.(console.error);
+                item.dispose(item.value)?.catch?.(EALogger.error);
             }
         } catch {
             // do nothing

@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import EALogger from "../common/EALogger.js";
 import DateTime from "../types/DateTime.js";
 import { loadedFromDb, type WorkflowDbContext, type WorkflowItem } from "./WorkflowDbContext.js";
 
@@ -30,7 +31,7 @@ export default class WorkflowTask implements Disposable {
         const { id, lockToken } = this.item;
         if (lockToken) {
             this.context.workflows.statements.update({ lockedTTL: null, lockToken: null}, { id, lockToken})
-                .catch(console.error);
+                .catch(EALogger.error);
         }
     }
 
@@ -48,9 +49,9 @@ export default class WorkflowTask implements Disposable {
             }
             lockedTTL = this.item.lockedTTL = now.addSeconds(15);
             this.context.workflows.statements.update({ lockedTTL }, {id, lockToken})
-                .catch(console.error);
+                .catch(EALogger.error);
         } catch (error) {
-            console.error(error);
+            EALogger.error(error);
         }
     };
 }

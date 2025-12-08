@@ -13,6 +13,7 @@ import sleep from "../common/sleep.js";
 import Waiter from "./Waiter.js";
 import { WorkflowItem } from "./WorkflowDbContext.js";
 import WorkflowStorage, { IWorkflowThrottleGroup } from "./WorkflowStorage.js";
+import EALogger from "../common/EALogger.js";
 
 export const runChildSymbol = Symbol("runChild");
 
@@ -334,7 +335,7 @@ export default class WorkflowContext {
                 using l = iterator;
                 await this.run(iterator.item, iterator.signal);
             } catch (error) {
-                console.error(error);
+                EALogger.error(error);
             }
         }
 
@@ -381,7 +382,7 @@ export default class WorkflowContext {
                     continue;
                 }
             } catch (error) {
-                console.error(error);
+                EALogger.error(error);
             }
             using ws = Waiter.create();
             await sleep(15000, ws.signal);
@@ -433,7 +434,7 @@ export default class WorkflowContext {
             }
             error = error.stack ?? error.toString();
             workflow.error = JSON.stringify(error);
-            console.error(error);
+            EALogger.error(error);
             workflow.state = "failed";
             workflow.eta = clock.utcNow.add(instance.failedPreserveTime);
             this.log(`Workflow ${workflow.id} failed ${workflow.error}`);

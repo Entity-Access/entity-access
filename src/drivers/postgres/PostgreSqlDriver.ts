@@ -9,6 +9,7 @@ import { BaseConnection, BaseDriver, EntityTransaction, IDbConnectionString, IDb
 import pg, { Pool, PoolClient} from "pg";
 import Cursor from "pg-cursor";
 import TimedCache from "../../common/cache/TimedCache.js";
+import EALogger from "../../common/EALogger.js";
 export interface IPgSqlConnectionString extends IDbConnectionString {
 
     user?: string, // default process.env.PGUSER || process.env.USER
@@ -82,7 +83,7 @@ class DbReader implements IDbReader {
         try {
             await this.cursor?.close();
         } catch (error) {
-            console.error(error.stack ?? error);
+            EALogger.error(error.stack ?? error);
         }
 
         try {
@@ -90,7 +91,7 @@ class DbReader implements IDbReader {
                 await this.client[Symbol.asyncDispose]();
             }
         } catch (error) {
-            console.error(error.stack ?? error);
+            EALogger.error(error.stack ?? error);
         }
     }
 
@@ -264,7 +265,7 @@ class PostgreSqlConnection extends BaseConnection {
                     await connection.end();
                 }
             } catch (error) {
-                console.error(error.stack ?? error);
+                EALogger.error(error.stack ?? error);
                 throw error;
             }
         };
@@ -305,7 +306,7 @@ class PostgreSqlConnection extends BaseConnection {
         const client = await pgPool.connect();
 
         if (signal) {
-            signal.addEventListener("abort", () => this.kill(client[pgID]).catch((error) => console.error(error)));
+            signal.addEventListener("abort", () => this.kill(client[pgID]).catch((error) => EALogger.error(error)));
         }
 
         client[Symbol.asyncDispose] = () => client.release();
@@ -324,7 +325,7 @@ class PostgreSqlConnection extends BaseConnection {
             await client.connect();
             await client.query("SELECT pg_cancel_backend($1)", [id]);
         } catch (error) {
-            console.error(error);
+            EALogger.error(error);
         } finally {
             await client.end();
         }

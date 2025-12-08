@@ -13,6 +13,7 @@ import IColumnSchema from "../../common/IColumnSchema.js";
 import type EntityContext from "../../model/EntityContext.js";
 import ExistingSchema from "../base/ExistingSchema.js";
 import ReaderQueue from "../base/ReaderQueue.js";
+import EALogger from "../../common/EALogger.js";
 
 export type ISqlServerConnectionString = IDbConnectionString & sql.config;
 
@@ -168,7 +169,7 @@ export class SqlServerConnection extends BaseConnection {
             return { rows, updated: r.rowsAffected [0]};
         } catch (error) {
             error = `Failed executing query ${command.text}\r\n${error.stack ?? error}`;
-            console.error(error);
+            EALogger.error(error);
             throw new Error(error);
         }
     }
@@ -275,7 +276,7 @@ class SqlReader extends ReaderQueue implements IDbReader {
         return this.drain();
     }
     [Symbol.asyncDispose]() {
-        return this.dispose()?.catch((error) => console.error(error));
+        return this.dispose()?.catch((error) => EALogger.error(error));
     }
 
 }

@@ -1,4 +1,5 @@
 // Making sure that Symbol.dispose is not undefined
+import EALogger from "../common/EALogger.js";
 import { IDisposable, disposeDisposable } from "../common/IDisposable.js";
 
 import { IAbstractClassOf, IClassOf } from "../decorators/IClassOf.js";
@@ -185,7 +186,7 @@ export class ServiceProvider implements IDisposable {
         // initialize properties...
         this.resolveProperties(instance, type);
         if (instance instanceof ServiceObject) {
-            instance.postInit()?.catch(console.error);
+            instance.postInit()?.catch(EALogger.error);
         }
         return instance;
     }

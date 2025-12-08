@@ -6,6 +6,7 @@ import sleep from "./sleep.js";
 
 // Making sure that Symbol.dispose is not undefined
 import "./IDisposable.js";
+import EALogger from "./EALogger.js";
 
 const idleTimeout = Symbol.for("idleTimeout");
 
@@ -164,7 +165,7 @@ export default class ObjectPool<T> {
             }
             this.total--;
             this.logger?.(`Pooled item ${pooledItem} destroyed.`);
-            void this.destroy(pooledItem)?.catch(console.error);
+            void this.destroy(pooledItem)?.catch(EALogger.error);
         };
         this.logger?.(`Pooled item ${pooledItem} acquired.`);
         this.logger?.(`Item ${pooledItem} has disposable ${typeof pooledItem[Symbol.asyncDispose]}`);
