@@ -260,7 +260,7 @@ export const PostgreSqlHelper: ISqlHelpers = {
             throw new NotSupportedError("DIFFERENCE");
         },
         endsWith(text, test) {
-            return prepareAny `(strpos(${text}, ${test}) - 1) = length(${text}) - length(${test})`;
+            return prepareAny `(strpos(${text}, ${test}) - 1 = (length(${text}) - length(${test})))`;
         },
         includes(text, test) {
             return prepareAny `(strpos(${text}, ${test}) > 0)`;
