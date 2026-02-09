@@ -13,7 +13,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/entity-access/entity-access.git"
+    "url": "git+https://github.com/Entity-Access/entity-access.git"
   },
   "author": "Akash Kava",
   "license": "MIT",
