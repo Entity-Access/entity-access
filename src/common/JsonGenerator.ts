@@ -84,7 +84,8 @@ export default class JsonGenerator {
         }
 
         if (model instanceof Date) {
-            return  `"${model.toJSON()}"`;
+            yield `"${model.toJSON()}"`;
+            return;
         }
 
         let suffix = "";
@@ -145,6 +146,10 @@ export default class JsonGenerator {
                     case "number":
                         yield JSON.stringify(element);
                         continue;
+                }
+                if (element instanceof Date) {
+                    yield `"${element.toJSON()}"`;
+                    continue;
                 }
                 yield this.recursiveGenerate(element, doneMap);
             }
