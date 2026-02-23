@@ -157,6 +157,15 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         epoch(d) {
             return prepareAny `DATEDIFF(ss, '1970-01-01 00:00:00', ${d}))`;
         },
+        age(dob) {
+            return prepareAny ` DATEDIFF(YEAR, ${dob}, GETUTCDATE()) -
+                CASE
+                    WHEN (MONTH(${dob}) > MONTH(GETUTCDATE())) OR
+                        (MONTH(${dob}) = MONTH(GETUTCDATE()) AND DAY(${dob}) > DAY(GETUTCDATE()))
+                    THEN 1
+                    ELSE 0
+                END`;
+        }
     },
     math: {
         min(...p) {

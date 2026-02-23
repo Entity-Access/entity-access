@@ -132,6 +132,11 @@ export const PostgreSqlHelper: ISqlHelpers = {
         now() {
             return prepareAny `NOW()`;
         },
+
+        age(dob) {
+            return prepareAny `EXTRACT (YEAR FROM AGE(${dob}))`;
+        },
+
         addDays(d, n) {
             return prepareAny `(${d} + (${n} * interval '1 day'))`;
         },

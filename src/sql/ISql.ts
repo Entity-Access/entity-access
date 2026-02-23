@@ -155,6 +155,9 @@ export interface ISql {
         addHours<T extends Date | DateTime>(d: T, n: number): T;
         addMinutes<T extends Date | DateTime>(d: T, n: number): T;
         addSeconds<T extends Date | DateTime>(d: T, n: number): T;
+
+        age<T extends Date | DateTime>(dateOfBirth: T): number;
+
         epoch(d: DateTime);
     }
 
