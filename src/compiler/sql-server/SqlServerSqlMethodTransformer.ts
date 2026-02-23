@@ -165,7 +165,10 @@ export const SqlServerSqlHelper: ISqlHelpers = {
                     THEN 1
                     ELSE 0
                 END`;
-        }
+        },
+        ageInMonths(dob) {
+            return prepareAny `DATEDIFF(MONTH, ${dob}, GETUTCDATE())`;
+        },
     },
     math: {
         min(...p) {

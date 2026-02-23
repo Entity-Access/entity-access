@@ -156,7 +156,14 @@ export interface ISql {
         addMinutes<T extends Date | DateTime>(d: T, n: number): T;
         addSeconds<T extends Date | DateTime>(d: T, n: number): T;
 
-        age<T extends Date | DateTime>(dateOfBirth: T): number;
+        age(d: Date|DateTime): number;
+
+        /**
+         * Returns age in months
+         * @param start smaller date - begin date
+         * @param end larger date - end date
+         */
+        ageInMonths(d: Date | DateTime): number;
 
         epoch(d: DateTime);
     }
