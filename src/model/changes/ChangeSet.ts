@@ -48,13 +48,13 @@ export default class ChangeSet {
         yield * [].concat(this.entries) as any;
 
         while(copy.length) {
+            const next = this.pending = [];
             for (const iterator of copy) {
                 iterator.setupInverseProperties();
                 iterator.detect();
                 yield iterator;
             }
-            copy = this.pending;
-            this.pending = [];
+            copy = next;
         }
 
         this.pending = void 0;

@@ -43,17 +43,16 @@ export default class JsonGenerator {
 
         let current = iterator;
 
-        let text = void 0;
+        let text = "";
 
         for(;;) {
             const { value, done } = current.next();
 
             if (typeof value === "string") {
-                text ??= "";
                 text += value;
                 if (text.length > 1024) {
                     yield text;
-                    text = void 0;
+                    text = "";
                 }
                 // yield value;
                 continue;
@@ -71,7 +70,7 @@ export default class JsonGenerator {
             current = value;
         }
 
-        if (text !== void 0) {
+        if (text) {
             yield text;
         }
 
