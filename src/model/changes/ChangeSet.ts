@@ -9,7 +9,7 @@ import ChangeEntry, { privateUpdateEntry, getContext } from "./ChangeEntry.js";
 
 export default class ChangeSet {
 
-    public addedEvent = new EventSet<ChangeEntry>(this);
+    // public addedEvent = new EventSet<ChangeEntry>(this);
 
     get [identityMapSymbol]() {
         return this.identityMap;
@@ -30,6 +30,8 @@ export default class ChangeSet {
 
     private nextId = 1;
 
+    private pending = [] as ChangeEntry[];
+
     constructor(private context: EntityContext) {
     }
 
@@ -37,8 +39,11 @@ export default class ChangeSet {
 
         this.detectChanges();
 
-        const pending = [] as ChangeEntry[];
-        using d = this.addedEvent.listen((ce) => pending.push(ce.detail));
+        // const pending = [] as ChangeEntry[];
+        // using d = this.addedEvent.listen((ce) => pending.push(ce.detail));
+
+
+        const pending = this.pending = [];
 
         yield * [].concat(this.entries) as any;
 
@@ -110,7 +115,8 @@ export default class ChangeSet {
         }, this);
         this.entries.push(entry);
         this.entryMap.set(entity, entry);
-        this.addedEvent.dispatch(entry);
+        // this.addedEvent.dispatch(entry);
+        this.pending.push(entry);
         return entry;
     }
 
