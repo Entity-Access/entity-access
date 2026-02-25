@@ -14,6 +14,8 @@ export default class JsonGenerator {
 
     private readonly serviceOwner: ServiceProvider;
 
+    private map: Map<any, any>;
+
     constructor(
         serviceOwner?
     ) {
@@ -28,13 +30,14 @@ export default class JsonGenerator {
 
     *generate(model) {
 
+        this.map = new Map();
+
         /**
          * This method will unwrap recursive generate
          * into non recursive execution.
          */
 
-        const map = new Map();
-        const iterator = this.recursiveGenerate(model, map);
+        const iterator = this.recursiveGenerate(model);
 
         const stack = [];
 
@@ -74,7 +77,7 @@ export default class JsonGenerator {
 
     }
 
-    private *recursiveGenerate(model, doneMap: Map<any,any>): Generator<any, any, any> {
+    private *recursiveGenerate(model): Generator<any, any, any> {
         switch(typeof model) {
             case "bigint":
             case "string":
@@ -110,19 +113,19 @@ export default class JsonGenerator {
                 } else {
                     suffix = ",";
                 }
-                yield this.recursiveGenerate(element, doneMap);
+                yield this.recursiveGenerate(element);
             }
             yield "]";
             return;
         }
-
-        let $id = doneMap.get(model);
+        const { map } = this;
+        let $id = map.get(model);
         if ($id) {
             yield `{"$ref": ${$id}}`;
             return;
         }
-        $id = doneMap.size + 1;
-        doneMap.set(model, $id);
+        $id = map.size + 1;
+        map.set(model, $id);
 
         this.serviceOwner?.attach(model);
 
@@ -163,7 +166,7 @@ export default class JsonGenerator {
                     yield `"${element.toJSON()}"`;
                     continue;
                 }
-                yield this.recursiveGenerate(element, doneMap);
+                yield this.recursiveGenerate(element);
             }
         }
 
