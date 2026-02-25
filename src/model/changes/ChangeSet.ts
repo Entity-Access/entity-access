@@ -30,7 +30,7 @@ export default class ChangeSet {
 
     private nextId = 1;
 
-    private pending = [] as ChangeEntry[];
+    private pending = void 0 as ChangeEntry[];
 
     constructor(private context: EntityContext) {
     }
@@ -43,19 +43,21 @@ export default class ChangeSet {
         // using d = this.addedEvent.listen((ce) => pending.push(ce.detail));
 
 
-        const pending = this.pending = [];
+        let copy = this.pending = [];
 
         yield * [].concat(this.entries) as any;
 
-        while(pending.length) {
-            const copy = [].concat(pending) as ChangeEntry[];
+        while(copy.length) {
             for (const iterator of copy) {
                 iterator.setupInverseProperties();
                 iterator.detect();
+                yield iterator;
             }
-            pending.length = 0;
-            yield *copy as any;
+            copy = this.pending;
+            this.pending = [];
         }
+
+        this.pending = void 0;
     }
 
     [privateUpdateEntry](entry: ChangeEntry) {
@@ -116,7 +118,7 @@ export default class ChangeSet {
         this.entries.push(entry);
         this.entryMap.set(entity, entry);
         // this.addedEvent.dispatch(entry);
-        this.pending.push(entry);
+        this.pending?.push(entry);
         return entry;
     }
 
