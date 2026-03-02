@@ -49,7 +49,11 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         let def = `ALTER TABLE ${name} ADD ${quotedColumnName} `;
 
         if (iterator.computed) {
-            def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
+            if (iterator.length) {
+                def += ` AS CAST(${iterator.computed} AS nvarchar(${iterator.length})) ${iterator.stored ? "PERSISTED" : ""}`;
+            } else {
+                def += ` AS ${iterator.computed} ${iterator.stored ? "PERSISTED" : ""}`;
+            }
             await this.executeQuery(def + ";");
             return;
         }

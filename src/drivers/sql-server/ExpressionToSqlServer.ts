@@ -126,7 +126,6 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
 
         this.prepareStatement(e);
 
-        const orderBy = e.orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(e.orderBy)}` : "";
         const where = e.where ? prepare `\n\tWHERE ${this.visit(e.where)}` : "";
 
         const fields = this.visitArray(e.fields, ",\n\t\t");
@@ -135,15 +134,19 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         const showTop = e.limit && !e.offset;
         const showFetch = e.limit && e.offset;
 
+        let { orderBy } = e;
+
         if (e.limit && e.offset) {
-            if (!e.orderBy?.length) {
+            if (!orderBy?.length) {
                 // lets set default order by... if not set...
                 // as sql server needs something to order by...
-                e.orderBy = [
+                orderBy = [
                     OrderByExpression.create({  target:  NumberLiteral.one  })
                 ];
             }
         }
+
+        const orderByText = orderBy?.length > 0 ? prepare `\n\t\tORDER BY ${this.visitArray(orderBy)}` : "";
 
         const topValue = Number(e.limit);
         const top = showTop ? prepare ` TOP (${() => topValue}) ` : "";
@@ -168,7 +171,7 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         const next = showFetch ? prepare ` FETCH NEXT ${Number(e.limit).toString()} ROWS ONLY` : "";
         return prepare `SELECT ${top}
         ${fields}
-        FROM ${source}${as}${joins}${where}${orderBy}${offset}${next}`;
+        FROM ${source}${as}${joins}${where}${orderByText}${offset}${next}`;
     }
 
     visitValuesStatement(e: ValuesStatement): ITextQuery {

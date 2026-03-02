@@ -142,7 +142,8 @@ export class Category {
         dataType: "Char",
         length: 400,
         nullable: true,
-        computed: (x) => x.parentID === null ? null : Sql.text.concatImmutable(Sql.cast.asText(x.parentID), '/', Sql.text.lower(x.name))
+        computed: (x) => x.parentID === null ? null : Sql.text.concatImmutable(Sql.cast.asText(x.parentID), '/', Sql.text.lower(x.name)),
+        stored: true
     })
     public path: string;
 
