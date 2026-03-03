@@ -25,7 +25,7 @@ export function EntityName(name: string) {
     };
 }
 
-export function DoNotCreate() {
+export function MigrationOff() {
     return (target) => {
         const model = SchemaRegistry.model(target);
         // @ts-expect-error readonly
