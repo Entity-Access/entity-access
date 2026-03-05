@@ -162,7 +162,7 @@ export default class EntityQuery<T = any>
         return this.orderByDescending(parameters, fx);
     }
 
-    where<P>(parameters: P, fx: (p: P) => (x: T) => boolean): any {
+    where(parameters: any, fx: any): any {
 
         return this.extend(parameters, fx, (select, body) => ({
             ... select,

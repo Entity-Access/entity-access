@@ -35,9 +35,6 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
      */
     private static transformUncached(node: bpe.Node, target?: ParameterExpression, outerParameter?: ParameterExpression): { params: ParameterExpression[], body: Expression, target: ParameterExpression } {
 
-        if (node.type !== "ArrowFunctionExpression") {
-            throw new Error("Expecting an arrow function");
-        }
 
         const paramSet = new Map<string, any>();
 
@@ -45,46 +42,60 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
 
         const params = [];
 
-        for (const iterator of node.params) {
-            if (iterator.type !== "Identifier") {
-                throw new Error("Expecting an identifier");
-            }
-            if (!firstOuterParam && outerParameter) {
-                firstOuterParam = iterator.name;
-                paramSet.set(iterator.name, outerParameter);
-                params.push(outerParameter);
-                continue;
-            }
-            const p1 = ParameterExpression.create({ name: iterator.name });
-            paramSet.set(iterator.name, p1);
-            params.push(p1);
-        }
-
-        if (outerParameter && firstOuterParam) {
-            paramSet.set(firstOuterParam, outerParameter);
-        }
-
-        let body = node.body;
-        if (body.type !== "ArrowFunctionExpression") {
+        if (node.type !== "ArrowFunctionExpression") {
             throw new Error("Expecting an arrow function");
         }
 
-        const firstTarget = body.params[0];
-
         let name = "____x";
 
-        if (firstTarget) {
+        let body = node.body;
+        let firstTarget: (bpe.Identifier | bpe.Pattern | bpe.RestElement);
+        if (body.type === "ArrowFunctionExpression") {
+            firstTarget = body.params[0];
+            if (firstTarget) {
 
-            if (firstTarget.type !== "Identifier") {
-                throw new Error("Expecting an identifier");
+                if (firstTarget.type !== "Identifier") {
+                    throw new Error("Expecting an identifier");
+                }
+                name = firstTarget.name;
             }
-            name = firstTarget.name;
+            for (const iterator of node.params) {
+                if (iterator.type !== "Identifier") {
+                    throw new Error("Expecting an identifier");
+                }
+                if (!firstOuterParam && outerParameter) {
+                    firstOuterParam = iterator.name;
+                    paramSet.set(iterator.name, outerParameter);
+                    params.push(outerParameter);
+                    continue;
+                }
+                const p1 = ParameterExpression.create({ name: iterator.name });
+                paramSet.set(iterator.name, p1);
+                params.push(p1);
+            }
+
+            if (outerParameter && firstOuterParam) {
+                paramSet.set(firstOuterParam, outerParameter);
+            }
+            body = body.body;
+        } else {
+            firstTarget = node.params[0];
+            if (firstTarget) {
+
+                if (firstTarget.type !== "Identifier") {
+                    throw new Error("Expecting an identifier");
+                }
+                name = firstTarget.name;
+            }
+            const lastParam = node.params.at(-1) as any as bpe.Identifier;
+            const p1 = ParameterExpression.create({ name: lastParam.name });
+            paramSet.set(lastParam.name, p1);
+            params.push(p1);
         }
 
 
-        target ??= ParameterExpression.create({ name});
 
-        body = body.body;
+        target ??= ParameterExpression.create({ name});
 
         const visitor = new this(paramSet, target, name);
         return {

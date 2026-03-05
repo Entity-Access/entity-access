@@ -1,11 +1,13 @@
 import { IQueryResult } from "../drivers/base/BaseDriver.js";
 import type { EntitySource } from "./EntitySource.js";
 
+// export type IParamFunction<P, T, TR> = (x: T, p: P) => TR;
+
 export type IFilterWithParameter<P = any, T = any> = (p: P) => (x: T) => boolean;
 
 export type ILambdaExpression<P = any, T = any, TR = any> = [input: P, x: (p: P) => (s: T) => TR];
 
-export type IFilterExpression<P = any, T = any> = [input: P, x: (p: P) => (s: T) => boolean];
+export type IFilterExpression<P = any, T = any> = [input: P, fx: (x: T, p: P) => boolean];
 
 export type IFieldsAsNumbers<T> = { [P in keyof T]: number };
 
@@ -18,6 +20,7 @@ export interface IBaseQuery<T> {
     some(): Promise<boolean>;
 
     select<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
+    select<P, TR>(parameters: P, fx: (x: T,p: P) => TR): IBaseQuery<TR>;
     map<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
 
     toArray(this: T extends object ? IBaseQuery<T> : never): Promise<T[]>;
@@ -27,6 +30,7 @@ export interface IBaseQuery<T> {
     limit<DT>(this: DT, limit: number): DT;
     offset<DT>(this: DT, offset: number): DT;
     where<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
+    where<P, DT>(this: DT, parameters: P, fx: (x: T,p: P) => boolean): DT;
     union<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
     selectView<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => Partial<T>): DT;
 

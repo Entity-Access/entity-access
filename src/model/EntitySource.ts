@@ -1,6 +1,6 @@
 import type EntityContext from "./EntityContext.js";
 import type EntityType from "../entity-query/EntityType.js";
-import type { IEntityQuery, IFilterExpression } from "./IFilterWithParameter.js";
+import type { IEntityQuery } from "./IFilterWithParameter.js";
 import { contextSymbol, modelSymbol, traceSymbol } from "../common/symbols/symbols.js";
 import { Expression, ExpressionAs, Identifier, InsertStatement, TableLiteral } from "../query/ast/Expressions.js";
 import { DirectSaveType } from "../drivers/base/BaseDriver.js";
@@ -444,8 +444,10 @@ export class EntitySource<T = any> {
         return mode === "modify" ? events.modify(query) : events.filter(query);
     }
 
-    public where<P>(...[parameter, fx]: IFilterExpression<P, T>) {
-        return this.asQuery().where(parameter, fx);
+    public where<P>(parameter: P, fx: (p: P) => (x: T) => boolean): IEntityQuery<T>;
+    public where<P>(parameter: P, fx: (x: T, p: P) => boolean): IEntityQuery<T>;
+    public where<P>(parameter: any, fx: unknown) {
+        return this.asQuery().where(parameter, fx as any) as IEntityQuery<T>;
     }
 
     public asQuery() {
