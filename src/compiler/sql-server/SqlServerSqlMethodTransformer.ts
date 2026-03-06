@@ -291,7 +291,7 @@ export const SqlServerSqlHelper: ISqlHelpers = {
             return prepareAny `(${text} LIKE ${test})`;
         },
         likeAny(text, test) {
-            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " iLike ", () => item , ")" ]), ")"] as any;
+            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " LIKE ", () => item , ")" ]), ")"] as any;
         },
         lower(text) {
             return prepareAny `LOWER(${text})`;
