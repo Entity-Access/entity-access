@@ -758,6 +758,10 @@ export default class EntityQuery<T = any>
             return this.map(parameters, fx).sum();
         }
 
+        if (parameters !== void 0) {
+            return this.map(parameters, fx).sum();
+        }
+
         const fields = [];
 
         let fieldName;
