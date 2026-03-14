@@ -25,6 +25,8 @@ export interface IBaseQuery<T> {
 
     toArray(this: T extends object ? IBaseQuery<T> : never): Promise<T[]>;
 
+    toPage(this: T extends object ? IBaseQuery<T>: never, start, size): Promise<{ more: boolean, items: T[]}>;
+
     toQuery(): { text: string, values: any[]};
 
     limit<DT>(this: DT, limit: number): DT;

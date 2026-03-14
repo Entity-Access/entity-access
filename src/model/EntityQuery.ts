@@ -21,6 +21,10 @@ export default class EntityQuery<T = any>
     public traceQuery: (text: string) => void;
     public includes: any[];
     public scope: ParameterExpression[];
+
+    private maxLimit = void 0;
+    private hasMore = false;
+
     constructor (p: Partial<EntityQuery<any>>
     ) {
         // lets clone select...
@@ -372,7 +376,7 @@ export default class EntityQuery<T = any>
             const type = this.type;
             const signal = this.signal;
 
-            const relationMapper = new RelationMapper(this.context.changeSet);
+            // const relationMapper = new RelationMapper(this.context.changeSet);
 
             signal?.throwIfAborted();
 
@@ -388,7 +392,7 @@ export default class EntityQuery<T = any>
                 Object.setPrototypeOf(iterator, prototype);
                 iterator.$type = type.entityName;
                 const entry = this.context.changeSet.getEntry(iterator, iterator);
-                relationMapper.fix(entry);
+                // relationMapper.fix(entry);
                 results.push(entry.entity as any);
             }
             return results;
@@ -505,6 +509,25 @@ export default class EntityQuery<T = any>
         return results;
     }
 
+    async toPage(start, size): Promise<any> {
+        this.maxLimit = size;
+        let q = this;
+        if (start > 0) {
+            q = q.offset(start);
+        }
+        q = q.limit(size);
+        const items: T[] = [];
+        q.hasMore = false;
+        for await (const iterator of q.enumerate()) {
+            items.push(iterator);
+        }
+        const { hasMore } = q;
+        return {
+            items,
+            more:hasMore
+        };
+    }
+
     async *enumerate(): AsyncGenerator<T, any, unknown> {
 
         await using scope = new AsyncDisposableScope();
@@ -561,12 +584,23 @@ export default class EntityQuery<T = any>
                 // select = { ... select, fields: select.model.getFieldMap(select.sourceParameter) };
             }
 
+            if (this.maxLimit) {
+                select.limit++;
+            }
+
+            let maxLimit = this.maxLimit ? this.maxLimit : Number.MAX_VALUE;
+
             query = this.context.driver.compiler.compileExpression(this, select);
             this.traceQuery?.(query.text);
             const reader = await this.context.connection.executeReader(query, signal);
             scope.register(reader);
             const prototype = type?.typeClass.prototype;
             for await (const iterator of reader.next(10, signal)) {
+                maxLimit--;
+                if(maxLimit < 0) {
+                    this.hasMore = true;
+                    break;
+                }
                 if (type) {
                     // const item = type.map(iterator) as any;
                     // set identity...
@@ -749,7 +783,8 @@ export default class EntityQuery<T = any>
                 Identifier.create({ value: "1"}),
                 "c1")
             ],
-            orderBy: void 0
+            orderBy: void 0,
+            limit: 1,
         };
 
         const nq = new EntityQuery({ ... this, selectStatement: select });

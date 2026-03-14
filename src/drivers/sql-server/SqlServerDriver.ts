@@ -202,7 +202,8 @@ export class SqlServerConnection extends BaseConnection {
     }
 
     protected async createDbTransaction(): Promise<EntityTransaction> {
-        const tx = this.transaction = new sql.Transaction(await this.newConnection());
+        const tx = this.transaction = (await this.newConnection()).transaction();
+        // await tx.begin();
         return new SqlEntityTransaction(this, tx);
     }
 
@@ -224,7 +225,7 @@ export class SqlServerConnection extends BaseConnection {
         return request;
     }
 
-    private newConnection(config = this.config) {
+    private async newConnection(config = this.config) {
         const key = config.server + "//" + config.database + "/" + config.user;
         return namedPool.getOrCreateAsync(config.server + "://" + config.database,
             async () => {
@@ -236,7 +237,6 @@ export class SqlServerConnection extends BaseConnection {
                 }) as any;
                 return await pool.connect();
             }, 15000, (x) => x.close());
-
     }
 
 }
