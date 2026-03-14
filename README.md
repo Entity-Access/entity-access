@@ -80,14 +80,10 @@ const db = new ShoppingContext();
 const q = db.customers
     // set parameters
     .where({ orderID },
-        // access parameters
-        (p) =>
-            // following expression
-            // be converted to SQL
-            (customer) => customer.orders.some(
+            (customer, /* Parameter */ p ) => customer.orders.some(
                 // joins/exists will be set
                 // based on relations declared
-                (order) => order.orderID === p.orderID );
+                (order) => order.orderID === p.orderID ));
 const customer = await q.first();
 ```
 Above expression will result in following filter expression
@@ -109,8 +105,7 @@ Query with Like operator
 /// Sql functions
 const userName = `akash%`;
 const q = db.orders.where({ userName },
-    (params) =>
-        (order) =>
+        (order, params) =>
             Sql.text.like(
                 order.customer.userName,
                 params.userName
@@ -180,7 +175,7 @@ class Product {
     @Column({ default: () => ""})
     productCode: string;
 
-    // You can specifiy computed expression
+    // You can specify computed expression
     // that will be converted to equivalent SQL
     // for target provider.
     @Column({
@@ -213,7 +208,7 @@ class OrderItem {
     @RelateTo(Product, {
         property: (orderItem) => orderItem.product,
         inverseProperty: (product) => product.orderItems,
-        foreignKeyContraint: {
+        foreignKeyConstraint: {
                 name: "FK_OrderItems_ProductID",
                 onDelete: "restrict"
         }
@@ -224,7 +219,7 @@ class OrderItem {
     @RelateTo(Order, {
         property: (orderItem) => orderItem.order,
         inverseProperty: (order) => order.orderItems,
-        foreignKeyContraint: {
+        foreignKeyConstraint: {
                 name: "FK_OrderItems_OrderID",
                 onDelete: "delete"
         }
@@ -273,8 +268,7 @@ using helper functions to convert before comparison.
 ```typescript
     const q = db.customers
         .where({ orderID },
-            (p) =>
-                (x) => x.orders.some(
+                (x, p) => x.orders.some(
                     (order) => order.orderID === p.orderID )
         )
 
@@ -324,8 +318,7 @@ passed will be sent as a sql parameter and not as a literal.
 ```typescript
     const prefix = `${name}%`;
     db.customers.where({ prefix },
-        (p) =>
-            (customer) => Sql.text.like(customer.firstName, p.prefix)
+            (customer, p) => Sql.text.like(customer.firstName, p.prefix)
                 || Sql.text.like(customer.lastName p.prefix)
     )
 ```
@@ -334,8 +327,7 @@ passed will be sent as a sql parameter and not as a literal.
 For other sql text functions you can use `Sql.text.startsWith`, `Sql.text.endsWith`, `Sql.text.left`... etc as shown below.
 ```typescript
     db.customers.where({ prefix },
-        (p) =>
-            (customer) => Sql.text.startsWith(customer.firstName, p.prefix)
+            (customer, p) => Sql.text.startsWith(customer.firstName, p.prefix)
                 || Sql.text.startsWith(customer.lastName p.prefix)
     )
 ```
@@ -346,8 +338,7 @@ Just as text functions you can also use date functions as shown below.
     const year = (new Date()).getFullYear();
     // get count of all orders of this year...
     db.orders.where({ year },
-        (p) =>
-            (order) => Sql.date.yearOf(order.orderDate) === p.year
+            (order, p) => Sql.date.yearOf(order.orderDate) === p.year
     )
 
     // above example is only for illustrations only, it will not use index.
@@ -356,8 +347,7 @@ Just as text functions you can also use date functions as shown below.
     const end:Date = /* start date */;
     // get count of all orders of this year...
     db.orders.where({ start, end },
-        (p) =>
-            (order) => p.start <= order.orderDate && order.orderDate >= p.end
+            (order, p) => p.start <= order.orderDate && order.orderDate >= p.end
     )
 
 ```
@@ -422,8 +412,8 @@ within one year.
 ```typescript
     const past365 = DateTime.now.addYears(-1);
     db.users.asQuery()
-        .delete({ past365 }, (p) =>
-            (x) => x.lastLogin < p.past365)
+        .delete({ past365 }, (x, p) =>
+            x.lastLogin < p.past365)
 ```
 ### Insert
 Following query will insert all old messages to
@@ -431,7 +421,7 @@ archivedMessages table and delete from messages
 in a single transaction.
 
 Everything happens on database server, no entity
-is loadded in the memory.
+is loaded in the memory.
 
 ```typescript
     const past365 = DateTime.now.addYears(-1);
@@ -439,8 +429,9 @@ is loadded in the memory.
     using tx = await db.connection.createTransaction();
 
     const oldMessagesQuery = db.messages
-        .where({ past365 }, (p) =>
-            (x) => x.dateCreated < p.past365 );
+        .where({ past365 },
+            (x, p) =>
+                x.dateCreated < p.past365 );
 
     oldMessagesQuery.insertInto(db.archivedMessages);
 
@@ -575,8 +566,8 @@ export class ProductEvents extends EntityEvents<Product> {
             // user has purchased or products are
             // active.
 
-            return query.where({ userID }, (p) =>
-                p.isActive
+            return query.where({ userID }, (x, p) =>
+                x.isActive
                 || x.orderItems.some((oi) =>
                     oi.order.customerID === p.userID
                 )
@@ -584,7 +575,7 @@ export class ProductEvents extends EntityEvents<Product> {
         }
 
         // anonymous users can see only active products        
-        return query.where({ userID }, (p) => p.isActive === true);
+        return query.where({ userID }, (x) => x.isActive === true);
     }
 
     /*
@@ -623,8 +614,8 @@ export class ProductEvents extends EntityEvents<Product> {
             // user has purchased or products are
             // active.
 
-            return query.where({ userID }, (p) =>
-                p.isActive === true
+            return query.where({ userID }, (x, p) =>
+                x.isActive === true
                 || x.orderItems.some((oi) =>
                     oi.order.customerID === p.userID
                 )
@@ -639,7 +630,7 @@ export class ProductEvents extends EntityEvents<Product> {
 
     }
 
-    // each of these methods, beforeInsert, afteInsert, beforeUpdate
+    // each of these methods, beforeInsert, afterInsert, beforeUpdate
     // afterUpdate, beforeDelete and afterDelete are asynchronous and
     // you can await on async methods.
     async afterInsert(entity: Product, entry: ChangeEntry<Product>) {
