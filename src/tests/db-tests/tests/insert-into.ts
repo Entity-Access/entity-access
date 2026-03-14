@@ -12,8 +12,8 @@ export default async function(this: TestConfig) {
     const context = await createContext(this.driver);
 
     await context.messages.asQuery()
-        .where(void 0, (p) => (x) => x.messageID > 100)
-        .select(void 0, (p) => (x) => ({
+        .where(void 0, (x, p) => x.messageID > 100)
+        .select(void 0, (x, p) => ({
             fromID: x.fromID,
             toID: x.toID,
             message: x.message

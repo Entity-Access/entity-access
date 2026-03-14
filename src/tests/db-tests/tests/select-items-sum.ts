@@ -14,15 +14,15 @@ export default async function(this: TestConfig) {
     let report;
 
     // const user = await context.users.all()
-    // .where({}, (p) => (x) => x.orders.some((oi) => oi.customerID  > 0))
+    // .where({}, (x, p) => x.orders.some((oi) => oi.customerID  > 0))
     // .trace(console.log)
     // .first();
 
     // assert.notEqual(null, user);
 
     // report  = await context.users.all()
-    //     // .where({}, (p) => (x) => x.orders.some((oi) => oi.customerID  > 0))
-    //     .map({}, (p) => (x) => ({
+    //     // .where({}, (x, p) => x.orders.some((oi) => oi.customerID  > 0))
+    //     .map({}, (x, p) => ({
     //             total: 5 * Sql.coll.sum(x.orders.map((o) => Sql.coll.sum(o.orderItems.map((oi) => oi.amount))))
     //         })
     //     )
@@ -32,12 +32,12 @@ export default async function(this: TestConfig) {
     // assert.notEqual(null, report);
 
     // await context.orders.asQuery()
-    //     .update(void 0, (p) => (x) => ({
+    //     .update(void 0, (x, p) => ({
     //         total: Sql.coll.sum(x.orderItems.map((o) => o.amount ))
     //     }));
 
     report = await context.users.all()
-        .map({}, (p) => (x) => ({
+        .map({}, (x, p) => ({
                 total: Sql.coll.sum(x.orders
                     .filter((o) => o.status === "pending")
                     .map((o) => o.total))
@@ -48,14 +48,14 @@ export default async function(this: TestConfig) {
 
     assert.notEqual(null, report);
 
-    // const all = await context.orders.asQuery().map(void 0, (p) => (x) => x.total)
+    // const all = await context.orders.asQuery().map(void 0, (x, p) => x.total)
     //     .first();
 
     // assert.notEqual(null, all);
 
     // const r = await context.users.all()
     //     .trace(console.log)
-    //     .sum(void 0, (p) => (x) => ({
+    //     .sum(void 0, (x, p) => ({
     //         paid: x.orders.some((o) => o.status === "pending") ? 1 : 0,
     //         total: 1
     //     }));

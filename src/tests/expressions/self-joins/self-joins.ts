@@ -12,7 +12,7 @@ export default function() {
     // const context = new ShoppingContext(driver);
     // const c1 = "a";
     // const log = [];
-    // let query = context.categories.where({ c1 }, (p) => (x) => x.categoryID === p.c1)
+    // let query = context.categories.where({ c1 }, (x, p) => x.categoryID === p.c1)
     //     .include((x) => x.children)
     //     .trace((x) => log.push(x))
     //     .first();

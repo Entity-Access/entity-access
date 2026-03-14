@@ -13,7 +13,7 @@ export class UserEvents extends EntityEvents<User> {
             return null;
         }
         const { userID } = this.user;
-        return query.where({ userID }, (p) => (x) => x.userID === p.userID
+        return query.where({ userID }, (x, p) => x.userID === p.userID
             || x.orders.some(
                 (op) => op.orderItems.some((oi) => oi.product.ownerID === p.userID)));
     }
@@ -23,6 +23,6 @@ export class UserEvents extends EntityEvents<User> {
             return null;
         }
         const { userID } = this.user;
-        return query.where({ userID}, (p) => (x) => x.userID === p.userID);
+        return query.where({ userID}, (x, p) => x.userID === p.userID);
     }
 }

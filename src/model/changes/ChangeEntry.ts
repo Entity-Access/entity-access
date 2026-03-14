@@ -184,7 +184,7 @@ export default class ChangeEntry<T = any> implements IChanges {
                 filter.push(`x.${fkColumn.name} === p.${relatedKeyColumn.name}`);
             }
 
-            const query = `(p) => (x) => ${filter.join(" && ")}` as any;
+            const query = `(x, p) => ${filter.join(" && ")}` as any;
             // console.log(query);
 
             await context.model.register(relatedEntity.typeClass)

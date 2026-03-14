@@ -19,9 +19,9 @@ export default async function(this: TestConfig) {
 
 
     const results = await context.products
-        .where(void 0, (p) => (x) => x.productID > 1)
+        .where(void 0, (x, p) => x.productID > 1)
         .trace(console.log)
-        .updateSelect(void 0, (p) => (x) => ({
+        .updateSelect(void 0, (x, p) => ({
             productDescription: "updated"
         }));
     assert.equal(results[0].productDescription, "updated");

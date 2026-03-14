@@ -20,7 +20,7 @@ export class ProductEvents extends EntityEvents<Product> {
             return null;
         }
         // everyone can read published or own products
-        return query.where({ userID, statusPublished }, (p) => (x) => x.ownerID === p.userID || x.status === p.statusPublished);
+        return query.where({ userID, statusPublished }, (x, p) => x.ownerID === p.userID || x.status === p.statusPublished);
     }
 
     modify(query: IEntityQuery<Product>): IEntityQuery<Product> {
@@ -32,7 +32,7 @@ export class ProductEvents extends EntityEvents<Product> {
         }
 
         // customer can modify its own products
-        return query.where({ userID }, (p) => (x) => x.ownerID === p.userID);
+        return query.where({ userID }, (x, p) => x.ownerID === p.userID);
     }
 
     afterUpdate(entity: Product, entry: ChangeEntry<Product>): void | Promise<void> {
@@ -84,7 +84,7 @@ export class ProductPriceEvents extends EntityEvents<ProductPrice> {
         }
 
         // user can view prices of only published or own products
-        return query.where({ userID, statusPublished } , (p) => (x) => x.product.status === p.statusPublished || x.product.ownerID === p.userID);
+        return query.where({ userID, statusPublished } , (x, p) => x.product.status === p.statusPublished || x.product.ownerID === p.userID);
     }
 
     modify(query: IEntityQuery<ProductPrice>): IEntityQuery<ProductPrice> {
@@ -96,7 +96,7 @@ export class ProductPriceEvents extends EntityEvents<ProductPrice> {
         }
 
         // user can only edit its own prices
-        return query.where({ userID }, (p) => (x) => x.product.ownerID === p.userID);
+        return query.where({ userID }, (x, p) => x.product.ownerID === p.userID);
     }
 
 }

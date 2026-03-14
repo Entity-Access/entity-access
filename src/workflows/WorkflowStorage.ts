@@ -43,11 +43,11 @@ export default class WorkflowStorage {
 
     getPendingWorkflowCount({ taskGroup = void 0 } = { }) {
         const db = new WorkflowDbContext(this.driver);
-        let q = db.workflows.where(void 0, (p) => (x) => x.isWorkflow === true
+        let q = db.workflows.where(void 0, (x, p) => x.isWorkflow === true
             && x.state === "queued"
         );
         if (taskGroup) {
-            q = q.where({ taskGroup}, (p) => (x) => x.taskGroup === p.taskGroup);
+            q = q.where({ taskGroup}, (x, p) => x.taskGroup === p.taskGroup);
         }
         return q.count();
     }
@@ -56,13 +56,13 @@ export default class WorkflowStorage {
         const now = this.clock.utcNow;
         const db = new WorkflowDbContext(this.driver);
         const { group, deferSeconds } = throttle;
-        const w = await db.workflows.where({ group, now }, (p) => (x) => x.throttleGroup === p.group
+        const w = await db.workflows.where({ group, now }, (x, p) => x.throttleGroup === p.group
                 && x.state !== "failed"
                 && x.state !== "done"
                 && x.isWorkflow === true
                 && x.eta >= Sql.cast.asDateTime(p.now)
             )
-            .orderByDescending(void 0, (p) => (x) => x.queued)
+            .orderByDescending(void 0, (x, p) => x.queued)
             .first();
         if (w) {
             w.eta = DateTime.from(w.eta).addSeconds(deferSeconds);
@@ -76,9 +76,9 @@ export default class WorkflowStorage {
 
         const db = new WorkflowDbContext(this.driver);
 
-        const last = await db.workflows.where(throttle, (p) => (x) => x.throttleGroup === p.group
+        const last = await db.workflows.where(throttle, (x, p) => x.throttleGroup === p.group
             && x.isWorkflow === true)
-            .orderByDescending(void 0, (p) => (x) => x.queued)
+            .orderByDescending(void 0, (x, p) => x.queued)
             .first();
 
         if (last) {
@@ -143,12 +143,12 @@ export default class WorkflowStorage {
         if (text) {
             // save..
             await db.workflows.statements.update({ extra: text }, { id });
-            // await db.workflows.where({ id }, (p) => (x) => x.id === p.id)
-            //     .update({ text}, (p) => (x) => ({ extra: p.text }));
+            // await db.workflows.where({ id }, (x, p) => x.id === p.id)
+            //     .update({ text}, (x, p) => ({ extra: p.text }));
             return text;
         }
-        const item = await db.workflows.where({ id }, (p) => (x) => x.id === p.id)
-            .select(void 0, (p) => (x) => ({ extra: x.extra}) ).first();
+        const item = await db.workflows.where({ id }, (x, p) => x.id === p.id)
+            .select(void 0, (x, p) => ({ extra: x.extra}) ).first();
         return item?.extra;
 }
 
@@ -162,9 +162,9 @@ export default class WorkflowStorage {
 
         // if parent workflows exist
         // change eta to recent ones...
-        const hasPendingChildren = await db.workflows.where({ id }, (p) => (x) => x.parentID === p.id && x.isWorkflow === true)
+        const hasPendingChildren = await db.workflows.where({ id }, (x, p) => x.parentID === p.id && x.isWorkflow === true)
             .limit(1000)
-            .update(void 0, (p) => (x) => ({
+            .update(void 0, (x, p) => ({
                 eta: Sql.date.addMinutes(Sql.date.now(),-1)
             }));
 
@@ -172,16 +172,16 @@ export default class WorkflowStorage {
             return;
         }
 
-        await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id)
+        await db.workflows.where({ id}, (x, p) => x.parentID === p.id)
             .limit(1000)
-            .delete({ id }, (p) => (x) => x.parentID === p.id);
+            .delete({ id }, (x, p) => x.parentID === p.id);
 
-        if (await db.workflows.where({ id}, (p) => (x) => x.parentID === p.id).some()) {
+        if (await db.workflows.where({ id}, (x, p) => x.parentID === p.id).some()) {
             return;
         }
 
         await db.workflows.asQuery()
-            .delete({ id}, (p) => (x) => x.id === p.id);
+            .delete({ id}, (x, p) => x.id === p.id);
 
         return true;
     }
@@ -255,17 +255,17 @@ export default class WorkflowStorage {
         const uuid = randomUUID();
 
         const items = await db.workflows
-            .where({now, taskGroup}, (p) => (x) => x.eta <= p.now
+            .where({now, taskGroup}, (x, p) => x.eta <= p.now
                 && ( x.lockedTTL === null
                     || x.lockedTTL <= p.now
                 )
                 && x.isWorkflow === true
                 && x.taskGroup === p.taskGroup)
-            .orderBy({}, (p) => (x) => x.eta)
-            .thenBy({}, (p) => (x) => x.priority)
+            .orderBy({}, (x, p) => x.eta)
+            .thenBy({}, (x, p) => x.priority)
             .limit(20)
             .withSignal(signal)
-            .updateSelect({ uuid}, (p) => (x) => ({
+            .updateSelect({ uuid}, (x, p) => ({
                 lockedTTL: Sql.date.addSeconds(Sql.date.now(), 15),
                 lockToken: p.uuid
             }));

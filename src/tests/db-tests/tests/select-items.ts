@@ -14,10 +14,10 @@ export default async function(this: TestConfig) {
 
     assert.notEqual(null, headphone);
 
-    const products = await context.products.where({}, (p) => (x) => x.productID > 0)
+    const products = await context.products.where({}, (x, p) => x.productID > 0)
         .offset(2)
         .limit(5)
-        .orderBy({}, (p) => (x) => x.name)
+        .orderBy({}, (x, p) => x.name)
         .toArray();
 
     assert.equal(5, products.length);
@@ -27,22 +27,22 @@ export default async function(this: TestConfig) {
     assert.equal(products.join(","), sorted.join(","));
 
     // count all headphones...
-    let allHeadphones = await context.productCategories.where({ headPhoneCategory }, (p) => (x) => x.category.categoryID === p.headPhoneCategory).count();
+    let allHeadphones = await context.productCategories.where({ headPhoneCategory }, (x, p) => x.category.categoryID === p.headPhoneCategory).count();
 
     assert.equal(6, allHeadphones);
 
-    allHeadphones = await context.products.where({ headPhoneCategory }, (p) => (x) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)).count();
+    allHeadphones = await context.products.where({ headPhoneCategory }, (x, p) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)).count();
 
     assert.equal(6, allHeadphones);
 
-    const first = await context.productCategories.where({ headPhoneCategory }, (p) => (x) => x.category.categoryID === p.headPhoneCategory).first();
+    const first = await context.productCategories.where({ headPhoneCategory }, (x, p) => x.category.categoryID === p.headPhoneCategory).first();
 
     // delete first one...
     context.products.delete(first);
 
     await context.saveChanges();
 
-    allHeadphones = await context.products.where({ headPhoneCategory }, (p) => (x) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)).count();
+    allHeadphones = await context.products.where({ headPhoneCategory }, (x, p) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)).count();
 
     assert.equal(5, allHeadphones);
 

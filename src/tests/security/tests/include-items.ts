@@ -10,7 +10,7 @@ export default async function (this: TestConfig) {
 
     const context = new ShoppingContext(old.driver, void 0, Logger.instance);
     const order = await context.orders.all()
-        .where({id: 0}, (p) => (x) => x.orderID > p.id)
+        .where({id: 0}, (x, p) => x.orderID > p.id)
         .include((x) => x.orderItems.forEach((oi) => oi.productPrice.product))
         .first();
 

@@ -14,6 +14,6 @@ export default async function(this: TestConfig) {
 
     assert.equal(c.key, "1");
 
-    c = await context.cachedItems.where(c, (p) => (x) => x.key === p.key).first();
+    c = await context.cachedItems.where(c, (x, p) => x.key === p.key).first();
     assert.equal(c.key, "1");
 }

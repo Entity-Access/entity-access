@@ -14,7 +14,7 @@ export default async function(this: TestConfig) {
 
     context.changeSet.clear();
 
-    const headphone = await context.categories.where({ name: "head-phones/blue-tooth" }, (p) => (x) => x.categoryID === p.name).first();
+    const headphone = await context.categories.where({ name: "head-phones/blue-tooth" }, (x, p) => x.categoryID === p.name).first();
 
     assert.equal(undefined, headphone.parent);
 

@@ -358,7 +358,7 @@ export class EntitySource<T = any> {
             filter.push(`x.${iterator.name} === p.${iterator.name}`);
         }
 
-        return this.where(keys, `(p) => (x) => ${filter.join(" && ")}` as any) as any;
+        return this.where(keys, `(x, p) => ${filter.join(" && ")}` as any) as any;
         // return q.first() as Promise<T>;
     }
 
@@ -381,7 +381,7 @@ export class EntitySource<T = any> {
                 filter.push(`x.${fkColumn.name} === p.${relatedKeyColumn.name}`);
             }
 
-            const query = `(p) => (x) => ${filter.join(" && ")}` as any;
+            const query = `(x, p) => ${filter.join(" && ")}` as any;
             // console.log(query);
 
             return this.context.model.register(relatedEntity.typeClass)

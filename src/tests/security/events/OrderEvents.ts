@@ -17,7 +17,7 @@ export class OrderEvents extends EntityEvents<Order> {
 
         // user can access orders placed by the user or orders with products owned by user
 
-        return query.where({ userID }, (p) => (x) => x.customerID === p.userID || x.orderItems.some((item) => item.product.ownerID === p.userID));
+        return query.where({ userID }, (x, p) => x.customerID === p.userID || x.orderItems.some((item) => item.product.ownerID === p.userID));
     }
 
     modify(query: IEntityQuery<Order>): IEntityQuery<Order> {
@@ -26,7 +26,7 @@ export class OrderEvents extends EntityEvents<Order> {
         }
         const { userID } = this.user;
         // user can only modify placed orders
-        return query.where({ userID }, (p) => (x) => x.customerID === p.userID || x.orderItems.some((item) => item.product.ownerID === p.userID));
+        return query.where({ userID }, (x, p) => x.customerID === p.userID || x.orderItems.some((item) => item.product.ownerID === p.userID));
     }
 
     onForeignKeyFilter(filter: ForeignKeyFilter<Order>): IEntityQuery<any> {
@@ -49,7 +49,7 @@ export class OrderItemEvents extends EntityEvents<OrderItem> {
 
         // user can access orders placed by the user or orders with products owned by user
 
-        return query.where({ userID }, (p) => (x) => x.order.customerID === p.userID || x.product.ownerID === p.userID);
+        return query.where({ userID }, (x, p) => x.order.customerID === p.userID || x.product.ownerID === p.userID);
     }
 
     modify(query: IEntityQuery<OrderItem>): IEntityQuery<OrderItem> {
@@ -58,7 +58,7 @@ export class OrderItemEvents extends EntityEvents<OrderItem> {
         }
         const { userID } = this.user;
         // user can only modify placed orders
-        return query.where({ userID }, (p) => (x) => x.order.customerID === p.userID || x.product.ownerID === p.userID);
+        return query.where({ userID }, (x, p) => x.order.customerID === p.userID || x.product.ownerID === p.userID);
     }
 
     onForeignKeyFilter(filter: ForeignKeyFilter<OrderItem>): IEntityQuery<any> {

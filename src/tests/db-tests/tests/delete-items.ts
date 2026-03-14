@@ -20,7 +20,7 @@ export default async function(this: TestConfig) {
     let total = await context.products.all().count();
 
     let n = await context.products.all()
-        .delete(void 0, (p) => (x) => x.productID === 1);
+        .delete(void 0, (x, p) => x.productID === 1);
 
     assert.equal(n, 1);
 
@@ -31,7 +31,7 @@ export default async function(this: TestConfig) {
     total = await context.products.all().count();
     n = await context.products.all()
         .limit(1)
-        .delete(void 0, (p) => (x) => true === true);
+        .delete(void 0, (x, p) => true === true);
 
     assert.equal(n, 1);
 

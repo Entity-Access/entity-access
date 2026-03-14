@@ -32,7 +32,7 @@ export default class EntityQuery<T = any>
         return p as EntityQuery;
     }
 
-    select(p: any, fx: any): any {
+    select(p: any, fx?: any): any {
         return this.map(p, fx);
     }
 
@@ -63,7 +63,11 @@ export default class EntityQuery<T = any>
         }, this.signal);
     }
 
-    selectView(parameters: any, fx: any): any {
+    selectView(parameters: any, fx?: any): any {
+        if (fx === void 0) {
+            fx = parameters;
+            parameters = void 0;
+        }
         const exp = this.context.driver.compiler.compile(this, fx);
         const p1 = exp.params[0];
         if (p1) {
@@ -131,7 +135,11 @@ export default class EntityQuery<T = any>
         });
     }
 
-    map(parameters: any, fx: any): any {
+    map(parameters: any, fx?: any): any {
+        if (fx === void 0) {
+            fx = parameters;
+            parameters = void 0;
+        }
         const q = this.extend(parameters, fx, (select, body) => {
             const fields = [] as Expression[];
             switch(body.type) {
@@ -159,15 +167,18 @@ export default class EntityQuery<T = any>
         return new EntityQuery({ ... this, signal });
     }
 
-    thenBy(parameters: any, fx: any): any {
+    thenBy(parameters: any, fx?: any): any {
         return this.orderBy(parameters, fx);
     }
-    thenByDescending(parameters: any, fx: any) {
+    thenByDescending(parameters: any, fx?: any) {
         return this.orderByDescending(parameters, fx);
     }
 
-    where(parameters: any, fx: any): any {
-
+    where(parameters: any, fx?: any): any {
+        if (fx === void 0) {
+            fx = parameters;
+            parameters = void 0;
+        }
         return this.extend(parameters, fx, (select, body) => ({
             ... select,
             where: select.where ? Expression.logicalAnd(select.where, body): body
@@ -182,8 +193,12 @@ export default class EntityQuery<T = any>
         });
     }
 
-    union(p, fx): any {
+    union(p, fx?): any {
 
+        if (fx === void 0) {
+            fx = p;
+            p = void 0;
+        }
         const limit = this.selectStatement.limit;
         const offset = this.selectStatement.offset;
 
@@ -321,7 +336,11 @@ export default class EntityQuery<T = any>
         });
     }
 
-    async delete(p, f): Promise<number> {
+    async delete(p, f?): Promise<number> {
+        if (f === void 0) {
+            f = p;
+            p = void 0;
+        }
         if (f) {
             return this.where(p, f).delete(void 0, void 0);
         }
@@ -367,6 +386,13 @@ export default class EntityQuery<T = any>
     }
 
     async updateSelect(p?, f?): Promise<T[]> {
+
+
+        if (f === void 0) {
+            f = p;
+            p = void 0;
+        }
+
         const updateStatement = this.getUpdateStatement(p, f, true);
 
         await using scope = new AsyncDisposableScope();
@@ -404,6 +430,10 @@ export default class EntityQuery<T = any>
 
     async update(p?, f?): Promise<number> {
 
+        if (f === void 0) {
+            f = p;
+            p = void 0;
+        }
         const updateStatement = this.getUpdateStatement(p, f);
 
         const session = this.context.logger ?? Logger.nullLogger;
@@ -419,7 +449,7 @@ export default class EntityQuery<T = any>
         }
     }
 
-    getUpdateStatement(p?, f?, returnEntity = false) {
+    getUpdateStatement(p, f, returnEntity = false) {
 
         if (f) {
             return this.extend(p, f, (select, body) => {
@@ -666,7 +696,11 @@ export default class EntityQuery<T = any>
     toQuery(): { text: string; values: any[]; } {
         return this.context.driver.compiler.compileExpression(this, this.selectStatement);
     }
-    orderBy(parameters: any, fx: any): any {
+    orderBy(parameters: any, fx?: any): any {
+        if (fx === void 0) {
+            fx = parameters;
+            parameters = void 0;
+        }
         return this.extend(parameters, fx, (select, target) => ({
             ... select,
             orderBy: select.orderBy
@@ -674,7 +708,11 @@ export default class EntityQuery<T = any>
                 : [OrderByExpression.create({ target})]
         }));
     }
-    orderByDescending(parameters: any, fx: any): any {
+    orderByDescending(parameters: any, fx?: any): any {
+        if (fx === void 0) {
+            fx = parameters;
+            parameters = void 0;
+        }
         const descending = true;
         return this.extend(parameters, fx, (select, target) => ({
             ... select,

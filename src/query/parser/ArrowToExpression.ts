@@ -18,7 +18,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
      * @param target parameter target
      * @returns Parsed expression
      */
-    public static transform(fx: (p: any) => (x: any) => any, target?: ParameterExpression, outerParameter?: ParameterExpression) {
+    public static transform(fx: (x: any, p: any) => any, target?: ParameterExpression, outerParameter?: ParameterExpression) {
         const key = fx.toString();
         const rs = new Restructure();
         const node = rs.visit(parseExpression(key));
@@ -26,7 +26,7 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
     }
 
     /**
-     * Since expression parsed as a different parameter in nested lambda (p) => (x) => x..,
+     * Since expression parsed as a different parameter in nested lambda (x, p) => x..,
      * we need to replace x with provided target to bind x with respective ParameterExpression.
      * As ParameterExpression contains the type and model associated with the table represented by `x`.
      * @param node parsed node
@@ -88,9 +88,11 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
                 name = firstTarget.name;
             }
             const lastParam = node.params.at(-1) as any as bpe.Identifier;
-            const p1 = ParameterExpression.create({ name: lastParam.name });
-            paramSet.set(lastParam.name, p1);
-            params.push(p1);
+            if (lastParam) {
+                const p1 = ParameterExpression.create({ name: lastParam.name });
+                paramSet.set(lastParam.name, p1);
+                params.push(p1);
+            }
         }
 
 

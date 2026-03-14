@@ -8,26 +8,26 @@ export default function () {
 
     let name = "1";
 
-    let r = compiler.execute({ name }, (p) => (x) => x.firstName === p.name);
+    let r = compiler.execute({ name }, (x, p) => x.firstName === p.name);
     assert.equal(`x."firstName" = $1`, r.text);
 
     name = null;
-    r = compiler.execute({ name }, (p) => (x) => x.firstName === p.name);
+    r = compiler.execute({ name }, (x, p) => x.firstName === p.name);
     assert.equal(`x."firstName" IS NULL`, r.text);
 
-    r = compiler.execute({ name }, (p) => (x) => x.firstName === null);
+    r = compiler.execute({ name }, (x, p) => x.firstName === null);
     assert.equal(`x."firstName" IS NULL`, r.text);
 
     name = "1";
 
-    r = compiler.execute({ name }, (p) => (x) => x.firstName !== p.name);
+    r = compiler.execute({ name }, (x, p) => x.firstName !== p.name);
     assert.equal(`x."firstName" <> $1`, r.text);
 
     name = null;
-    r = compiler.execute({ name }, (p) => (x) => x.firstName !== p.name);
+    r = compiler.execute({ name }, (x, p) => x.firstName !== p.name);
     assert.equal(`x."firstName" IS NOT NULL`, r.text);
 
-    r = compiler.execute({ name }, (p) => (x) => x.firstName !== null);
+    r = compiler.execute({ name }, (x, p) => x.firstName !== null);
     assert.equal(`x."firstName" IS NOT NULL`, r.text);
 }
 

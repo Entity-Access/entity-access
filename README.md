@@ -285,7 +285,7 @@ using helper functions to convert before comparison.
 
 To use `IN` operator, you can simply use javascript's `in` keyword.
 ```typescript
-let all = await db.products.where(void 0, (p) => (x) =>
+let all = await db.products.where(void 0, (x, p) =>
         x.productType in ["mobile", "laptop"]
     ).toArray();
 ```
@@ -300,7 +300,7 @@ However, you can also send `in` parameters as parameters as shown below.
 
 ```typescript
 const productTypes = ["mobile", "laptop"];
-all = await db.products.where({ productTypes }, (p) => (x) =>
+all = await db.products.where({ productTypes }, (x, p) =>
         x.productType in p.productTypes
     ).toArray();
 ```
@@ -364,19 +364,19 @@ Just as text functions you can also use date functions as shown below.
 
 ### OrderBy
 ```typescript
-    q.orderBy({}, (p) => (x) => x.orderDate)
-    .thenBy({}, (p) => (x) => x.customer.firstName)
+    q.orderBy({}, (x, p) => x.orderDate)
+    .thenBy({}, (x, p) => x.customer.firstName)
 
     // custom...
-    q.orderBy({}, (p) => (x) => x.orderDate)
-    .thenBy({}, (p) => (x) => Sql.text.collate(x.customer.firstName, "case_insensitive"))
+    q.orderBy({}, (x, p) => x.orderDate)
+    .thenBy({}, (x, p) => Sql.text.collate(x.customer.firstName, "case_insensitive"))
 
 ```
 
 ### Limit/Offset
 ```typescript
-    q = q.orderByDescending({}, (p) => (x) => x.orderDate)
-    .thenBy({}, (p) => (x) => x.customer.firstName)
+    q = q.orderByDescending({}, (x, p) => x.orderDate)
+    .thenBy({}, (x, p) => x.customer.firstName)
     .limit(50)
     .offset(50);
 ```
@@ -410,7 +410,7 @@ logged in within 30 days.
 ```typescript
     const past30 = DateTime.now.addDays(-30);
     db.users.asQuery()
-        .update({ past30 }, (p) => (x) => ({
+        .update({ past30 }, (x, p) => ({
             active: Sql.cast.asBoolean(
                 x.lastLogin > p.past30
             )
@@ -444,7 +444,7 @@ is loadded in the memory.
 
     oldMessagesQuery.insertInto(db.archivedMessages);
 
-    oldMessagesQuery.delete(void 0, (p) => (x) => x.messageID !== null);
+    oldMessagesQuery.delete(void 0, (x, p) => x.messageID !== null);
 
     await tx.commit();
 
@@ -546,7 +546,7 @@ Sql.myFunctions = {
 // now you can use this as shown below...
 
 context.orders.all()
-    .where({amount}, (p) => (x) =>
+    .where({amount}, (x, p) =>
         Sql.mySchema.calculateAmount(x.total, x.units, x.taxId) < p.amount );
 
 ```

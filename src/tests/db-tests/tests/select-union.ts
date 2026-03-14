@@ -14,10 +14,10 @@ export default async function(this: TestConfig) {
 
     context.changeSet.clear();
 
-    const pq = context.productCategories.where({ headPhoneCategory }, (p) => (x) => x.categoryID === p.headPhoneCategory);
+    const pq = context.productCategories.where({ headPhoneCategory }, (x, p) => x.categoryID === p.headPhoneCategory);
 
     const r = pq
-        .unions(context.productCategories.where({ maleClothesCategory }, (p) => (x) => x.category.parentID === p.maleClothesCategory))
+        .unions(context.productCategories.where({ maleClothesCategory }, (x, p) => x.category.parentID === p.maleClothesCategory))
         .trace(console.log);
 
     const n = await r.count();

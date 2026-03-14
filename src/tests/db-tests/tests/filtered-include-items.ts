@@ -11,7 +11,7 @@ export default async function(this: TestConfig) {
     const context = await createContext(this.driver);
 
     const category = await context.categories
-        .where({ headPhoneCategory }, (p) => (x) => x.categoryID === p.headPhoneCategory && x.productCategories.some((pc) => pc.productID > 0))
+        .where({ headPhoneCategory }, (x, p) => x.categoryID === p.headPhoneCategory && x.productCategories.some((pc) => pc.productID > 0))
         .include((x) => x.productCategories.forEach((pc) => pc.product.prices))
         .first();
 
@@ -19,7 +19,7 @@ export default async function(this: TestConfig) {
     assert.notEqual(0, first.product.prices.length);
 
     const count = await context.categories
-        .where({ headPhoneCategory }, (p) => (x) => x.categoryID === p.headPhoneCategory && x.productCategories.some((pc) => pc.productID > 0))
+        .where({ headPhoneCategory }, (x, p) => x.categoryID === p.headPhoneCategory && x.productCategories.some((pc) => pc.productID > 0))
         .count();
 
     assert.notEqual(0, count);

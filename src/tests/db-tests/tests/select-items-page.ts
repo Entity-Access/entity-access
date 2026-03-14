@@ -10,12 +10,12 @@ export default async function(this: TestConfig) {
 
     const context = await createContext(this.driver);
 
-    const headphone = await context.products.where({ name: "Jabber Head Phones" }, (p) => (x) => x.name === p.name).first();
+    const headphone = await context.products.where({ name: "Jabber Head Phones" }, (x, p) => x.name === p.name).first();
 
     assert.notEqual(null, headphone);
 
-    const q = context.products.where({}, (p) => (x) => x.productID > 0)
-        .orderBy({}, (p) => (x) => x.name);
+    const q = context.products.where({}, (x, p) => x.productID > 0)
+        .orderBy({}, (x, p) => x.name);
 
     let products = await q
         .toPage(2,2);

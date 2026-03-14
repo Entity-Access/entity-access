@@ -11,7 +11,7 @@ export default async function(this: TestConfig) {
 
     const context = await createContext(this.driver);
 
-    const cats = await context.categories.where({ search: "headphones%"}, (p) => (x) => Sql.text.like(x.parent.lowerName, p.search)
+    const cats = await context.categories.where({ search: "headphones%"}, (x, p) => Sql.text.like(x.parent.lowerName, p.search)
         || Sql.text.like(x.parent.parent.lowerName, p.search) )
         .trace(console.log)
         .toArray();

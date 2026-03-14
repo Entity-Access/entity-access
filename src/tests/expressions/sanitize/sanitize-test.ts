@@ -10,7 +10,7 @@ export default function () {
     const name = "Akash";
 
     assert.throws(()=>
-        compiler.execute({ name }, (p) => (x) => pg_kill(9))
+        compiler.execute({ name }, (x, p) => pg_kill(9))
     );
 
 

@@ -11,7 +11,7 @@ export default async function(this: TestConfig) {
     const context = await createContext(this.driver);
 
     let headphone = await context.products
-        .where({ name: "Jabber Head Phones" }, (p) => (x) => x.name === p.name)
+        .where({ name: "Jabber Head Phones" }, (x, p) => x.name === p.name)
         .include((x) => x.categories.forEach((c) => c.category.children))
         .first();
 
@@ -24,7 +24,7 @@ export default async function(this: TestConfig) {
 
     const blueTooth = "Bluetooth";
     headphone = await context.products
-    .where({ name: "Jabber Head Phones", blueTooth }, (p) => (x) => x.name === p.name
+    .where({ name: "Jabber Head Phones", blueTooth }, (x, p) => x.name === p.name
         && x.categories.some((c) =>
             c.category.children.some((cc) => cc.name === p.blueTooth)))
     .include((x) => x.categories.forEach((c) => c.category.children))

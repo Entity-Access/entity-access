@@ -8,24 +8,24 @@ export default function () {
 
     const names = ["Akash", "Simmi"];
 
-    let r = compiler.execute({ names }, (p) => (x) => Sql.in(x.firstName, p.names));
+    let r = compiler.execute({ names }, (x, p) => Sql.in(x.firstName, p.names));
     assert.equal(`x."firstName" IN ($1,$2)`, r.text);
 
-    r = compiler.execute({ names }, (p) => (x) => x.firstName in p.names);
+    r = compiler.execute({ names }, (x, p) => x.firstName in p.names);
     assert.equal(`x."firstName" IN ($1,$2)`, r.text);
 
-    r = compiler.execute({ names }, (p) => (x) => x.firstName in ["a", "b"]);
+    r = compiler.execute({ names }, (x, p) => x.firstName in ["a", "b"]);
     assert.equal(`x."firstName" IN ('a','b')`, r.text);
 
-    // r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
+    // r = compiler.execute({ names }, (x, p) => Sql.text.likeAny(x.firstName, p.names));
 
-    // r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
+    // r = compiler.execute({ names }, (x, p) => Sql.text.likeAny(x.firstName, p.names));
     // assert.equal("((x.firstName like $1) OR (x.firstName like $2))", r.text);
 
-    r = compiler.execute({ names }, (p) => (x) => Sql.text.likeAny(x.firstName, p.names));
+    r = compiler.execute({ names }, (x, p) => Sql.text.likeAny(x.firstName, p.names));
     assert.equal(`(x."firstName" LIKE ANY (ARRAY[$1,$2]))`, r.text);
 
-    r = compiler.execute({ names }, (p) => (x) => Sql.text.iLikeAny(x.firstName, p.names));
+    r = compiler.execute({ names }, (x, p) => Sql.text.iLikeAny(x.firstName, p.names));
     assert.equal(`(x."firstName" iLIKE ANY (ARRAY[$1,$2]))`, r.text);
 }
 

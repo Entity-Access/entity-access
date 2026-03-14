@@ -19,9 +19,10 @@ export interface IBaseQuery<T> {
 
     some(): Promise<boolean>;
 
-    select<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
+    select<TR>(fx: (x: T) => TR): IBaseQuery<TR>;
     select<P, TR>(parameters: P, fx: (x: T,p: P) => TR): IBaseQuery<TR>;
-    map<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): IBaseQuery<TR>;
+    map<TR>(fx: (x: T) => TR): IBaseQuery<TR>;
+    map<P, TR>(parameters: P, fx: (x: T, p: P) => TR): IBaseQuery<TR>;
 
     toArray(this: T extends object ? IBaseQuery<T> : never): Promise<T[]>;
 
@@ -31,38 +32,42 @@ export interface IBaseQuery<T> {
 
     limit<DT>(this: DT, limit: number): DT;
     offset<DT>(this: DT, offset: number): DT;
-    where<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
+    where<DT>(this: DT, fx: (x: T) => boolean): DT;
     where<P, DT>(this: DT, parameters: P, fx: (x: T,p: P) => boolean): DT;
+    union<DT>(this: DT, fx: (x: T) => boolean): DT;
     union<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => boolean): DT;
-    selectView<P, DT>(this: DT, parameters: P, fx: (p: P) => (x: T) => Partial<T>): DT;
+    selectView<DT>(this: DT, fx: (x: T) => Partial<T>): DT;
+    selectView<P, DT>(this: DT, parameters: P, fx: (x: T, p: P) => Partial<T>): DT;
 
-    innerJoin<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (p: JT) => (x: T) => boolean): DT;
+    innerJoin<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (x: T, p: JT) => boolean): DT;
 
-    exists<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (p: JT) => (x: T) => boolean): DT;
+    exists<JT, DT>(this: DT, q1: IBaseQuery<JT>, fx: (x: T, p: JT) => boolean): DT;
 
     count(): Promise<number>;
     count<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
 
     slice<DT>(this:DT, start?: number, end?: number): DT;
 
-    sum(): Promise<number>;
-    sum<P>(parameters: P, fx: (p: P) => (x: T) => number): Promise<number>;
-    sum<P, TR>(parameters: P, fx: (p: P) => (x: T) => TR): Promise<IFieldsAsNumbers<TR>>;
+    sum(fx?: (x: T) => number): Promise<number>;
+    sum<P, TR>(parameters: P, fx: (x: T, p: P) => TR): Promise<IFieldsAsNumbers<TR>>;
 
 
     withSignal<DT>(this:DT, signal: AbortSignal): DT;
 
     include<TR>(fx: (x: T) => TR | TR[]): IBaseQuery<T>;
 
-    update<P>(parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<number>;
-    updateSelect<P>(this: T extends object ? IBaseQuery<T> : never, parameters: P, fx: (p: P) => (x:T) => Partial<T>): Promise<T[]>;
+    update(fx: (x:T) => Partial<T>): Promise<number>;
+    update<P>(parameters: P, fx: (x:T, p: P) => Partial<T>): Promise<number>;
+    updateSelect(this: T extends object ? IBaseQuery<T> : never, fx: (x:T) => Partial<T>): Promise<T[]>;
+    updateSelect<P>(this: T extends object ? IBaseQuery<T> : never, parameters: P, fx: (x:T, p: P) => Partial<T>): Promise<T[]>;
 
     /**
      * Warning !! Be careful, this will delete rows from the database and neither soft delete nor any other events will be invoked.
      * @param parameters parameters to supply
      * @param fx filter expression
      */
-    delete<P>(parameters: P, fx: (p: P) => (x: T) => boolean): Promise<number>;
+    delete(fx: (x: T) => boolean): Promise<number>;
+    delete<P>(parameters: P, fx: (x: T, p: P) => boolean): Promise<number>;
 
     trace<DT>(this: DT, tracer: (text: string) => void): DT;
 
@@ -79,12 +84,16 @@ export interface IBaseQuery<T> {
 
 export interface IOrderedEntityQuery<T> extends IBaseQuery<T> {
 
-    thenBy<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
-    thenByDescending<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
+    thenBy(fx: (x: T) => any): IOrderedEntityQuery<T>;
+    thenBy<P>(parameters: P, fx: (x: T, p: P) => any): IOrderedEntityQuery<T>;
+    thenByDescending(fx: (x: T) => any): IOrderedEntityQuery<T>;
+    thenByDescending<P>(parameters: P, fx: (x: T, p: P) => any): IOrderedEntityQuery<T>;
 }
 
 export interface IEntityQuery<T> extends IBaseQuery<T> {
 
-    orderBy<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
-    orderByDescending<P>(parameters: P, fx: (p: P) => (x: T) => any): IOrderedEntityQuery<T>;
+    orderBy(fx: (x: T) => any): IOrderedEntityQuery<T>;
+    orderBy<P>(parameters: P, fx: (x: T, p: P) => any): IOrderedEntityQuery<T>;
+    orderByDescending(fx: (x: T) => any): IOrderedEntityQuery<T>;
+    orderByDescending<P>(parameters: P, fx: (x: T, p: P) => any): IOrderedEntityQuery<T>;
 }

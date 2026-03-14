@@ -86,33 +86,33 @@ WHERE EXISTS
 export default function() {
 
     const context = new ShoppingContext(new PostgreSqlDriver({}));
-    let query = context.products.where({ productID: 1 }, (p) => (x) => x.orderItems.some((o) => o.productID === p.productID));
+    let query = context.products.where({ productID: 1 }, (x, p) => x.orderItems.some((o) => o.productID === p.productID));
 
     let r = query.toQuery();
     assertSqlMatch(sql1, r.text);
 
     const old = query;
-    query = query.where({ amount: 200}, (p) => (x) => x.orderItems.some((o) => o.amount > p.amount));
+    query = query.where({ amount: 200}, (x, p) => x.orderItems.some((o) => o.amount > p.amount));
     r = query.toQuery();
     assertSqlMatch(sql2, r.text);
 
-    query = old.where({ date: new Date()}, (p) => (x) => x.orderItems.some((o) => o.order.orderDate > p.date));
+    query = old.where({ date: new Date()}, (x, p) => x.orderItems.some((o) => o.order.orderDate > p.date));
     r = query.toQuery();
     assertSqlMatch(sql3, r.text);
 
-    query = context.products.where({ date: new Date()}, (p) => (x) => x.owner.dateCreated > p.date);
+    query = context.products.where({ date: new Date()}, (x, p) => x.owner.dateCreated > p.date);
     r = query.toQuery();
     assertSqlMatch(productJoin, r.text);
 
-    const q = context.orderItems.where({ o: 1,  owner: 1}, (p) => (x) => x.productID === p.o || x.product.ownerID === p.owner);
+    const q = context.orderItems.where({ o: 1,  owner: 1}, (x, p) => x.productID === p.o || x.product.ownerID === p.owner);
     r = q.toQuery();
     assertSqlMatch(join2, r.text);
 
-    query = old.where({ date: new Date()}, (p) => (x) => !x.orderItems.some((o) => o.order.orderDate > p.date));
+    query = old.where({ date: new Date()}, (x, p) => !x.orderItems.some((o) => o.order.orderDate > p.date));
     r = query.toQuery();
     assertSqlMatch(notExp, r.text);
 
-    query = old.selectView(void 0, (p) => (x) => ({
+    query = old.selectView(void 0, (x, p) => ({
         productDescription: x.productDescription,
         ownerID: 0,
     }));

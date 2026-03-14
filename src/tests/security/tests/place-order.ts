@@ -55,7 +55,7 @@ async function createInterests(this: TestConfig) {
 
     await context.saveChanges();
 
-    const userCategories = await context.userCategories.where({ userID }, (p) => (x) => x.userID === p.userID).count();
+    const userCategories = await context.userCategories.where({ userID }, (x, p) => x.userID === p.userID).count();
 
     assert.equal(1, userCategories);
 
@@ -100,7 +100,7 @@ async function addNewOrder(this: TestConfig, customer: User, userID?) {
 
     // get first headphone...
     const headPhone = await context.products.all().firstOrFail();
-    const headPhonePrice = await context.productPrices.where({ id: headPhone.productID }, (p) => (x) => x.productID === p.id).firstOrFail();
+    const headPhonePrice = await context.productPrices.where({ id: headPhone.productID }, (x, p) => x.productID === p.id).firstOrFail();
 
     context.orders.add({
         customer,
