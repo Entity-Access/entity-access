@@ -46,4 +46,12 @@ export default async function(this: TestConfig) {
 
     assert.equal(5, allHeadphones);
 
+
+    // old style of query
+
+    allHeadphones = await context.products.where({ headPhoneCategory },
+        ((p) => (x) => x.categories.some((pc) => pc.categoryID === p.headPhoneCategory)) as any).count();
+
+    assert.equal(5, allHeadphones);
+
 }

@@ -89,10 +89,15 @@ export default class ArrowToExpression extends BabelVisitor<Expression> {
             }
             const lastParam = node.params.at(-1) as any as bpe.Identifier;
             if (lastParam) {
-                const p1 = ParameterExpression.create({ name: lastParam.name });
-                paramSet.set(lastParam.name, p1);
-                params.push(p1);
+                if (outerParameter) {
+                    paramSet.set(lastParam.name, outerParameter);
+                } else {
+                    const p1 = ParameterExpression.create({ name: lastParam.name });
+                    paramSet.set(lastParam.name, p1);
+                    params.push(p1);
+                }
             }
+
         }
 
 

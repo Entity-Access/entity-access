@@ -444,9 +444,9 @@ export class EntitySource<T = any> {
         return mode === "modify" ? events.modify(query) : events.filter(query);
     }
 
-    public where<P>(parameter: P, fx: (p: P) => (x: T) => boolean): IEntityQuery<T>;
+    public where(fx: (x: T) => boolean): IEntityQuery<T>;
     public where<P>(parameter: P, fx: (x: T, p: P) => boolean): IEntityQuery<T>;
-    public where<P>(parameter: any, fx: unknown) {
+    public where<P>(parameter?: any, fx?: unknown) {
         return this.asQuery().where(parameter, fx as any) as IEntityQuery<T>;
     }
 
