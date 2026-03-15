@@ -646,7 +646,8 @@ export default class EntityQuery<T = any>
 
         } catch(error) {
             session.error(`Failed executing ${query?.text}\n${error.stack ?? error}`);
-            throw error;
+            // this should preserve stack trace..
+            throw new EntityAccessError(`Failed ${error.stack ?? error}\n`);
         }
     }
 
