@@ -42,8 +42,7 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org/
       - run: npm install
-      - run: npm install -D typescript
-      - run: tsc
+      - run: npx tsc
       - run: npm run test
         env:
           POSTGRES_HOST: localhost
