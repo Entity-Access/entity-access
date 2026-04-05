@@ -141,6 +141,8 @@ export default abstract class SqlServerMigrations extends Migrations {
                 return "UniqueIdentifier";
             case "Geometry":
                 return "geometry";
+            case "Point":
+                return "geometry";
         }
         const a: never = iterator.dataType;
         throw new Error("Not Defined");
