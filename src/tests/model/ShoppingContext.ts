@@ -64,10 +64,10 @@ export class CachedItem {
 })
 @Index({
     name: "IX_Users_Geo",
-    columns: [{
-        name:(x) => x.location, descending: false
-    }],
-    spatial: true
+    columns: [
+        { name:(x) => x.location, descending: false },
+        { name:(x) => x.userName, descending: false },
+    ],
 })
 export class User {
 

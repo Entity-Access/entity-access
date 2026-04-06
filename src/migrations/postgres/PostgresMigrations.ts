@@ -79,6 +79,7 @@ export default abstract class PostgresMigrations extends Migrations {
 
     async enableGeoSpatialTypes(): Promise<void> {
         await this.connection.executeQuery(`CREATE EXTENSION IF NOT EXISTS postgis;`);
+        await this.connection.executeQuery(`CREATE EXTENSION IF NOT EXISTS btree_gist;`);
     }
 
     protected getColumnDefinition(iterator: IColumn) {

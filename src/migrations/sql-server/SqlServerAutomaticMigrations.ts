@@ -3,6 +3,7 @@ import ICheckConstraint from "../../decorators/ICheckConstraint.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
+import { isSpatialType } from "../../decorators/ISqlType.js";
 import { BaseConnection } from "../../drivers/base/BaseDriver.js";
 import ExistingSchema from "../../drivers/base/ExistingSchema.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
@@ -122,12 +123,16 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             : type.name;
         const indexName =  index.name;
         const columns = [];
+        let spatial = true;
         for (const column of index.columns) {
             const columnName = column.name;
-            columns.push(`${columnName} ${ index.spatial ? "" : (column.descending ? "DESC" : "ASC")}`);
+            const c = type.getColumn(column.name);
+            const isColumnSpatial = isSpatialType(c.dataType);
+            spatial &&= isColumnSpatial;
+            columns.push(`${columnName} ${ isSpatialType(c.dataType) ? "" : (column.descending ? "DESC" : "ASC")}`);
         }
 
-        const indexType = index.spatial ? " SPATIAL " : "";
+        const indexType = spatial ? " SPATIAL " : "";
 
         let query = `IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = '${indexName}' AND object_id = OBJECT_ID('${name}'))
         BEGIN   

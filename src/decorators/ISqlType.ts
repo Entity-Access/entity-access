@@ -72,3 +72,12 @@ export type ISqlType =
     /** Geography - for SQL Server and other Geography compatible databases*/
     "Geography"
     ;
+
+
+export const isSpatialType = (type: ISqlType) => {
+    switch(type) {
+        case "Geography":
+            return true;
+    }
+    return false;
+};
