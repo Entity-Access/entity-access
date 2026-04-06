@@ -55,6 +55,8 @@ export default abstract class Migrations {
             }
         }
 
+        let hasGeoSpatialTypes = false;
+
         for (const s of model.sources.values()) {
             const type = s[modelSymbol] as EntityType;
 
@@ -63,6 +65,11 @@ export default abstract class Migrations {
             }
 
             for (const column of type.columns) {
+                switch(column.dataType) {
+                    case "Geography":
+                        hasGeoSpatialTypes = true;
+                        break;
+                }
                 if (column.computed && typeof column.computed !== "string") {
                     // parse..
                     const source = context.query(type.typeClass) as EntityQuery<any>;
@@ -77,6 +84,10 @@ export default abstract class Migrations {
                     const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
                     column.default = textQuery.join("").replace(r, "");
                 }
+            }
+
+            if (hasGeoSpatialTypes) {
+                await this.enableGeoSpatialTypes();
             }
 
             const schema = await this.getSchema(type);
@@ -147,6 +158,10 @@ export default abstract class Migrations {
             await this.commitVersion(context, name, version, historyTableName);
         }
         return true;
+    }
+
+    async enableGeoSpatialTypes() {
+        // do nothing...
     }
 
     async hasVersion(context: EntityContext, name: string, version: string, table: string) {

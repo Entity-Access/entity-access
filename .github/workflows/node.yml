@@ -23,7 +23,7 @@ jobs:
 
       postgres:
         # Docker Hub image
-        image: postgres
+        image: postgis/postgis:18-3.6-alpine
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: abcd123

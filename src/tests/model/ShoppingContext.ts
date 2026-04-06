@@ -81,6 +81,9 @@ export class User {
     })
     public photoID: number;
 
+    @Column({ dataType: "Geography", nullable: true})
+    location: any;
+
     public profile: UserProfile;
 
     public ownedProducts: Product[];

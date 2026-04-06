@@ -69,6 +69,6 @@ export type ISqlType =
      */
     "ByteArray" |
 
-    /** Geometry - for SQL Server and other geometry compatible databases*/
-    "Geometry"
+    /** Geography - for SQL Server and other Geography compatible databases*/
+    "Geography"
     ;

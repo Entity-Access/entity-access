@@ -77,6 +77,10 @@ export default abstract class PostgresMigrations extends Migrations {
         return new ExistingSchema(false, { columns, foreignKeys, indexes, constraints });
     }
 
+    async enableGeoSpatialTypes(): Promise<void> {
+        await this.connection.executeQuery(`CREATE EXTENSION IF NOT EXISTS postgis;`);
+    }
+
     protected getColumnDefinition(iterator: IColumn) {
         if (iterator.dataType === "Decimal") {
             if (iterator.precision && iterator.scale) {
@@ -123,8 +127,8 @@ export default abstract class PostgresMigrations extends Migrations {
                 return "jsonb";
             case "UUID":
                 return "uuid";
-            case "Geometry":
-                return "geometry";
+            case "Geography":
+                return "geography";
         }
         const a: never = iterator.dataType;
         throw new Error("Not Defined");

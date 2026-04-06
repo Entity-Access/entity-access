@@ -11,7 +11,7 @@ services:
     ports:
       - 1433:1433
   postgresdb:
-    image: postgres:alpine
+    image: postgis/postgis:18-3.6-alpine
     container_name: pg-test
     restart: unless-stopped
     environment:
