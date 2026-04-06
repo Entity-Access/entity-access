@@ -15,7 +15,6 @@ export default interface IIndexDef<T = any> {
     unique?: boolean;
     include?: ((x:T) => any)[];
     indexType?: string;
-    spatial?: boolean;
     filter?: (x: T) => boolean;
 }
 
@@ -26,6 +25,5 @@ export interface IIndex{
     unique?: boolean;
     include?: string[];
     indexType?: string;
-    spatial?: boolean;
     filter?: ((x: any) => boolean) | string;
 }

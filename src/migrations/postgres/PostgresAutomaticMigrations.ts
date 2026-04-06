@@ -3,6 +3,7 @@ import ICheckConstraint from "../../decorators/ICheckConstraint.js";
 import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
+import { isSpatialType } from "../../decorators/ISqlType.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
 import PostgresMigrations from "./PostgresMigrations.js";
@@ -108,6 +109,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             : type.name;
         const indexName =  index.name;
         const columns = [];
+        let spatial = false;
         for (const column of index.columns) {
             const columnName = column.name;
             let operatorClass = "";
@@ -124,11 +126,14 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                         break;
                 }
             }
-            columns.push(`${columnName} ${operatorClass} ${ index.spatial ? "" : (column.descending ? "DESC" : "ASC")}`);
+            const c = type.getColumn(column.name);
+            const isColumnSpatial = isSpatialType(c.dataType);
+            spatial ||= isColumnSpatial;
+            columns.push(`${columnName} ${operatorClass} ${ isColumnSpatial ? "" : (column.descending ? "DESC" : "ASC")}`);
         }
         let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX IF NOT EXISTS ${indexName} ON ${name}`;
 
-        if (index.spatial) {
+        if (spatial) {
             query += " USING GIST ";
         }
 
