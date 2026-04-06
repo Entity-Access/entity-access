@@ -40,6 +40,9 @@ export const PostgreSqlHelper: ISqlHelpers = {
                 return prepareAny `ST_Point(${[(p) => x[0](p).longitude]}, ${[(p) => x[0](p).latitude]}, 4326)`;
         },
         distance(x, y) {
+            return prepareAny `ST_Distance(${x}, ${y})`;
+        },
+        spheroidDistance(x, y) {
             return prepareAny `ST_Distance(${x}, ${y}, true)`;
         },
     },

@@ -68,7 +68,11 @@ export interface ISql {
          * @param srid default should be 4326
          */
         point(latitudeOrX: number, longitudeOrY: number, srid?: number): IGeometry;
-        distance(x: IGeometry, y: IGeometry): number;
+
+        /** Exclusive for postgres */
+        spheroidDistance(from: IGeometry, to: IGeometry): number;
+
+        distance(from: IGeometry, to: IGeometry, useSpheroid?: boolean): number;
         location(p: {latitude: number, longitude: number}): IGeometry;
     },
     json: {

@@ -38,6 +38,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         distance(x, y) {
             return prepareAny `${x}.STDistance(${y})`;
         },
+        spheroidDistance(x, y) {
+            return prepareAny `${x}.STDistance(${y})`;
+        },
     },
     window: {
         rank: {
