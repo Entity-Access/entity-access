@@ -14,6 +14,7 @@ export default function Index<T>(
         unique,
         include,
         indexType,
+        spatial,
         filter
     }
     : IIndexDef<T>) {
@@ -27,6 +28,7 @@ export default function Index<T>(
             include: include ? include.map(NameParser.parseMember) : void 0,
             dropNames,
             indexType,
+            spatial,
             filter,
             columns
         };

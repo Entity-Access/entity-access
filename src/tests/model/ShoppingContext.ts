@@ -62,6 +62,13 @@ export class CachedItem {
     columns: [(x) => x.userName],
     unique: true
 })
+@Index({
+    name: "IX_Users_Geo",
+    columns: [{
+        name:(x) => x.location, descending: false
+    }],
+    spatial: true
+})
 export class User {
 
     @Column({ key: true , generated: "identity", dataType: "BigInt" })

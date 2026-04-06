@@ -124,11 +124,14 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const columns = [];
         for (const column of index.columns) {
             const columnName = column.name;
-            columns.push(`${columnName} ${column.descending ? "DESC" : "ASC"}`);
+            columns.push(`${columnName} ${ index.spatial ? "" : (column.descending ? "DESC" : "ASC")}`);
         }
+
+        const indexType = index.spatial ? " SPATIAL " : "";
+
         let query = `IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = '${indexName}' AND object_id = OBJECT_ID('${name}'))
         BEGIN   
-            CREATE ${index.unique ? "UNIQUE" : ""} INDEX ${indexName} ON ${name} ( ${columns.join(", ")})`;
+            CREATE ${index.unique ? "UNIQUE" : ""} ${indexType} INDEX ${indexName} ON ${name} ( ${columns.join(", ")})`;
 
         if (index.include) {
             query += ` INCLUDE (${index.include.join(",")})`;

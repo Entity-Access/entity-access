@@ -124,9 +124,15 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                         break;
                 }
             }
-            columns.push(`${columnName} ${operatorClass} ${column.descending ? "DESC" : "ASC"}`);
+            columns.push(`${columnName} ${operatorClass} ${ index.spatial ? "" : (column.descending ? "DESC" : "ASC")}`);
         }
-        let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX IF NOT EXISTS ${indexName} ON ${name} ( ${columns.join(", ")})`;
+        let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX IF NOT EXISTS ${indexName} ON ${name}`;
+
+        if (index.spatial) {
+            query += " USING GIST ";
+        }
+
+        query += ` ( ${columns.join(", ")})`;
 
         if (index.include) {
             query += ` INCLUDE (${index.include.join(",")})`;
