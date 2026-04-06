@@ -29,7 +29,7 @@ export default async function(this: TestConfig) {
         .where(first, (x, p) => x.userID === p.userID)
         .map({ pune}, (x, p) => ({
             userID: x.userID,
-            distance: Sql.spatial.distance(x.location, Sql.spatial.location(p.pune))
+            distance: Sql.spatial.spheroidDistance(x.location, Sql.spatial.location(p.pune))
         }))
         .first();
     // console.log(near.distance);
