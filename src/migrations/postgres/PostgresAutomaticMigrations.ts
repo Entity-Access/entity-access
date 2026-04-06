@@ -110,6 +110,13 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         const indexName =  index.name;
         const columns = [];
         let spatial = false;
+
+        for(const column of index.columns) {
+            const c = type.getColumn(column.name);
+            const isColumnSpatial = isSpatialType(c.dataType);
+            spatial ||= isColumnSpatial;
+        }
+
         for (const column of index.columns) {
             const columnName = column.name;
             let operatorClass = "";
@@ -126,10 +133,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
                         break;
                 }
             }
-            const c = type.getColumn(column.name);
-            const isColumnSpatial = isSpatialType(c.dataType);
-            spatial ||= isColumnSpatial;
-            columns.push(`${columnName} ${operatorClass} ${ isColumnSpatial ? "" : (column.descending ? "DESC" : "ASC")}`);
+            columns.push(`${columnName} ${operatorClass} ${ spatial ? "" : (column.descending ? "DESC" : "ASC")}`);
         }
         let query = `CREATE ${index.unique ? "UNIQUE" : ""} INDEX IF NOT EXISTS ${indexName} ON ${name}`;
 
