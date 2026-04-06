@@ -125,8 +125,6 @@ export default abstract class PostgresMigrations extends Migrations {
                 return "uuid";
             case "Geometry":
                 return "geometry";
-            case "Point":
-                return "point";
         }
         const a: never = iterator.dataType;
         throw new Error("Not Defined");
