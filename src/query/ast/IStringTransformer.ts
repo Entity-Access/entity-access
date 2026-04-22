@@ -20,6 +20,37 @@ export class QueryParameter {
     }
 }
 
+export const expandParamArray = ({
+    sep = ",",
+    input,
+    prefix = [],
+    suffix = [],
+    emptyResult = [" false "],
+    fx = (xi) => [() => xi]
+}) => [(p) => {
+    const a = input[0](p);
+    if (!a.length) {
+        return emptyResult;
+    }
+    const r = prefix;
+    let s = "";
+    for (const iterator of a) {
+        if (s) {
+            r.push(s);
+        }
+        s = sep;
+        const items = fx(iterator).flat(2);
+        for (const fi of items) {
+            r.push(fi);
+        }
+    }
+    for(const sx of suffix) {
+        r.push(sx);
+    }
+    return r.flat(2);
+}] as any;
+
+
 export const joinMap = (sep: string, input, a: any, fx: ((item) => any) = (xi) => [() => xi]) => {
     const r = [];
     a = (Array.isArray(a) ? a.map((x) => x(input)) : a(input)).flat(2);

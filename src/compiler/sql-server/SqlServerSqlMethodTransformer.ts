@@ -1,5 +1,5 @@
 
-import { joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
+import { expandParamArray, joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers, flattenMethods } from "../ISqlHelpers.js";
 
@@ -281,8 +281,14 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         iLike(text, test) {
             return prepareAny `(${text} like ${test})`;
         },
-        iLikeAny(text, test) {
-            return ["(", (x)=> joinMap(" OR ", x, test, (item) => [ "(" , text, " like ", () => item , ")" ]), ")"] as any;
+        iLikeAny(text, input) {
+            return expandParamArray({
+                input,
+                sep: " OR ",
+                prefix: ["("],
+                fx: (item) => ["(", text, " like ", () => item, ")" ] as any,
+                suffix: [")"]
+            });
         },
         indexOf(text, test) {
             return prepareAny `(CHARINDEX(${test}, ${text}) - 1)`;
