@@ -44,6 +44,17 @@ const getOrCreateModel = (map: Map<any, EntityType>, type: IClassOf<any>, compil
     if (t.keys.length > 1) {
         t.keys.sort((a, b) => a.order - b.order);
     }
+
+    for(const index of t.indexes) {
+        for (const column of index.columns) {
+            const c = t.getProperty(column.name);
+            if (c.field) {
+                column.name = c.field.columnName;
+            } else {
+                debugger;
+            }
+        }
+    }
     for (const iterator of original.relations) {
         if (!iterator.relatedTypeClass) {
             iterator.relatedTypeClass = iterator.relatedTypeClassFactory();

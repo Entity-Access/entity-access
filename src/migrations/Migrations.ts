@@ -90,6 +90,17 @@ export default abstract class Migrations {
                 await this.enableGeoSpatialTypes();
             }
 
+            // for (const index of type.indexes) {
+            //     for (const column of index.columns) {
+            //         const c = type.getProperty(column.name);
+            //         if (c.field) {
+            //             column.name = c.field.columnName;
+            //         } else {
+            //             debugger;
+            //         }
+            //     }
+            // }
+
             const schema = await this.getSchema(type);
 
             await this.migrateTable(context, type);
@@ -217,12 +228,14 @@ export default abstract class Migrations {
         }
 
 
-        for (const column of index.columns) {
-            const c = type.getProperty(column.name);
-            if (c.field) {
-                column.name = c.field.columnName;
-            }
-        }
+        // for (const column of index.columns) {
+        //     const c = type.getProperty(column.name);
+        //     if (c.field) {
+        //         column.name = c.field.columnName;
+        //     } else {
+        //         debugger;
+        //     }
+        // }
 
         if (index.include) {
             index.include = index.include.map((c) => type.getProperty(c).field.columnName);

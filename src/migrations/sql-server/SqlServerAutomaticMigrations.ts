@@ -32,7 +32,7 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
                 : "";
             const indexDef: IIndex = {
                 name: `IX_${type.name}_${iterator.name}`,
-                columns: [{ name: iterator.quotedColumnName, descending: iterator.indexOrder !== "ascending"}],
+                columns: [{ name: iterator.columnName, descending: iterator.indexOrder !== "ascending"}],
                 filter
             };
             await this.migrateIndexInternal(context, indexDef, type);
@@ -123,20 +123,25 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             : type.name;
         const indexName =  index.name;
         const columns = [];
-        let spatial = true;
+        let spatial = false;
         let nonSpatial = false;
         for (const column of index.columns) {
             const columnName = column.name;
             const c = type.getColumn(column.name);
             const isColumnSpatial = isSpatialType(c.dataType);
-            spatial &&= isColumnSpatial;
-            nonSpatial ||= !isColumnSpatial;
+            if (isColumnSpatial) {
+                spatial ||= true;
+            } else {
+                nonSpatial ||= true;
+            }
             columns.push(`${columnName} ${ isSpatialType(c.dataType) ? "" : (column.descending ? "DESC" : "ASC")}`);
         }
 
-        if (nonSpatial && spatial) {
-            console.warn(`SQL SERVER DOEST NOT SUPPORT SPATIAL AND OTHER DATATYPE INDEX so ${name} index is not created`);
-            return;
+        if (spatial) {
+            if (nonSpatial) {
+                console.warn(`SQL SERVER DOEST NOT SUPPORT SPATIAL AND OTHER DATATYPE INDEX so ${name} index is not created`);
+                return;
+            }
         }
 
         const indexType = spatial ? " SPATIAL " : "";
