@@ -1,4 +1,4 @@
-import { joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
+import { expandParamArray, joinAny, joinMap, prepareAny } from "../../query/ast/IStringTransformer.js";
 import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers, flattenMethods } from "../ISqlHelpers.js";
@@ -280,8 +280,12 @@ export const PostgreSqlHelper: ISqlHelpers = {
         iLike(text, test) {
             return prepareAny `(${text} iLike ${test})`;
         },
-        iLikeAny(text, test) {
-            return ["(" , text , " iLIKE ANY (ARRAY[", (x)=> joinMap(",", x, test, (item) => [() => item] ), "]))"] as any;
+        iLikeAny(text, input) {
+            return expandParamArray({
+                input,
+                prefix: ["(", text , " iLIKE ANY (ARRAY["],
+                suffix: ["]))"]
+            });
         },
         indexOf(text, test) {
             return prepareAny `(strpos(${text}, ${test}) - 1)`;
@@ -295,8 +299,12 @@ export const PostgreSqlHelper: ISqlHelpers = {
         like(text, test) {
             return prepareAny `(${text} LIKE ${test})`;
         },
-        likeAny(text, test) {
-            return ["(" , text , " LIKE ANY (ARRAY[", (x)=> joinMap(",", x, test, (item) => [() => item] ), "]))"] as any;
+        likeAny(text, input) {
+            return expandParamArray({
+                input,
+                prefix: ["(", text , " LIKE ANY (ARRAY["],
+                suffix: ["]))"]
+            });
         },
         lower(text) {
             return prepareAny `LOWER(${text})`;
