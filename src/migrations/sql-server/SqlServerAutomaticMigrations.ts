@@ -124,12 +124,19 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         const indexName =  index.name;
         const columns = [];
         let spatial = true;
+        let nonSpatial = false;
         for (const column of index.columns) {
             const columnName = column.name;
             const c = type.getColumn(column.name);
             const isColumnSpatial = isSpatialType(c.dataType);
             spatial &&= isColumnSpatial;
+            nonSpatial ||= !isColumnSpatial;
             columns.push(`${columnName} ${ isSpatialType(c.dataType) ? "" : (column.descending ? "DESC" : "ASC")}`);
+        }
+
+        if (nonSpatial && spatial) {
+            console.warn(`SQL SERVER DOEST NOT SUPPORT SPATIAL AND OTHER DATATYPE INDEX so ${name} index is not created`);
+            return;
         }
 
         const indexType = spatial ? " SPATIAL " : "";
