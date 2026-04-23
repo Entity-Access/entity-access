@@ -250,6 +250,24 @@ export class EntitySource<T = any> {
         this.statements = new EntityStatements<T>(model, context);
     }
 
+    public withKeys(keys: Partial<T>) {
+        const s = this;
+        return {
+            select(loadChangeEntry?: boolean) {
+                return s.statements.select({}, keys, loadChangeEntry);
+            },
+            update(changes: Partial<T>, loadChangeEntry?: boolean) {
+                return s.statements.update( changes , keys, loadChangeEntry);
+            },
+            selectOrInsert(changes?: Partial<T>) {
+                return s.statements.selectOrInsert( changes ? { ... changes, ... keys } : { ... keys }, keys);
+            },
+            updateOrInsert(changes: Partial<T>) {
+                return s.statements.upsert({ ... keys, ... changes }, (x) => ({ ... x, ... changes }), keys);
+            },
+        };
+    }
+
     public async saveDirect({
         keys,
         mode,
