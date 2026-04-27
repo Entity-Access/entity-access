@@ -219,7 +219,7 @@ export default class EntityContext {
             await verificationSession.verifyAsync();
         }
 
-        await this.saveChangesInternalWithoutEvents(options);
+        await this.saveChangesInternalWithoutEvents(options, pending);
 
         if (pending.length > 0) {
 
@@ -241,9 +241,9 @@ export default class EntityContext {
 
     }
 
-    private async saveChangesInternalWithoutEvents(options?: ISaveOptions) {
+    private async saveChangesInternalWithoutEvents(options?: ISaveOptions, pending?:{ change: ChangeEntry }[] ) {
         const signal = options?.signal;
-        const copy = Array.from(this.changeSet.getChanges()) as ChangeEntry[];
+        const copy = pending ? pending.map((x) => x.change) : Array.from(this.changeSet.getChanges()) as ChangeEntry[];
         const { connection } = this;
         for (const iterator of copy) {
             switch (iterator.status) {
