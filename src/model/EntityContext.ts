@@ -174,7 +174,7 @@ export default class EntityContext {
 
     private async saveChangesInternal(options: ISaveOptions) {
 
-        const verificationSession = new VerificationSession(this);
+        const verificationSession = this.verifyFilters ? new VerificationSession(this) : null;
 
         const pending = [] as { status: ChangeEntry["status"], change: ChangeEntry , events: EntityEvents<any>  }[];
 
@@ -193,36 +193,28 @@ export default class EntityContext {
             switch(iterator.status) {
                 case "inserted":
                     await events.beforeInsert(iterator.entity, iterator);
-                    if (this.verifyFilters) {
-                        verificationSession.queueVerification(iterator, events);
-                    }
+                    verificationSession?.queueVerification(iterator, events);
                     pending.push({ status: iterator.status, change: iterator, events });
                     iterator.setupInverseProperties();
                     copy.push(iterator);
                     continue;
                 case "modified":
                     await events.beforeUpdate(iterator.entity, iterator);
-                    if (this.verifyFilters) {
-                        verificationSession.queueVerification(iterator, events);
-                    }
+                    verificationSession?.queueVerification(iterator, events);
                     pending.push({ status: iterator.status, change: iterator, events });
                     iterator.setupInverseProperties();
                     copy.push(iterator);
                     continue;
                 case "deleted":
                     await events.beforeDelete(iterator.entity, iterator);
-                    if (this.verifyFilters) {
-                        verificationSession.queueVerification(iterator, events);
-                    }
+                    verificationSession?.queueVerification(iterator, events);
                     pending.push({ status: iterator.status, change: iterator, events });
                     copy.push(iterator);
                     continue;
             }
         }
 
-        if (this.verifyFilters) {
-            await verificationSession.verifyAsync();
-        }
+        await verificationSession?.verifyAsync();
 
         await this.saveChangesInternalWithoutEvents(options, copy);
 
