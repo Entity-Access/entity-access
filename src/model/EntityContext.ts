@@ -127,7 +127,7 @@ export default class EntityContext {
 
         if (this[isChanging]) {
             if (!this.raiseEvents) {
-                this.queuePostSaveTask(() => this.saveChangesInternalWithoutEvents(options));
+                this.queuePostSaveTask(() => this.saveChangesInternalWithoutEvents(options, Array.from(this.changeSet.getChanges())));
                 return 0;
             }
             this.queuePostSaveTask(() => this.saveChanges(options));
@@ -140,7 +140,7 @@ export default class EntityContext {
         try {
 
             if(!this.raiseEvents) {
-                const rx = await this.saveChangesInternalWithoutEvents(options);
+                const rx = await this.saveChangesInternalWithoutEvents(options, Array.from(this.changeSet.getChanges()));
                 await tx.commit();
                 return rx;
             }
@@ -178,6 +178,8 @@ export default class EntityContext {
 
         const pending = [] as { status: ChangeEntry["status"], change: ChangeEntry , events: EntityEvents<any>  }[];
 
+        const copy = [] as ChangeEntry[];
+
         for (const iterator of this.changeSet.getChanges()) {
 
             switch(iterator.status) {
@@ -196,6 +198,7 @@ export default class EntityContext {
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
                     iterator.setupInverseProperties();
+                    copy.push(iterator);
                     continue;
                 case "modified":
                     await events.beforeUpdate(iterator.entity, iterator);
@@ -204,6 +207,7 @@ export default class EntityContext {
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
                     iterator.setupInverseProperties();
+                    copy.push(iterator);
                     continue;
                 case "deleted":
                     await events.beforeDelete(iterator.entity, iterator);
@@ -211,6 +215,7 @@ export default class EntityContext {
                         verificationSession.queueVerification(iterator, events);
                     }
                     pending.push({ status: iterator.status, change: iterator, events });
+                    copy.push(iterator);
                     continue;
             }
         }
@@ -219,7 +224,7 @@ export default class EntityContext {
             await verificationSession.verifyAsync();
         }
 
-        await this.saveChangesInternalWithoutEvents(options, pending);
+        await this.saveChangesInternalWithoutEvents(options, copy);
 
         if (pending.length > 0) {
 
@@ -241,9 +246,8 @@ export default class EntityContext {
 
     }
 
-    private async saveChangesInternalWithoutEvents(options?: ISaveOptions, pending?:{ change: ChangeEntry }[] ) {
+    private async saveChangesInternalWithoutEvents(options: ISaveOptions, copy: ChangeEntry [] ) {
         const signal = options?.signal;
-        const copy = pending ? pending.map((x) => x.change) : Array.from(this.changeSet.getChanges()) as ChangeEntry[];
         const { connection } = this;
         for (const iterator of copy) {
             switch (iterator.status) {
