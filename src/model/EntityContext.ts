@@ -195,7 +195,7 @@ export default class EntityContext {
                     await events.beforeInsert(iterator.entity, iterator);
                     verificationSession?.queueVerification(iterator, events);
                     pending.push({ status: iterator.status, change: iterator, events });
-                    iterator.setupInverseProperties();
+                    iterator.detectDependencies();
                     copy.push(iterator);
                     continue;
                 case "modified":

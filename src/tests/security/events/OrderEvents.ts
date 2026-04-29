@@ -79,9 +79,9 @@ export class OrderItemEvents extends EntityEvents<OrderItem> {
             const start = DateTime.now;
 
             const product = db.products.add({
-                    status: "a",
-                    name: "b"
-                });
+                status: "a",
+                name: "b",
+            });
             entity.productPrice = db.productPrices.add({
                 amount: 10,
                 product,

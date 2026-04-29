@@ -241,7 +241,7 @@ export default class ChangeEntry<T = any> implements IChanges {
         if (dbValues !== void 0) {
             const { entity, type } = this;
             for (const key in dbValues) {
-                if (Object.prototype.hasOwnProperty.call(dbValues, key)) {
+                if (Object.hasOwn(dbValues, key)) {
                     const element = dbValues[key];
                     entity[key] = element;
                 }
@@ -286,7 +286,7 @@ export default class ChangeEntry<T = any> implements IChanges {
         const { entity, original } = this;
         if (original) {
             for (const key in original) {
-                if (Object.prototype.hasOwnProperty.call(original, key)) {
+                if (Object.hasOwn(original, key)) {
                     const element = original[key];
                     entity[key] = element;
                 }
@@ -296,9 +296,8 @@ export default class ChangeEntry<T = any> implements IChanges {
         this.modified.clear();
     }
 
-
     detectDependencies() {
-        const { type: { fkRelations, inverseRelations }, entity } = this;
+        const { type: { fkRelations }, entity } = this;
 
         for (const iterator of fkRelations) {
 
@@ -320,18 +319,19 @@ export default class ChangeEntry<T = any> implements IChanges {
                 Object.setPrototypeOf(related, prototype);
             }
 
-            this.order++;
-
             const relatedChanges = this.changeSet.getEntry(related);
+            this.order += relatedChanges.order + 1;
+
+            relatedChanges.detectDependencies();
 
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
                 const key = related[relatedKeyColumn.name];
                 if (key === void 0 || key === null) {
                     relatedChanges.pending.push(() => {
-                        this.entity[fkColumn.name] = related[relatedKeyColumn.name];
+                        this.setValue(fkColumn, related[relatedKeyColumn.name]);
                     });
                 } else {
-                    this.entity[fkColumn.name] = key;
+                    this.setValue(fkColumn, key);
                 }
             }
         }
@@ -359,7 +359,8 @@ export default class ChangeEntry<T = any> implements IChanges {
                 }
 
                 for (const r of related) {
-                    this.setInversePropertyValue(r, iterator);                }
+                    this.setInversePropertyValue(r, iterator);
+                }
                 continue;
             }
             if (deleted) {
@@ -374,21 +375,40 @@ export default class ChangeEntry<T = any> implements IChanges {
     private setInversePropertyValue(related: any, { relatedName , relatedRelation }: IEntityRelation) {
         const { entity } = this;
         const re = this.changeSet.getEntry(related);
-        re.order = this.order + 1;
+        re.order += this.order + 1;
         if (related[relatedName] !== entity) {
             related[relatedName] = entity;
         }
         if (this.status !== "inserted") {
             for (const { fkColumn , relatedKeyColumn } of relatedRelation.fkMap) {
-                related[fkColumn.name] = entity[relatedKeyColumn.name];
+                re.setValue(fkColumn, entity[relatedKeyColumn.name]);
             }
             return;
         }
         this.pending.push(() => {
             for (const { fkColumn , relatedKeyColumn } of relatedRelation.fkMap) {
-                related[fkColumn.name] = entity[relatedKeyColumn.name];
+                re.setValue(fkColumn, entity[relatedKeyColumn.name]);
             }
         });
+    }
+
+    private setValue(column: IColumn, newValue) {
+        const oldValue = this.entity[column.name];
+        if (oldValue === newValue) {
+            return;
+        }
+        this.entity[column.name] = newValue;
+        this.modified.set(column, {
+            column,
+            newValue,
+            oldValue,
+        });
+        switch(this.status) {
+            case "detached":
+            case "unchanged":
+                this.status = "modified";
+                break;
+        }
     }
 
 }
