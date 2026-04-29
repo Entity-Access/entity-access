@@ -43,6 +43,16 @@ export default class EntityType {
     public readonly fullyQualifiedTableName: string;
 
     @InstanceCache
+    public get inverseRelations() {
+        return this.relations.filter((x) => x.isInverseRelation);
+    }
+
+    @InstanceCache
+    public get fkRelations() {
+        return this.relations.filter((x) => !x.isInverseRelation);
+    }
+
+    @InstanceCache
     public get fullyQualifiedName() {
         return this.schema
             ? TableLiteral.create({

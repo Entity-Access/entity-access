@@ -37,23 +37,15 @@ export default class ChangeSet {
 
     *getChanges(max = 5): Generator<ChangeEntry, any, any> {
 
-        this.detectChanges();
+        const initialChanges = this.detectChanges();
 
-        // const pending = [] as ChangeEntry[];
-        // using d = this.addedEvent.listen((ce) => pending.push(ce.detail));
+        let copy = this.pending = [] as ChangeEntry[];
 
-
-        let copy = this.pending = [];
-
-        yield * [].concat(this.entries) as any;
+        yield *initialChanges;
 
         while(copy.length) {
             const next = this.pending = [];
-            for (const iterator of copy) {
-                iterator.setupInverseProperties();
-                iterator.detect();
-                yield iterator;
-            }
+            yield * this.detectChanges(copy);
             copy = next;
         }
 
@@ -125,17 +117,29 @@ export default class ChangeSet {
     /**
      * Detect changes will detect and sort the entries as they should be inserted.
      */
-    public detectChanges() {
+    public detectChanges(source = this.entries) {
 
-        for (const iterator of this.entries) {
+        const changes = [] as ChangeEntry[];
+
+        for (const iterator of source) {
             iterator.setupInverseProperties();
         }
 
-        for (const iterator of this.entries) {
+        for (const iterator of source) {
             iterator.detect();
+            switch(iterator.status) {
+                case "detached":
+                case "unchanged":
+                    continue;
+                default:
+                    changes.push(iterator);
+                    break;
+            }
         }
 
-        this.entries.sort((a, b) => a.order - b.order);
+        // this.entries.sort((a, b) => a.order - b.order);
+        changes.sort((a, b) => a.order - b.order);
+        return changes;
 
     }
 
