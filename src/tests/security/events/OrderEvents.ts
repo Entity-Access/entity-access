@@ -1,7 +1,9 @@
-import Inject from "../../../di/di.js";
+import Inject, { ServiceProvider } from "../../../di/di.js";
 import { IEntityQuery } from "../../../model/IFilterWithParameter.js";
+import ChangeEntry from "../../../model/changes/ChangeEntry.js";
 import EntityEvents, { ForeignKeyFilter } from "../../../model/events/EntityEvents.js";
-import { Order, OrderItem, User } from "../../model/ShoppingContext.js";
+import DateTime from "../../../types/DateTime.js";
+import { Order, OrderItem, ShoppingContext, User } from "../../model/ShoppingContext.js";
 import { UserInfo } from "./UserInfo.js";
 
 export class OrderEvents extends EntityEvents<Order> {
@@ -34,6 +36,7 @@ export class OrderEvents extends EntityEvents<Order> {
             return filter.read();
         }
     }
+
 }
 
 export class OrderItemEvents extends EntityEvents<OrderItem> {
@@ -67,6 +70,26 @@ export class OrderItemEvents extends EntityEvents<OrderItem> {
         }
         if (filter.is((x) => x.productPrice)) {
             return filter.read();
+        }
+    }
+
+    beforeInsert(entity: OrderItem, entry: ChangeEntry): void | Promise<void> {
+        if (!entity.priceID && !entity.productID) {
+            const db = ServiceProvider.resolve(this, ShoppingContext);
+            const start = DateTime.now;
+
+            const product = db.products.add({
+                    status: "a",
+                    name: "b"
+                });
+            entity.productPrice = db.productPrices.add({
+                amount: 10,
+                product,
+                active: true,
+                startDate: start.asJSDate,
+                endDate: start.addYears(1).asJSDate
+            });
+            entity.product = product;
         }
     }
 }

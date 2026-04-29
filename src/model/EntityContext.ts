@@ -216,23 +216,22 @@ export default class EntityContext {
 
         await verificationSession?.verifyAsync();
 
+        copy.sort((a, b) => a.order - b.order);
+
         await this.saveChangesInternalWithoutEvents(options, copy);
 
-        if (pending.length > 0) {
-
-            for (const { status, change, change: { entity}, events } of pending) {
-                switch(status) {
-                    case "inserted":
-                        await events.afterInsert(entity, change);
-                        continue;
-                    case "modified":
-                        await events.afterUpdate(entity, change);
-                        change.clearUpdated();
-                        continue;
-                    case "deleted":
-                        await events.afterDelete(entity, change);
-                        continue;
-                }
+        for (const { status, change, change: { entity}, events } of pending) {
+            switch(status) {
+                case "inserted":
+                    await events.afterInsert(entity, change);
+                    continue;
+                case "modified":
+                    await events.afterUpdate(entity, change);
+                    change.clearUpdated();
+                    continue;
+                case "deleted":
+                    await events.afterDelete(entity, change);
+                    continue;
             }
         }
 

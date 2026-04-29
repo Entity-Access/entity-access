@@ -1,5 +1,5 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
-import { IColumn } from "../../decorators/IColumn.js";
+import { IColumn, IEntityRelation } from "../../decorators/IColumn.js";
 import NameParser from "../../decorators/parser/NameParser.js";
 import EntityType from "../../entity-query/EntityType.js";
 import DateTime from "../../types/DateTime.js";
@@ -296,11 +296,9 @@ export default class ChangeEntry<T = any> implements IChanges {
         this.modified.clear();
     }
 
+
     detectDependencies() {
         const { type: { fkRelations, inverseRelations }, entity } = this;
-        // for parent relations.. check if related key is set or not...
-
-        let orderChanged = false;
 
         for (const iterator of fkRelations) {
 
@@ -322,71 +320,23 @@ export default class ChangeEntry<T = any> implements IChanges {
                 Object.setPrototypeOf(related, prototype);
             }
 
+            this.order++;
+
             const relatedChanges = this.changeSet.getEntry(related);
 
-            this.order++;
-            orderChanged = true;
-
-            if (relatedChanges.status !== "inserted") {
-                for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
-                    this.entity[fkColumn.name] = related[relatedKeyColumn.name];
-                }
-                continue;
-            }
-
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
-                // const keyValue = related[relatedKeyColumn.name];
-                // if (keyValue === void 0 || keyValue === null) {
-
-                    // if(relatedChanges.dependents.has(this)) {
-                    //     continue;
-                    // }
-                    // relatedChanges.dependents.add(this);
-
-                    // for (const d of this.dependents) {
-                    //     d.order += this.order + 1;
-                    // }
-
-                    // if (!fkColumn.columnName) {
-                    //     throw new EntityAccessError(`Configuration error, fk not set for ${fkColumn.name}`);
-                    // }
+                const key = related[relatedKeyColumn.name];
+                if (key === void 0 || key === null) {
                     relatedChanges.pending.push(() => {
                         this.entity[fkColumn.name] = related[relatedKeyColumn.name];
                     });
-                    // if (this.status !== "inserted") {
-                    //     this.modified.set(iterator, { column: fkColumn, oldValue: void 0, newValue: void 0});
-                    // }
-                // }
-                // continue;
+                } else {
+                    this.entity[fkColumn.name] = key;
+                }
             }
-
-
-
-            // if(!relatedChanges.dependents.has(this)) {
-            //     relatedChanges.dependents.add(this);
-            //     this.order += relatedChanges.order + 1;
-            //     for (const d of this.dependents) {
-            //         d.order += this.order + 1;
-            //     }
-            // }
-            // for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
-            //     this.entity[fkColumn.name] = related[relatedKeyColumn.name];
-            // }
-            // this.entity[iterator.fkColumn.name] = related[rKey.name];
         }
 
-        if (!orderChanged) {
-            return;
-        }
-
-        for (const element of inverseRelations) {
-            const inverseRelation = this[element.name];
-            if (!inverseRelation) {
-                continue;
-            }
-            // inversely related item can never be an array
-            this.changeSet.getEntry(inverseRelation).order++;
-        }
+        this.setupInverseProperties();
     }
 
     setupInverseProperties() {
@@ -398,24 +348,47 @@ export default class ChangeEntry<T = any> implements IChanges {
                 continue;
             }
             if (Array.isArray(related)) {
-                for (const r of related) {
-                    const existing = r[relatedName];
-                    if (existing !== this.entity) {
-                        r[iterator.relatedName] = this.entity;
-                        // need to update order...
-                        this.changeSet.getEntry(r).order++;
-                    }
+                if (deleted) {
+                    this.pending.push(() => {
+                        const index = related.indexOf(this.entity);
+                        if (index !== -1) {
+                            related.splice(index, 1);
+                        }
+                    });
+                    continue;
                 }
+
+                for (const r of related) {
+                    this.setInversePropertyValue(r, iterator);                }
                 continue;
-            }
-            if (related[relatedName] !== this.entity) {
-                related[relatedName] = this.entity;
-                // need to update order...
-                this.changeSet.getEntry(related).order++;
             }
             if (deleted) {
                 this.pending.push(() => delete related[relatedName]);
+                continue;
             }
+            this.setInversePropertyValue(related, iterator);
         }
     }
+
+
+    private setInversePropertyValue(related: any, { relatedName , relatedRelation }: IEntityRelation) {
+        const { entity } = this;
+        const re = this.changeSet.getEntry(related);
+        re.order = this.order + 1;
+        if (related[relatedName] !== entity) {
+            related[relatedName] = entity;
+        }
+        if (this.status !== "inserted") {
+            for (const { fkColumn , relatedKeyColumn } of relatedRelation.fkMap) {
+                related[fkColumn.name] = entity[relatedKeyColumn.name];
+            }
+            return;
+        }
+        this.pending.push(() => {
+            for (const { fkColumn , relatedKeyColumn } of relatedRelation.fkMap) {
+                related[fkColumn.name] = entity[relatedKeyColumn.name];
+            }
+        });
+    }
+
 }
