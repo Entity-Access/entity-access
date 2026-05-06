@@ -163,7 +163,7 @@ export class ServiceProvider implements IDisposable {
         const keys = type.prototype[injectServiceKeysSymbol];
         if (keys) {
             for (const key in keys) {
-                if (Object.prototype.hasOwnProperty.call(keys, key)) {
+                if (Object.hasOwn(keys, key)) {
                     const element = keys[key];
                     instance[key] ??= this.resolve(element);
                 }

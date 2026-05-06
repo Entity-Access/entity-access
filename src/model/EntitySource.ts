@@ -16,7 +16,7 @@ const removeUndefined = (obj) => {
     }
     const r = {};
     for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        if (Object.hasOwn(obj, key)) {
             const element = obj[key];
             if (element === void 0) {
                 continue;
@@ -77,7 +77,7 @@ export class EntityStatements<T = any> {
         const result = r.rows[0];
         if (result) {
             for (const key in result) {
-                if (Object.prototype.hasOwnProperty.call(result, key)) {
+                if (Object.hasOwn(result, key)) {
                     const element = result[key];
                     entity[key] = element;
                 }
@@ -105,7 +105,7 @@ export class EntityStatements<T = any> {
         const result = r.rows[0];
         if (result) {
             for (const key in result) {
-                if (Object.prototype.hasOwnProperty.call(result, key)) {
+                if (Object.hasOwn(result, key)) {
                     const element = result[key];
                     entity[key] = element;
                 }
@@ -133,7 +133,7 @@ export class EntityStatements<T = any> {
         const result = r.rows[0];
         if (result) {
             for (const key in result) {
-                if (Object.prototype.hasOwnProperty.call(result, key)) {
+                if (Object.hasOwn(result, key)) {
                     const element = result[key];
                     entity[key] = element;
                 }
@@ -189,7 +189,7 @@ export class EntityStatements<T = any> {
                 if (existing) {
                     existing = updateAfterSelect(existing);
                     for (const key in existing) {
-                        if (Object.prototype.hasOwnProperty.call(existing, key)) {
+                        if (Object.hasOwn(existing, key)) {
                             entity[key] = existing[key];
                         }
                     }
@@ -300,7 +300,7 @@ export class EntitySource<T = any> {
             if (er.rows?.[0]) {
                 const fr = er.rows[0];
                 for (const key in fr) {
-                    if (Object.prototype.hasOwnProperty.call(fr, key)) {
+                    if (Object.hasOwn(fr, key)) {
                         const element = fr[key];
                         const name = this.model.getColumn(key).name;
                         returnEntity[name] = element;
@@ -314,7 +314,7 @@ export class EntitySource<T = any> {
                     const original = { ... returnEntity, ... changes };
                     const updates = updateAfterSelect(original);
                     for (const key in updates) {
-                        if (Object.prototype.hasOwnProperty.call(updates, key)) {
+                        if (Object.hasOwn(updates, key)) {
                             const element = updates[key];
                             changes[key] = element;
                         }
@@ -341,7 +341,7 @@ export class EntitySource<T = any> {
             if(r.rows?.length) {
                 const first = r.rows[0];
                 for (const key in first) {
-                    if (Object.prototype.hasOwnProperty.call(first, key)) {
+                    if (Object.hasOwn(first, key)) {
                         const element = first[key];
                         const name = this.model.getColumn(key).name;
                         returnEntity[name] ??= element;

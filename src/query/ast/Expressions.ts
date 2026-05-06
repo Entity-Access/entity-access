@@ -134,7 +134,7 @@ export abstract class Expression {
         const r = {} as any;
         Object.setPrototypeOf(r, Object.getPrototypeOf(expression));
         for (const key in expression) {
-            if (Object.prototype.hasOwnProperty.call(expression, key)) {
+            if (Object.hasOwn(expression, key)) {
                 const element = expression[key];
                 if(Array.isArray(element)) {
                     r[key] = element.map((x) => this.clone(x));
@@ -149,7 +149,7 @@ export abstract class Expression {
     private static shallowCopy(expression, constants: Expression[]) {
         const copy = {} as any;
         for (const key in expression) {
-            if (Object.prototype.hasOwnProperty.call(expression, key)) {
+            if (Object.hasOwn(expression, key)) {
                 const element = expression[key];
                 if (key === "type" || key === "is") {
                     continue;

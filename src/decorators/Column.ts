@@ -19,7 +19,7 @@ export default function Column<T>(cfg: IColumnDefinition<T> = {} as any): ((targ
         const model = SchemaRegistry.model(cn);
         const c = model[addOrCreateColumnSymbol](key);
         for (const k in cfg) {
-            if (Object.prototype.hasOwnProperty.call(cfg, k)) {
+            if (Object.hasOwn(cfg, k)) {
                 const element = cfg[k];
                 c[k] = element;
             }

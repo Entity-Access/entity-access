@@ -17,7 +17,7 @@ export type ISqlHelpers = transformed<ISql>;
 
 export const flattenHelpers = (f, name, target = {}) => {
     for (const key in f) {
-        if (Object.prototype.hasOwnProperty.call(f, key)) {
+        if (Object.hasOwn(f, key)) {
             const element = f[key];
             if (typeof element === "function") {
                 target[name + "." + key] = element;
@@ -38,7 +38,7 @@ export const flattenMethods = (m: any): ISqlMethodTransformer => {
 
     const fillMap = (target, root = "Sql") => {
         for (const key in target) {
-            if (Object.prototype.hasOwnProperty.call(target, key)) {
+            if (Object.hasOwn(target, key)) {
                 const element = target[key];
                 if (typeof element === "object") {
                     fillMap(element, root + "." + key);

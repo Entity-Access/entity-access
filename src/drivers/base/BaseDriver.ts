@@ -417,7 +417,7 @@ export abstract class BaseDriver {
     createSelectWithKeysExpression(type: EntityType, check: any, returnFields: Expression[] ) {
         let where = null as Expression;
         for (const key in check) {
-            if (Object.prototype.hasOwnProperty.call(check, key)) {
+            if (Object.hasOwn(check, key)) {
                 const element = check[key];
                 const column = type.getField(key).quotedColumnNameExp;
                 const condition = Expression.equal(column, Expression.constant(element));
@@ -448,7 +448,7 @@ export abstract class BaseDriver {
         if (mode === "delete") {
             let where = null as Expression;
             for (const key in test) {
-                if (Object.prototype.hasOwnProperty.call(test, key)) {
+                if (Object.hasOwn(test, key)) {
                     const element = test[key];
                     const { quotedColumnNameExp } = type.getField(key);
                     const compare = Expression.equal(quotedColumnNameExp, Expression.constant(element));
@@ -520,7 +520,7 @@ export abstract class BaseDriver {
 
         if(test) {
             for (const key in test) {
-                if (Object.prototype.hasOwnProperty.call(test, key)) {
+                if (Object.hasOwn(test, key)) {
                     const element = test[key];
                     const { quotedColumnNameExp } = type.getField(key);
                     keys.push(Expression.equal(quotedColumnNameExp, Expression.constant(element)));

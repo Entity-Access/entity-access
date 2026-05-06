@@ -6,7 +6,6 @@
 
 export const filteredSymbol = Symbol("filtered");
 
-const hasOwnProperty = Object.prototype.hasOwnProperty;
 
 export const FilteredExpression = {
     isFiltered(fx): boolean {
@@ -21,7 +20,7 @@ export const FilteredExpression = {
         }
         fx[filteredSymbol] = true;
         for (const key in fx) {
-            if (hasOwnProperty.call(fx, key)) {
+            if (Object.hasOwn(fx, key)) {
                 const element = fx[key];
                 FilteredExpression.markAsFiltered(element);
             }
