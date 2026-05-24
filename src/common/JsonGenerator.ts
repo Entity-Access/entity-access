@@ -25,7 +25,7 @@ export default class JsonGenerator {
     }
 
     reader(model: any) {
-        return Readable.from(this.generate(model));
+        return Readable.from(this.generate(model), { encoding: "utf-8"});
     }
 
     *generate(model) {
