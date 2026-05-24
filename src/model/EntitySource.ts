@@ -189,7 +189,7 @@ export class EntityStatements<T = any> {
                 if (existing) {
                     existing = updateAfterSelect(existing);
                     for (const key in existing) {
-                        if (Object.hasOwn(existing, key)) {
+                        if (Object.hasOwn(existing as any, key)) {
                             entity[key] = existing[key];
                         }
                     }
@@ -314,7 +314,7 @@ export class EntitySource<T = any> {
                     const original = { ... returnEntity, ... changes };
                     const updates = updateAfterSelect(original);
                     for (const key in updates) {
-                        if (Object.hasOwn(updates, key)) {
+                        if (Object.hasOwn(updates as any, key)) {
                             const element = updates[key];
                             changes[key] = element;
                         }

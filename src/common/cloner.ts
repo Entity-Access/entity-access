@@ -2,7 +2,7 @@ export const cloner = {
     clone<T>(obj: T, symbols = false): T {
         const copy = {} as T;
         for (const key in obj) {
-            if (Object.hasOwn(obj, key)) {
+            if (Object.hasOwn(obj as any, key)) {
                 const element = obj[key];
                 if (element && Array.isArray(element)) {
                     copy[key] = [].concat(element) as any;

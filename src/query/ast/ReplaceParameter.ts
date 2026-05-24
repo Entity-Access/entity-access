@@ -27,7 +27,7 @@ export default class ReplaceParameter {
         }
         const treeCopy = {} as any;
         for (const key in tree) {
-            if (Object.hasOwn(tree, key)) {
+            if (Object.hasOwn(tree as any, key)) {
                 const element = tree[key];
                 if (element && typeof element === "object") {
                     treeCopy[key] = this.replace(element, from, to);

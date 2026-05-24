@@ -9,6 +9,7 @@
         "importHelpers": true,
         "outDir": "dist",
         "rootDir": "./src",
+        "tsBuildInfoFile": "./dist/.tsbuildinfo",
         "strict": false,
         "skipDefaultLibCheck": true,
         "skipLibCheck": true,
