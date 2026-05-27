@@ -265,6 +265,9 @@ export class EntitySource<T = any> {
             updateOrInsert(changes: Partial<T>) {
                 return s.statements.upsert({ ... keys, ... changes }, (x) => ({ ... x, ... changes }), keys);
             },
+            delete() {
+                return s.statements.delete(keys);
+            }
         };
     }
 
