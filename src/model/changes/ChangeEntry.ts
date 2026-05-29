@@ -296,7 +296,12 @@ export default class ChangeEntry<T = any> implements IChanges {
         this.modified.clear();
     }
 
-    detectDependencies() {
+    detectDependencies(set = new Set()) {
+        // prevent recursion
+        if (set.has(this)) {
+            return;
+        }
+        set.add(this);
         const { type: { fkRelations }, entity } = this;
 
         for (const iterator of fkRelations) {
@@ -322,7 +327,7 @@ export default class ChangeEntry<T = any> implements IChanges {
             const relatedChanges = this.changeSet.getEntry(related);
             this.order += relatedChanges.order + 1;
 
-            relatedChanges.detectDependencies();
+            relatedChanges.detectDependencies(set);
 
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
                 const key = related[relatedKeyColumn.name];
