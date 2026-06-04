@@ -1,6 +1,5 @@
 import assert from "assert";
 import Sql from "../../../sql/Sql.js";
-import QueryCompiler from "../../../compiler/QueryCompiler.js";
 import SqlServerQueryCompiler from "../../../drivers/sql-server/SqlServerQueryCompiler.js";
 
 export default function () {

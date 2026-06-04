@@ -1,6 +1,5 @@
-import { createWriteStream, existsSync, read, readFileSync } from "fs";
+import { existsSync } from "fs";
 import JsonGenerator from "../../common/JsonGenerator.js";
-import { pipeline } from "stream/promises";
 import { readFile, writeFile } from "fs/promises";
 import assert from "assert";
 

@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import assert from "assert";
-import Inject, { Register, RegisterScoped, RegisterSingleton, ServiceProvider } from "../../di/di.js";
+import Inject, { RegisterSingleton, ServiceProvider } from "../../di/di.js";
 import WorkflowContext from "../../workflows/WorkflowContext.js";
 import Workflow, { Activity } from "../../workflows/Workflow.js";
 import WorkflowClock from "../../workflows/WorkflowClock.js";
@@ -9,7 +9,6 @@ import { TestConfig } from "../TestConfig.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
 import WorkflowStorage from "../../workflows/WorkflowStorage.js";
 import TimeSpan from "../../types/TimeSpan.js";
-import sleep from "../../common/sleep.js";
 
 class MockClock extends WorkflowClock {
 

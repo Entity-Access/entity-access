@@ -1,4 +1,3 @@
-import { IClassOf } from "../../decorators/IClassOf.js";
 import { BaseDriver } from "../../drivers/base/BaseDriver.js";
 import { ContextEvents } from "../../index.js";
 import { ShoppingContext, User, statusPublished } from "./ShoppingContext.js";
@@ -52,7 +51,7 @@ async function seed(context: ShoppingContext) {
     const product = clothes[0];
     const productPrice = product.prices[0];
 
-    const user = context.users.add({
+    context.users.add({
         userName: "customer1",
         dateCreated: new Date(),
         orders: [

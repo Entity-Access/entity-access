@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import assert from "assert";
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
-import { Query } from "../../../query/Query.js";
 import { TestConfig } from "../../TestConfig.js";
 import DateTime from "../../../types/DateTime.js";
 

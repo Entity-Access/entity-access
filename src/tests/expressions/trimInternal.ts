@@ -1,4 +1,4 @@
-import assert, { AssertionError } from "assert";
+import assert from "assert";
 
 export const trimInternal = (text: string) => {
     let r = "";

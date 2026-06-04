@@ -1,5 +1,5 @@
 import assert from "assert";
-import Inject, { Register, RegisterSingleton, ServiceProvider } from "../../../di/di.js";
+import Inject, { RegisterSingleton, ServiceProvider } from "../../../di/di.js";
 import WorkflowContext from "../../../workflows/WorkflowContext.js";
 import Workflow, { Activity } from "../../../workflows/Workflow.js";
 import WorkflowClock from "../../../workflows/WorkflowClock.js";
@@ -93,7 +93,7 @@ export default async function (this: TestConfig) {
         },
     });
 
-    const resultNext = await storage.getWorkflow(next);
+    await storage.getWorkflow(next);
 
     assert.equal(result.id, next);
 

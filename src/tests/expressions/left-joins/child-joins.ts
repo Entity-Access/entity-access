@@ -1,7 +1,5 @@
-import assert from "assert";
-import QueryCompiler from "../../../compiler/QueryCompiler.js";
 import { ShoppingContext } from "../../model/ShoppingContext.js";
-import { assertSqlMatch, trimInternal } from "../trimInternal.js";
+import { assertSqlMatch } from "../trimInternal.js";
 import PostgreSqlDriver from "../../../drivers/postgres/PostgreSqlDriver.js";
 
 const sql1 = `SELECT
