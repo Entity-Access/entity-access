@@ -109,7 +109,7 @@ export default class PostgreSqlDriver extends BaseDriver {
         return postGresQueryCompiler;
     }
 
-    constructor(private readonly config: IPgSqlConnectionString) {
+    constructor(config: IPgSqlConnectionString) {
         super(config);
         // config.poolSize ??= 20;
         // this.pool = new ObjectPool({
@@ -138,7 +138,6 @@ export default class PostgreSqlDriver extends BaseDriver {
         let returning = "";
         const values = [];
         let i = 1;
-        const { quote } = this.compiler;
         for (const iterator of type.columns) {
             if (iterator.generated || iterator.computed) {
                 if (returning) {

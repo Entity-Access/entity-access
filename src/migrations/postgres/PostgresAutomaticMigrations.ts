@@ -170,8 +170,6 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
             values.push(schema);
         }
 
-        const driver = context.connection;
-
         const r = await this.executeQuery({ text, values });
         if (r.rows?.length) {
             return true;
@@ -251,9 +249,6 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         const name = type.schema
         ? type.schema + "." + type.name
         : type.name;
-
-
-        const driver = context.connection;
 
         const text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} CHECK (${constraint.filter})`;
 

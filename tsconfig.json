@@ -15,6 +15,7 @@
         "skipLibCheck": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
+        "noUnusedLocals": true,
         "lib": [
             "ES2022",
             "ESNext.Disposable",

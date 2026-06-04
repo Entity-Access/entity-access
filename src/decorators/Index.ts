@@ -1,5 +1,3 @@
-import ExpressionToSql from "../query/ast/ExpressionToSql.js";
-import ArrowToExpression from "../query/parser/ArrowToExpression.js";
 import { IClassOf } from "./IClassOf.js";
 import IIndexDef, { IIndex, IIndexedColumn } from "./IIndex.js";
 import SchemaRegistry from "./SchemaRegistry.js";

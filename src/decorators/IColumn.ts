@@ -1,5 +1,5 @@
 import EntityType from "../entity-query/EntityType.js";
-import type { Expression, Identifier } from "../query/ast/Expressions.js";
+import type { Identifier } from "../query/ast/Expressions.js";
 import { IClassOf } from "./IClassOf.js";
 import { IForeignKeyConstraint } from "./IForeignKeyConstraint.js";
 import { ISqlType } from "./ISqlType.js";

@@ -1,6 +1,5 @@
 import CIMap from "../../common/CIMap.js";
 import IColumnSchema, { IConstraintSchema, IForeignKeyConstraintSchema, IIndexSchema } from "../../common/IColumnSchema.js";
-import { BaseConnection } from "./BaseDriver.js";
 
 export default class ExistingSchema {
 

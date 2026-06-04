@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-import CustomEvent from "../CustomEvent.js";
 import EALogger from "../EALogger.js";
 import EventSet from "../EventSet.js";
 

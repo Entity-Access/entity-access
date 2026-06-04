@@ -131,7 +131,8 @@ export default abstract class PostgresMigrations extends Migrations {
             case "Geography":
                 return "geography";
         }
-        const a: never = iterator.dataType;
+        // @ts-expect-error unused
+        const _a: never = iterator.dataType;
         throw new Error("Not Defined");
     }
 }

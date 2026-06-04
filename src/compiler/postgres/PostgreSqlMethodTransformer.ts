@@ -2,7 +2,6 @@ import { expandParamArray, joinAny, joinMap, prepareAny } from "../../query/ast/
 import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
 import Sql from "../../sql/Sql.js";
 import { ISqlHelpers, flattenMethods } from "../ISqlHelpers.js";
-import type QueryCompiler from "../QueryCompiler.js";
 
 const onlyAlphaNumeric = (x: string) => x.replace(/\W/g, "");
 

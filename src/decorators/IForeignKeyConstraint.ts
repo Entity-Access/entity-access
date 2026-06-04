@@ -1,5 +1,5 @@
 import type EntityType from "../entity-query/EntityType.js";
-import { FKType, IColumn } from "./IColumn.js";
+import { FKType } from "./IColumn.js";
 
 
 export interface IForeignKeyConstraint {

@@ -1,4 +1,3 @@
-import CIMap from "../common/CIMap.js";
 import Logger, { ConsoleLogger } from "../common/Logger.js";
 import { modelSymbol } from "../common/symbols/symbols.js";
 import type QueryCompiler from "../compiler/QueryCompiler.js";
@@ -73,14 +72,14 @@ export default abstract class Migrations {
                 if (column.computed && typeof column.computed !== "string") {
                     // parse..
                     const source = context.query(type.typeClass) as EntityQuery<any>;
-                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.computed}` as any);
+                    const { textQuery } = this.compiler.compileToSql(source, `(p) => ${column.computed}` as any);
                     const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
                     column.computed = textQuery.join("").replace(r, "");
                 }
                 if (column.default && typeof column.default !== "string") {
                     // parse..
                     const source = context.query(type.typeClass) as EntityQuery<any>;
-                    const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${column.default.toString().replace("()", "(x)")}` as any);
+                    const { textQuery } = this.compiler.compileToSql(source, `(p) => ${column.default.toString().replace("()", "(x)")}` as any);
                     const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
                     column.default = textQuery.join("").replace(r, "");
                 }
@@ -130,7 +129,7 @@ export default abstract class Migrations {
                 );
             }
 
-            for (const { isInverseRelation , foreignKeyConstraint, relatedTypeClass } of type.relations) {
+            for (const { isInverseRelation , foreignKeyConstraint } of type.relations) {
 
                 if (isInverseRelation) {
                     continue;
@@ -244,7 +243,7 @@ export default abstract class Migrations {
         if (index.filter && typeof index.filter !== "string") {
             // parse..
             const source = context.query(type.typeClass) as EntityQuery<any>;
-            const { target , textQuery } = this.compiler.compileToSql(source, `(p) => ${index.filter}` as any);
+            const { textQuery } = this.compiler.compileToSql(source, `(p) => ${index.filter}` as any);
             const r = new RegExp(source.selectStatement.sourceParameter.name + "\\.", "ig");
             index.filter = textQuery.join("").replace(r, "");
         }
@@ -270,9 +269,6 @@ export default abstract class Migrations {
     }
 
     async createColumns(type: EntityType, nonKeyColumns: IColumn[]) {
-        const name = type.schema
-            ? type.schema + "." + type.name
-            : type.name;
 
         if (nonKeyColumns.length > 1) {
             nonKeyColumns.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

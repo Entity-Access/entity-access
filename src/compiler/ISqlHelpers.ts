@@ -5,8 +5,6 @@ import type QueryCompiler from "./QueryCompiler.js";
 
 type IFunction = ( ... a: any[]) => any;
 
-type others = Omit<ISql, "in">;
-
 type IStringReturn<T extends IFunction> = (... p: Parameters<T>) => string[];
 
 type transformed<T> = {

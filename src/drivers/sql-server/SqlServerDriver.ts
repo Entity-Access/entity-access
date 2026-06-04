@@ -9,9 +9,7 @@ import { SqlServerLiteral } from "./SqlServerLiteral.js";
 import TimedCache from "../../common/cache/TimedCache.js";
 import EntityType from "../../entity-query/EntityType.js";
 import DateTime from "../../types/DateTime.js";
-import IColumnSchema from "../../common/IColumnSchema.js";
 import type EntityContext from "../../model/EntityContext.js";
-import ExistingSchema from "../base/ExistingSchema.js";
 import ReaderQueue from "../base/ReaderQueue.js";
 import EALogger from "../../common/EALogger.js";
 
@@ -45,7 +43,6 @@ export default class SqlServerDriver extends BaseDriver {
         const values = [];
         let returning = "";
         let i = 1;
-        const { quote } = this.compiler;
         for (const iterator of type.columns) {
             if (iterator.generated || iterator.computed) {
                 if (returning) {
@@ -121,9 +118,9 @@ export class SqlServerConnection extends BaseConnection {
 
     private transaction: sql.Transaction;
 
-    private get sqlQueryCompiler() {
-        return this.compiler as SqlServerQueryCompiler;
-    }
+    // private get sqlQueryCompiler() {
+    //     return this.compiler as SqlServerQueryCompiler;
+    // }
 
     constructor(driver, private config: ISqlServerConnectionString) {
         super(driver);

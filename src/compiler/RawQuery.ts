@@ -1,4 +1,4 @@
-import { BaseConnection, BaseDriver } from "../drivers/base/BaseDriver.js";
+import { BaseConnection } from "../drivers/base/BaseDriver.js";
 import { ITextQuery } from "../query/ast/IStringTransformer.js";
 
 export default class RawQuery {
