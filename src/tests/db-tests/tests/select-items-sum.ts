@@ -14,15 +14,15 @@ export default async function(this: TestConfig) {
     // let report;
 
     // const user = await context.users.all()
-    // .where({}, (x, p) => x.orders.some((oi) => oi.customerID  > 0))
+    // .where((x) => x.orders.some((oi) => oi.customerID  > 0))
     // .trace(console.log)
     // .first();
 
     // assert.notEqual(null, user);
 
     // report  = await context.users.all()
-    //     // .where({}, (x, p) => x.orders.some((oi) => oi.customerID  > 0))
-    //     .map({}, (x, p) => ({
+    //     // .where((x) => x.orders.some((oi) => oi.customerID  > 0))
+    //     .map((x) => ({
     //             total: 5 * Sql.coll.sum(x.orders.map((o) => Sql.coll.sum(o.orderItems.map((oi) => oi.amount))))
     //         })
     //     )
@@ -37,7 +37,7 @@ export default async function(this: TestConfig) {
     //     }));
 
     const report = await context.users.all()
-        .map({}, (x, p) => ({
+        .map((x) => ({
                 total: Sql.coll.sum(x.orders
                     .filter((o) => o.status === "pending")
                     .map((o) => o.total))

@@ -14,8 +14,8 @@ export default async function(this: TestConfig) {
 
     assert.notEqual(null, headphone);
 
-    const q = context.products.where({}, (x, p) => x.productID > 0)
-        .orderBy({}, (x, p) => x.name);
+    const q = context.products.where((x) => x.productID > 0)
+        .orderBy((x) => x.name);
 
     let products = await q
         .toPage(2,2);

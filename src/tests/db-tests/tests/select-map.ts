@@ -10,7 +10,7 @@ export default async function(this: TestConfig) {
     const context = await createContext(this.driver);
 
     const f = await context.orderItems.all()
-        .map({}, (p) => ({ orderID, amount }) => ({ orderID, amount }))
+        .map(({ orderID, amount }) => ({ orderID, amount }))
         .first();
 
     console.log(f);

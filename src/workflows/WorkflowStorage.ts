@@ -259,8 +259,8 @@ export default class WorkflowStorage {
                 )
                 && x.isWorkflow === true
                 && x.taskGroup === p.taskGroup)
-            .orderBy({}, (x, p) => x.eta)
-            .thenBy({}, (x, p) => x.priority)
+            .orderBy((x) => x.eta)
+            .thenBy((x) => x.priority)
             .limit(20)
             .withSignal(signal)
             .updateSelect({ uuid}, (x, p) => ({

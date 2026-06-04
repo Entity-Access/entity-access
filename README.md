@@ -354,19 +354,19 @@ Just as text functions you can also use date functions as shown below.
 
 ### OrderBy
 ```typescript
-    q.orderBy({}, (x, p) => x.orderDate)
-    .thenBy({}, (x, p) => x.customer.firstName)
+    q.orderBy((x) => x.orderDate)
+    .thenBy((x) => x.customer.firstName)
 
     // custom...
-    q.orderBy({}, (x, p) => x.orderDate)
-    .thenBy({}, (x, p) => Sql.text.collate(x.customer.firstName, "case_insensitive"))
+    q.orderBy((x) => x.orderDate)
+    .thenBy((x) => Sql.text.collate(x.customer.firstName, "case_insensitive"))
 
 ```
 
 ### Limit/Offset
 ```typescript
-    q = q.orderByDescending({}, (x, p) => x.orderDate)
-    .thenBy({}, (x, p) => x.customer.firstName)
+    q = q.orderByDescending((x) => x.orderDate)
+    .thenBy((x) => x.customer.firstName)
     .limit(50)
     .offset(50);
 ```

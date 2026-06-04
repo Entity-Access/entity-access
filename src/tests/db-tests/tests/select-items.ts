@@ -14,10 +14,10 @@ export default async function(this: TestConfig) {
 
     assert.notEqual(null, headphone);
 
-    const products = await context.products.where({}, (x, p) => x.productID > 0)
+    const products = await context.products.where((x) => x.productID > 0)
         .offset(2)
         .limit(5)
-        .orderBy({}, (x, p) => x.name)
+        .orderBy((x) => x.name)
         .toArray();
 
     assert.equal(5, products.length);
