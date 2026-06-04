@@ -3,7 +3,7 @@ import { IEntityQuery } from "../../../model/IFilterWithParameter.js";
 import ChangeEntry from "../../../model/changes/ChangeEntry.js";
 import EntityEvents, { ForeignKeyFilter } from "../../../model/events/EntityEvents.js";
 import DateTime from "../../../types/DateTime.js";
-import { Order, OrderItem, ShoppingContext, User } from "../../model/ShoppingContext.js";
+import { Order, OrderItem, ShoppingContext } from "../../model/ShoppingContext.js";
 import { UserInfo } from "./UserInfo.js";
 
 export class OrderEvents extends EntityEvents<Order> {

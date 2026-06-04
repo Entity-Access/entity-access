@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
-import { randomBytes, randomUUID } from "crypto";
+import { randomBytes } from "crypto";
 import EntityAccessError from "../common/EntityAccessError.js";
 import { IClassOf } from "../decorators/IClassOf.js";
-import Inject, { RegisterSingleton, ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
+import Inject, { ServiceProvider, injectServiceKeysSymbol } from "../di/di.js";
 import DateTime from "../types/DateTime.js";
 import type Workflow from "./Workflow.js";
 import { ActivitySuspendedError } from "./ActivitySuspendedError.js";
@@ -332,7 +332,7 @@ export default class WorkflowContext {
         // run...
         for (const iterator of pending) {
             try {
-                using l = iterator;
+                using _l = iterator;
                 await this.run(iterator.item, iterator.signal);
             } catch (error) {
                 EALogger.error(error);

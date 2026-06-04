@@ -56,7 +56,6 @@ export class ProductCategoryEvents extends EntityEvents<ProductCategory> {
     }
 
     modify(query: IEntityQuery<ProductCategory>): IEntityQuery<ProductCategory> {
-        const { userID } = this.user;
 
         // admin can access everything so return null
         if (this.user.admin) {

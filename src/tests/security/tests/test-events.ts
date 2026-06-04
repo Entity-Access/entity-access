@@ -1,6 +1,6 @@
 import assert from "assert";
 import Logger from "../../../common/Logger.js";
-import { ServiceCollection, ServiceProvider } from "../../../di/di.js";
+import { ServiceProvider } from "../../../di/di.js";
 import { BaseDriver } from "../../../drivers/base/BaseDriver.js";
 import ContextEvents from "../../../model/events/ContextEvents.js";
 import { TestConfig } from "../../TestConfig.js";

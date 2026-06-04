@@ -1,10 +1,10 @@
 import assert from "assert";
 import Logger from "../../../common/Logger.js";
-import { ServiceCollection, ServiceProvider } from "../../../di/di.js";
+import { ServiceProvider } from "../../../di/di.js";
 import { BaseDriver } from "../../../drivers/base/BaseDriver.js";
 import ContextEvents from "../../../model/events/ContextEvents.js";
 import { TestConfig } from "../../TestConfig.js";
-import { ShoppingContext, statusPublished } from "../../model/ShoppingContext.js";
+import { ShoppingContext } from "../../model/ShoppingContext.js";
 import { createContext } from "../../model/createContext.js";
 import { ShoppingContextEvents } from "../ShoppingContextEvents.js";
 import { UserInfo } from "../events/UserInfo.js";

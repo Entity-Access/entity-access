@@ -1,6 +1,6 @@
-function isEmpty(n: number): boolean {
-    return n === undefined || n === null || n === 0 || isNaN(n);
-}
+// function isEmpty(n: number): boolean {
+//     return n === undefined || n === null || n === 0 || isNaN(n);
+// }
 
 export const msMinutes = 60000;
 
@@ -52,8 +52,11 @@ export default class TimeSpan {
             throw new Error("Invalid time format");
         }
         let isPM: boolean = false;
-        // tslint:disable-next-line: one-variable-per-declaration
-        let d: number, h: number, m: number, s: number, ms: number;
+        let d: number;
+        let h: number;
+        let m: number;
+        let s: number;
+        let ms: number;
         const tokens = text.split(/:/);
         // split last...
         const last = tokens[tokens.length - 1];
@@ -93,8 +96,6 @@ export default class TimeSpan {
 
         return new TimeSpan(d, isPM ? h + 12 : h, m, s, ms);
     }
-
-    private msSinceEpoch: number;
 
     public get totalSeconds(): number {
         return this.msSinceEpoch * secondsPerMS;
@@ -151,9 +152,10 @@ export default class TimeSpan {
         return new TimeSpan(Math.ceil(this.msSinceEpoch % msDays));
     }
 
+    private msSinceEpoch: number;
     constructor(ms: number);
     // tslint:disable-next-line: unified-signatures
-    constructor(days: number, hours: number, minutes?: number, seconds?: number, milliseconds?: number)
+    constructor(days: number, hours: number, minutes?: number, seconds?: number, milliseconds?: number);
     constructor(days: number, hours?: number, minutes?: number, seconds?: number, milliseconds?: number) {
         if (arguments.length === 1) {
                 this.msSinceEpoch = days;

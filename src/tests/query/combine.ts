@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { IQuery, Query, QueryPart } from "../../query/Query.js";
+import { Query, QueryPart } from "../../query/Query.js";
 
 export default function () {
     const id = 1;
