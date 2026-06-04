@@ -1,5 +1,4 @@
 import assert from "assert";
-import { Sql } from "../../../index.js";
 import { TestConfig } from "../../TestConfig.js";
 import { createContext } from "../../model/createContext.js";
 import { traceSymbol } from "../../../common/symbols/symbols.js";
@@ -35,14 +34,14 @@ async function testSavePoint(context: ShoppingContext) {
     assert.strictEqual(1, result.rows[0].v1);
 }
 
-async function failSavePoint(context: ShoppingContext) {
-    await using tx = await context.connection.createTransaction();
+// async function failSavePoint(context: ShoppingContext) {
+//     await using tx = await context.connection.createTransaction();
 
-    await assert.rejects(async () => {
-        const rx = await context.connection.executeQuery("SELECT ADSFDFDFDS FROM A1");
-        console.log(rx);
-    });
+//     await assert.rejects(async () => {
+//         const rx = await context.connection.executeQuery("SELECT ADSFDFDFDS FROM A1");
+//         console.log(rx);
+//     });
 
-    await assert.rejects(async () => await context.connection.executeQuery("SELECT 1 as v1"));
-}
+//     await assert.rejects(async () => await context.connection.executeQuery("SELECT 1 as v1"));
+// }
 

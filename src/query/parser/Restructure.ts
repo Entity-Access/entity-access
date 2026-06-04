@@ -1,5 +1,4 @@
 import * as bpe from "@babel/types";
-import { BabelVisitor } from "./BabelVisitor.js";
 import { NotSupportedError } from "./NotSupportedError.js";
 import TransformVisitor from "./TransformVisitor.js";
 

@@ -1,7 +1,5 @@
-import assert from "assert";
 import { TestConfig } from "../../TestConfig.js";
 import { createContext } from "../../model/createContext.js";
-import Sql from "../../../sql/Sql.js";
 
 export default async function(this: TestConfig) {
 

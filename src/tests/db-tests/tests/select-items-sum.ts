@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestConfig } from "../../TestConfig.js";
-import { createContext, headPhoneCategory } from "../../model/createContext.js";
+import { createContext } from "../../model/createContext.js";
 import Sql from "../../../sql/Sql.js";
 
 export default async function(this: TestConfig) {
@@ -11,7 +11,7 @@ export default async function(this: TestConfig) {
 
     const context = await createContext(this.driver);
 
-    let report;
+    // let report;
 
     // const user = await context.users.all()
     // .where({}, (x, p) => x.orders.some((oi) => oi.customerID  > 0))
@@ -36,7 +36,7 @@ export default async function(this: TestConfig) {
     //         total: Sql.coll.sum(x.orderItems.map((o) => o.amount ))
     //     }));
 
-    report = await context.users.all()
+    const report = await context.users.all()
         .map({}, (x, p) => ({
                 total: Sql.coll.sum(x.orders
                     .filter((o) => o.status === "pending")

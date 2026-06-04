@@ -8,10 +8,6 @@ interface IGeometry {
     srid: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface IGeography extends IGeometry {
-}
-
 export interface ISql {
 
     in<T>(a: T, array: T[]): boolean;

@@ -1,5 +1,4 @@
 import assert from "assert";
-import { Sql } from "../../../index.js";
 import { TestConfig } from "../../TestConfig.js";
 import { createContext } from "../../model/createContext.js";
 

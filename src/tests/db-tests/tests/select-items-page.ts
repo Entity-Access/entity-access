@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestConfig } from "../../TestConfig.js";
-import { createContext, headPhoneCategory } from "../../model/createContext.js";
+import { createContext } from "../../model/createContext.js";
 
 export default async function(this: TestConfig) {
 
