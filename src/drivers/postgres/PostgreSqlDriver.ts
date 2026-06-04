@@ -109,7 +109,7 @@ export default class PostgreSqlDriver extends BaseDriver {
         return postGresQueryCompiler;
     }
 
-    constructor(config: IPgSqlConnectionString) {
+    constructor(public readonly config: IPgSqlConnectionString) {
         super(config);
         // config.poolSize ??= 20;
         // this.pool = new ObjectPool({
