@@ -80,6 +80,7 @@ export default abstract class Visitor<T = any> {
             case "NegateExpression":
                 return this.visitNegateExpression(e);
         }
+        // @ts-expect-error unused
         const c: never = e;
         throw new Error(`${e1.type} Not implemented`);
     }

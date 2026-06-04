@@ -1,10 +1,8 @@
 import { BaseConnection, BaseDriver } from "../drivers/base/BaseDriver.js";
 import ChangeSet from "./changes/ChangeSet.js";
 import EntityModel from "./EntityModel.js";
-import { Expression } from "../query/ast/Expressions.js";
 import { IClassOf } from "../decorators/IClassOf.js";
 import VerificationSession from "./verification/VerificationSession.js";
-import EntityType from "../entity-query/EntityType.js";
 import EntityEvents from "./events/EntityEvents.js";
 import ChangeEntry from "./changes/ChangeEntry.js";
 import ContextEvents from "./events/ContextEvents.js";
@@ -15,8 +13,6 @@ import { FilteredExpression } from "./events/FilteredExpression.js";
 import { traceSymbol } from "../common/symbols/symbols.js";
 
 const isChanging = Symbol("isChanging");
-
-const empty = {};
 
 export interface ISaveOptions {
     trace?: (text: string) => void;
@@ -274,13 +270,13 @@ export default class EntityContext {
         }
     }
 
-    private async executeExpression(expression: Expression, { signal , trace }: ISaveOptions = empty) {
-        const { text, values } = this.driver.compiler.compileExpression(null, expression);
-        if (trace) {
-            trace(text);
-        }
-        const r = await this.connection.executeQuery({ text, values }, signal);
-        return r.rows?.[0];
-    }
+    // private async executeExpression(expression: Expression, { signal , trace }: ISaveOptions = empty) {
+    //     const { text, values } = this.driver.compiler.compileExpression(null, expression);
+    //     if (trace) {
+    //         trace(text);
+    //     }
+    //     const r = await this.connection.executeQuery({ text, values }, signal);
+    //     return r.rows?.[0];
+    // }
 
 }

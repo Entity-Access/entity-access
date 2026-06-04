@@ -1,12 +1,8 @@
 import { cloner } from "../../common/cloner.js";
-import { IEntityRelation } from "../../decorators/IColumn.js";
 import EntityType from "../../entity-query/EntityType.js";
 import EntityContext from "../../model/EntityContext.js";
 import EntityQuery from "../../model/EntityQuery.js";
-import DebugStringVisitor from "../ast/DebugStringVisitor.js";
-import { ArrowFunctionExpression, ExistsExpression, Expression, ExpressionType, JoinExpression, NumberLiteral, ParameterExpression, SelectStatement, TableSource } from "../ast/Expressions.js";
-import ReplaceParameter from "../ast/ReplaceParameter.js";
-import ArrowToExpression from "../parser/ArrowToExpression.js";
+import { ArrowFunctionExpression, Expression, ExpressionType, JoinExpression, SelectStatement } from "../ast/Expressions.js";
 import { NotSupportedError } from "../parser/NotSupportedError.js";
 
 export class QueryExpander {
@@ -23,8 +19,8 @@ export class QueryExpander {
 
     constructor(
         private context: EntityContext,
-        private select: SelectStatement,
-        private filter: boolean
+        select: SelectStatement,
+        filter: boolean
     ) {
 
     }
@@ -97,8 +93,6 @@ export class QueryExpander {
 
         // let where: Expression;
         // let joinWhere: Expression;
-
-        const fk = relation.fkMap ?? relation.relatedRelation.fkMap;
 
         key += "." + relation.name;
 

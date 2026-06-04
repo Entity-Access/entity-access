@@ -142,6 +142,7 @@ export default abstract class SqlServerMigrations extends Migrations {
             case "Geography":
                 return "geography";
         }
+        // @ts-expect-error unused
         const a: never = iterator.dataType;
         throw new Error("Not Defined");
     }

@@ -1,4 +1,3 @@
-import EventEmitter from "events";
 import type ChangeEntry from "../changes/ChangeEntry.js";
 import type ChangeSet from "../changes/ChangeSet.js";
 import { IColumn } from "../../decorators/IColumn.js";
@@ -17,7 +16,7 @@ export default class RelationMapper {
     private events: Map<string, Function[]> = new Map();
 
     constructor(
-        private changeSet: ChangeSet,
+        changeSet: ChangeSet,
         private identityMap = changeSet[identityMapSymbol]
     ) {
     }

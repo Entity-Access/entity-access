@@ -1,5 +1,4 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
-import EventSet from "../../common/EventSet.js";
 import { identityMapSymbol } from "../../common/symbols/symbols.js";
 import EntityContext from "../EntityContext.js";
 import IdentityMap from "../identity/IdentityMap.js";
@@ -27,8 +26,6 @@ export default class ChangeSet {
      * This will provide new entity for same key
      */
     private readonly identityMap = new IdentityMap();
-
-    private nextId = 1;
 
     private pending = void 0 as ChangeEntry[];
 

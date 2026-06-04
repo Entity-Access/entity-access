@@ -5,9 +5,6 @@ import * as bpe from "@babel/types";
 import Restructure from "./Restructure.js";
 import { NotSupportedError } from "./NotSupportedError.js";
 
-type IQueryFragment = string | { name?: string, value?: any };
-
-const defaultObject = {};
 
 export default class ArrowToExpression extends BabelVisitor<Expression> {
 

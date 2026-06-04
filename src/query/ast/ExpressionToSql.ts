@@ -15,10 +15,10 @@ interface IPropertyChain {
     chain: { member: string, args?: Expression[], isCollectionMethod?: boolean }[]
 }
 
-interface IPropertyMethods {
-    identifier?: Identifier;
-    parameter?: ParameterExpression;
-}
+// interface IPropertyMethods {
+//     identifier?: Identifier;
+//     parameter?: ParameterExpression;
+// }
 
 export interface IMappingModel {
     parameter: ParameterExpression;
@@ -386,7 +386,7 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
     visitMemberExpression(me: MemberExpression): ITextQuery {
         const propertyChain = this.getPropertyChain(me);
         if (propertyChain) {
-            const { parameter, identifier, chain } = propertyChain;
+            const { parameter, chain } = propertyChain;
             if (parameter) {
                 if (parameter === this.root) {
                     // we have a parameter...

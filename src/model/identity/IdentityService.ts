@@ -1,5 +1,4 @@
 import { identitySymbol } from "../../common/symbols/symbols.js";
-import SchemaRegistry from "../../decorators/SchemaRegistry.js";
 import type EntityType from "../../entity-query/EntityType.js";
 
 export default class IdentityService {

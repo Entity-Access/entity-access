@@ -1,8 +1,5 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
 import { IClassOf } from "../../decorators/IClassOf.js";
-import { ServiceProvider } from "../../di/di.js";
-import { NotSupportedError } from "../../query/parser/NotSupportedError.js";
-import type EntityContext from "../EntityContext.js";
 import type EntityEvents from "./EntityEvents.js";
 import { entityNameSymbol } from "./EntityEvents.js";
 

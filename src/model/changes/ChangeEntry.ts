@@ -38,14 +38,11 @@ export default class ChangeEntry<T = any> implements IChanges {
 
     private pending: (() => void)[];
 
-    private dependents: Set<ChangeEntry>;
-
     constructor(p: IChanges, changeSet: ChangeSet) {
         Object.setPrototypeOf(p, ChangeEntry.prototype);
         const ce = p as ChangeEntry;
         ce.changeSet = changeSet;
         ce.pending = [];
-        ce.dependents = new Set();
         ce.modified = new Map();
         ce.order = 1;
         return ce;
@@ -239,7 +236,7 @@ export default class ChangeEntry<T = any> implements IChanges {
 
         // we will only apply the columns defined
         if (dbValues !== void 0) {
-            const { entity, type } = this;
+            const { entity } = this;
             for (const key in dbValues) {
                 if (Object.hasOwn(dbValues, key)) {
                     const element = dbValues[key];

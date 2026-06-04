@@ -1,10 +1,6 @@
 import { IClassOf } from "../../decorators/IClassOf.js";
-import { ITextQuery } from "./IStringTransformer.js";
 import type EntityType from "../../entity-query/EntityType.js";
 import DebugStringVisitor from "./DebugStringVisitor.js";
-import { IEntityRelation } from "../../decorators/IColumn.js";
-
-const flattenedSelf = Symbol("flattenedSelf");
 
 /**
  * The reason we are using our own Expression type is to keep
@@ -146,23 +142,23 @@ export abstract class Expression {
         return r as T;
     }
 
-    private static shallowCopy(expression, constants: Expression[]) {
-        const copy = {} as any;
-        for (const key in expression) {
-            if (Object.hasOwn(expression, key)) {
-                const element = expression[key];
-                if (key === "type" || key === "is") {
-                    continue;
-                }
-                if (element instanceof Constant) {
-                    constants.push(element);
-                }
-                copy[key] = element;
-            }
-        }
-        Object.setPrototypeOf(copy, Object.getPrototypeOf(expression));
-        return copy;
-    }
+    // private static shallowCopy(expression, constants: Expression[]) {
+    //     const copy = {} as any;
+    //     for (const key in expression) {
+    //         if (Object.hasOwn(expression, key)) {
+    //             const element = expression[key];
+    //             if (key === "type" || key === "is") {
+    //                 continue;
+    //             }
+    //             if (element instanceof Constant) {
+    //                 constants.push(element);
+    //             }
+    //             copy[key] = element;
+    //         }
+    //     }
+    //     Object.setPrototypeOf(copy, Object.getPrototypeOf(expression));
+    //     return copy;
+    // }
 
     readonly type: ExpressionType["type"];
 

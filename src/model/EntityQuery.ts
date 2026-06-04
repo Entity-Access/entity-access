@@ -4,7 +4,7 @@ import { modelSymbol } from "../common/symbols/symbols.js";
 import { AsyncDisposableScope } from "../common/usingAsync.js";
 import { IDbReader } from "../drivers/base/BaseDriver.js";
 import EntityType from "../entity-query/EntityType.js";
-import { BinaryExpression, CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, InsertStatement, JoinExpression, MemberExpression, NewObjectExpression, NumberLiteral, OrderByExpression, ParameterExpression, SelectStatement, TableLiteral, UpdateStatement } from "../query/ast/Expressions.js";
+import { BinaryExpression, CallExpression, DeleteStatement, ExistsExpression, Expression, ExpressionAs, Identifier, JoinExpression, MemberExpression, NewObjectExpression, NumberLiteral, OrderByExpression, ParameterExpression, SelectStatement, UpdateStatement } from "../query/ast/Expressions.js";
 import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
@@ -38,7 +38,6 @@ export default class EntityQuery<T = any>
 
     insertInTo(es: EntitySource) {
         const model = es[modelSymbol] as EntityType;
-        const table = model.fullyQualifiedName as TableLiteral;
         const fields = [] as string[];
         for (const iterator of this.selectStatement.fields) {
             if (iterator.type !== "ExpressionAs") {

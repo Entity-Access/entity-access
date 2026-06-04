@@ -4,8 +4,6 @@ import { IColumn } from "../../decorators/IColumn.js";
 import { IForeignKeyConstraint } from "../../decorators/IForeignKeyConstraint.js";
 import { IIndex } from "../../decorators/IIndex.js";
 import { isSpatialType } from "../../decorators/ISqlType.js";
-import { BaseConnection } from "../../drivers/base/BaseDriver.js";
-import ExistingSchema from "../../drivers/base/ExistingSchema.js";
 import { SqlServerLiteral } from "../../drivers/sql-server/SqlServerLiteral.js";
 import EntityType from "../../entity-query/EntityType.js";
 import type EntityContext from "../../model/EntityContext.js";
@@ -117,7 +115,6 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
 
     async migrateIndex(context: EntityContext, index: IIndex, type: EntityType) {
 
-        const driver = context.connection;
         const name = type.schema
             ? type.schema + "." + type.name
             : type.name;
@@ -171,8 +168,6 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
             text += ` and schema_name = ${schema}`;
         }
 
-        const driver = context.connection;
-
         const r = await this.executeQuery(text);
         if (r.rows?.length === 0) {
             if (r.rows["c1"] > 0) {
@@ -191,8 +186,6 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         if (await this.constraintExists(context, name, type.schema, type)) {
             return;
         }
-
-        const driver = context.connection;
 
         // sql server does not allow self referencing FK
         // so we will not create it
@@ -241,8 +234,6 @@ export default class SqlServerAutomaticMigrations extends SqlServerMigrations {
         ? type.schema + "." + type.name
         : type.name;
 
-
-        const driver = context.connection;
 
         const text = `ALTER TABLE ${name} ADD CONSTRAINT ${constraint.name} CHECK (${constraint.filter})`;
 
