@@ -213,6 +213,40 @@ export class EntityStatements<T = any> {
         }
     }
 
+    async upsertComputed(keys: Partial<T>, updateAfterSelect: (x?:Partial<T>) => Partial<T>, retry = 3): Promise<T> {
+        const tx = this.context.connection.currentTransaction;
+        const logger = this.context.logger;
+        let tid: string;
+        if (tx) {
+            tid = `txp_${Date.now()}`;
+            await tx.save(tid);
+        }
+
+        try {
+            let entity = await this.select({}, keys) as Partial<T>;
+            const hasEntity = entity;
+            entity = updateAfterSelect(entity);
+            if (hasEntity) {
+                const r = await this.update(entity, keys);
+                if (r) {
+                    return r;
+                }
+            }
+            return await this.insert(entity);
+        } catch (error) {
+            logger?.debug(error);
+            retry --;
+            if(retry > 0) {
+                if (tid) {
+                    await tx.rollbackTo(tid);
+                }
+                await sleep(300);
+                return await this.upsertComputed(keys, updateAfterSelect, retry);
+            }
+            throw error;
+        }
+    }
+
     async delete(entity: Partial<T>) {
         // check if we have keys...
         for(const key of this.model.keys) {
@@ -264,12 +298,21 @@ export class EntitySource<T = any> {
             updateOrInsert(changes: Partial<T>) {
                 return s.statements.upsert({ ... keys, ... changes }, (x) => ({ ... x, ... changes }), keys);
             },
+            upsert(factory: (existing?: Partial<T>) => Partial<T>) {
+                return s.statements.upsertComputed(keys, factory);
+            } ,
             delete() {
                 return s.statements.delete(keys);
             }
         };
     }
 
+    /**
+     * @deprecated use withKeys or statement
+     * @param param0
+     * @param retry
+     * @returns
+     */
     public async saveDirect({
         keys,
         mode,

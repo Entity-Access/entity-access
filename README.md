@@ -446,9 +446,9 @@ Entity Context provides direct statements to save/retrieve entities without load
 
 ### Select
 ```typescript
-   const msg = await context.messages.statements.select({
-       messageID
-   });
+   const msg = await context.messages
+        .withKeys({ messageID })
+        .select();
 ```
 
 ### Insert
@@ -463,28 +463,34 @@ Entity Context provides direct statements to save/retrieve entities without load
 
 ### Update
 ```typescript
-   await context.messages.statements
+   await context.messages
+        .withKeys({
+            messageID
+        })
         .update(
-            /** Changes */
             { archived: true },
-            /** key */
-            { messageID }
+        )
+```
+
+### UpdateOrInsert
+```typescript
+   await context.messages
+        .withKeys({
+            messageID
+        })
+        .updateOrInsert(
+            { archived: true },
         )
 ```
 
 ### Upsert
 ```typescript
    await context.messages.statements
+        .withKeys({ messageID })
         .upsert(
-            /** Changes */
-            { read: 1 },
-            /** Apply update for an existing entity */
-            (existing) => ({
-                ... existing,
-                read: existing.read + 1
-            })
-            /** key */
-            { messageID }
+            (existing) => existing
+                ? ({ read: existing.read + 1 })
+                : ({ read: 1 })
         )
 ```
 
