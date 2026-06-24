@@ -161,6 +161,8 @@ export default class WorkflowContext {
 
     private registry: Map<string, IWorkflowSchema> = new Map();
 
+    private stats = {};
+
     constructor(
         @Inject
         public storage: WorkflowStorage
@@ -176,6 +178,9 @@ export default class WorkflowContext {
         taskGroups = ["default"],
         signal
     }: IWorkflowStartParams = {}) {
+        setInterval(() => {
+            console.log(JSON.stringify(this.stats));
+        },15000);
         await Promise.all(taskGroups.map((taskGroup) => this.startGroup(taskGroup, signal)));
     }
 
@@ -379,6 +384,7 @@ export default class WorkflowContext {
                 const total = await this.processQueueOnce({ taskGroup, signal });
                 if (total > 0) {
                     // do not wait till we have zero messages to process
+                    this.stats[taskGroup] = total + (this.stats[taskGroup] ?? 0);
                     continue;
                 }
             } catch (error) {
