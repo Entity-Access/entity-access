@@ -407,6 +407,8 @@ export default class WorkflowContext {
 
         const schema = WorkflowRegistry.getByName(workflow.name);
         const { eta, id, queued } = workflow;
+        const startTime = Date.now();
+        let timer = setInterval(() => console.log(`Workflow ${id} running since ${((Date.now() - startTime)/1000).toString(2)} seconds`), 60000);
         const input = JSON.parse(workflow.input);
         const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(queued) }, this);
         for (const iterator of schema.activities) {
@@ -418,11 +420,17 @@ export default class WorkflowContext {
         scope.add( schema.type, instance);
         try {
             const result = await instance.run();
+            clearInterval(timer);
+            timer = void 0;
             workflow.output = JSON.stringify(result ?? 0);
             workflow.state = "done";
             workflow.eta = clock.utcNow.add(instance.preserveTime);
             this.log(`Workflow ${workflow.id} finished successfully.`);
         } catch (error) {
+            if (timer) {
+                clearInterval(timer);
+                timer = void 0;
+            }
             if (error instanceof ActivitySuspendedError) {
                 // this will update last id...
                 workflow.eta = clock.utcNow.add(error.ttl);
