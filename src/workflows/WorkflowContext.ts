@@ -329,7 +329,6 @@ export default class WorkflowContext {
 
     public async processQueueOnce({ taskGroup = "default", signal = void 0 as AbortSignal } = {}) {
         const pending = await this.storage.dequeue(taskGroup, signal);
-        console.log(JSON.stringify({ taskGroup, pending: pending.length }));
         // run...
         for (const iterator of pending) {
             try {
