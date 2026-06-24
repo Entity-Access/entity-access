@@ -180,6 +180,7 @@ export default class WorkflowContext {
     }: IWorkflowStartParams = {}) {
         setInterval(() => {
             console.log(JSON.stringify(this.stats));
+            this.stats = {};
         },15000);
         await Promise.all(taskGroups.map((taskGroup) => this.startGroup(taskGroup, signal)));
     }
