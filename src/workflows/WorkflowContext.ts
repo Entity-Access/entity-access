@@ -408,7 +408,7 @@ export default class WorkflowContext {
         const schema = WorkflowRegistry.getByName(workflow.name);
         const { eta, id, queued } = workflow;
         const startTime = Date.now();
-        let timer = setInterval(() => console.log(`Workflow ${id} running since ${((Date.now() - startTime)/1000).toString(2)} seconds`), 60000);
+        let timer = setInterval(() => console.log(`Workflow ${id} running since ${((Date.now() - startTime)/1000).toFixed(2)} seconds`), 60000);
         const input = JSON.parse(workflow.input);
         const instance = new (schema.type)({ input, eta, id, currentTime: DateTime.from(queued) }, this);
         for (const iterator of schema.activities) {
