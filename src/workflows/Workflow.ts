@@ -20,6 +20,8 @@ export default abstract class Workflow<TIn = any, TOut = any> {
 
     public static taskGroup = null;
 
+    public static taskGroups = void 0 as string[];
+
     /**
      * If specified, all workflows in same sequence
      * will executed sequentially in a single worker node

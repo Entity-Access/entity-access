@@ -185,11 +185,14 @@ export default class WorkflowContext {
         // get taskGroups...
         const set = new Set<string>(taskGroups);
         for(const g of this.registry.values()) {
+            const groups = (g.type as any).taskGroups ?? [];
             const tg = (g.type as any).taskGroup;
-            if(!tg) {
-                continue;
+            if (tg) {
+                groups.push(tg);
             }
-            set.add(tg);
+            for(const ag of groups) {
+                set.add(ag);
+            }
         }
         const all = Array.from(set);
         console.log(JSON.stringify({
@@ -223,7 +226,7 @@ export default class WorkflowContext {
             throwIfExists,
             eta,
             parentID,
-            taskGroup = "default",
+            taskGroup,
             throttle
         }: IWorkflowQueueParameter = {}) {
         const clock = this.storage.clock;
@@ -281,7 +284,7 @@ export default class WorkflowContext {
                 }
 
                 eta ??= now;
-                taskGroup = (type as any).taskGroup || taskGroup;
+                taskGroup ??= (type as any).taskGroup ?? "default";
                 await this.storage.save({
                     id,
                     taskGroup,
@@ -362,7 +365,7 @@ export default class WorkflowContext {
         return pending.length;
     }
 
-    async runChild(w: Workflow, type, input, throttle?: IWorkflowThrottleGroup) {
+    async runChild(w: Workflow, type, input, throttle?: IWorkflowThrottleGroup, taskGroup?: string) {
 
         // there might still be some workflows pending
         // this will ensure even empty workflow !!
@@ -387,7 +390,7 @@ export default class WorkflowContext {
             throw new ActivitySuspendedError();
         }
 
-        await this.queue(type, input, { id, parentID: w.id, throttle });
+        await this.queue(type, input, { id, parentID: w.id, throttle, taskGroup });
         throw new ActivitySuspendedError();
     }
 
