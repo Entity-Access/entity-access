@@ -191,7 +191,12 @@ export default class WorkflowContext {
             }
             set.add(tg);
         }
-        await Promise.all(Array.from(set).map((tg) => this.startGroup(tg, signal)));
+        const all = Array.from(set);
+        console.log(JSON.stringify({
+            action: `Start Workflows`,
+            params: all
+        }));
+        await Promise.all(all.map((tg) => this.startGroup(tg, signal)));
     }
 
     public async get<T = any>(c: IClassOf<Workflow<any, T>> | string, id?: string): Promise<IWorkflowResult<T>> {
@@ -388,7 +393,6 @@ export default class WorkflowContext {
 
     private async startGroup(taskGroup, signal) {
 
-        console.log(`Started executing workflow jobs for group ${taskGroup}`);
         while(!signal?.aborted) {
             try {
                 const total = await this.processQueueOnce({ taskGroup, signal });
