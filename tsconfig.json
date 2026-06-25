@@ -4,6 +4,8 @@
         "module":"NodeNext",
         "incremental": true,
         "sourceMap": true,
+        "declaration": true,
+        "declarationMap": true,
         "importHelpers": true,
         "outDir": "dist",
         "rootDir": "./src",
