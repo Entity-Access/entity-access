@@ -251,12 +251,11 @@ export default class WorkflowStorage {
         // const q = this.lockQuery;
 
         const uuid = randomUUID();
-        const ttl = DateTime.now.addSeconds(15);
 
         const items = await db.workflows
             .where({now, taskGroup}, (x, p) => x.eta <= p.now
                 && ( x.lockedTTL === null
-                    || x.lockedTTL <= p.now
+                    || x.lockedTTL <= Sql.date.now()
                 )
                 && x.isWorkflow === true
                 && x.taskGroup === p.taskGroup)
@@ -264,8 +263,8 @@ export default class WorkflowStorage {
             .thenBy((x) => x.priority)
             .limit(20)
             .withSignal(signal)
-            .updateSelect({ uuid, ttl}, (x, p) => ({
-                lockedTTL: Sql.cast.asDateTime(p.ttl),
+            .updateSelect({ uuid}, (x, p) => ({
+                lockedTTL: Sql.date.addSeconds(Sql.date.now(),15),
                 lockToken: p.uuid
             }));
         const all = [] as WorkflowTask[];

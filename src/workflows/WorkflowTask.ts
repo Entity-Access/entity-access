@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import EALogger from "../common/EALogger.js";
+import Sql from "../sql/Sql.js";
 import DateTime from "../types/DateTime.js";
 import { loadedFromDb, type WorkflowDbContext, type WorkflowItem } from "./WorkflowDbContext.js";
 
@@ -37,7 +38,6 @@ export default class WorkflowTask implements Disposable {
 
     renewLock = () => {
         try {
-            const { id, lockToken } = this.item;
             let { lockedTTL } = this.item;
             if (!lockedTTL) {
                 return;
@@ -48,7 +48,8 @@ export default class WorkflowTask implements Disposable {
                 return;
             }
             lockedTTL = this.item.lockedTTL = now.addSeconds(15);
-            this.context.workflows.statements.update({ lockedTTL }, {id, lockToken})
+            this.context.workflows.where(this.item, (x, p) => x.id === p.id && x.lockToken === p.lockToken)
+                .update((x) => ({ lockedTTL: Sql.date.addSeconds(Sql.date.now(), 15)}))
                 .catch(EALogger.error);
         } catch (error) {
             EALogger.error(error);
