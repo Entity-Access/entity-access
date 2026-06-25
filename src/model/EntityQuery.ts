@@ -384,7 +384,11 @@ export default class EntityQuery<T = any>
         }
     }
 
-    async updateSelect(p?, f?): Promise<T[]> {
+    updateSelectSkipLocked(p?, f?): Promise<T[]> {
+        return this.updateSelect(p, f, true);
+    }
+
+    async updateSelect(p?, f?, skipLocked?): Promise<T[]> {
 
 
         if (f === void 0) {
@@ -392,7 +396,7 @@ export default class EntityQuery<T = any>
             p = void 0;
         }
 
-        const updateStatement = this.getUpdateStatement(p, f, true);
+        const updateStatement = this.getUpdateStatement(p, f, true, skipLocked);
 
         await using scope = new AsyncDisposableScope();
         const session = this.context.logger ?? Logger.nullLogger;
@@ -448,7 +452,7 @@ export default class EntityQuery<T = any>
         }
     }
 
-    getUpdateStatement(p, f, returnEntity = false) {
+    getUpdateStatement(p, f, returnEntity = false, skipLocked = false) {
 
         if (f) {
             return this.extend(p, f, (select, body) => {
@@ -468,8 +472,10 @@ export default class EntityQuery<T = any>
                         break;
                 }
                 return { ... select, fields };
-            }).getUpdateStatement(void 0, void 0, returnEntity);
+            }).getUpdateStatement(void 0, void 0, returnEntity, skipLocked);
         }
+
+        this.selectStatement.skipLocked = true;
 
         const as = Expression.parameter("s1", this.type);
         const sp = Expression.parameter("u1", this.type);

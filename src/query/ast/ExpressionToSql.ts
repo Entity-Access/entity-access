@@ -101,9 +101,13 @@ export default class ExpressionToSql extends Visitor<ITextQuery> {
         const fields = this.visitArray(e.fields, ",\n\t\t");
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
 
+        let suffix = "";
+        if (e.skipLocked) {
+            suffix = " FOR UPDATE SKIP LOCKED ";
+        }
         return prepare `SELECT
         ${fields}
-        FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}`;
+        FROM ${source}${as}${joins}${where}${orderBy}${limit}${offset}${suffix}`;
    }
     prepareStatement(e: SelectStatement) {
         // inject parameter and types if we don't have it..

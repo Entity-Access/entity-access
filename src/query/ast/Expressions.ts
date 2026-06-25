@@ -305,6 +305,7 @@ export class SelectStatement extends Expression {
     offset: number;
 
     model: EntityType;
+    skipLocked?: boolean;
 
     // // include  relations...
     // include: SelectStatement[];

@@ -59,6 +59,8 @@ export interface IBaseQuery<T> {
 
     update(fx: (x:T) => Partial<T>): Promise<number>;
     update<P>(parameters: P, fx: (x:T, p: P) => Partial<T>): Promise<number>;
+    updateSelectSkipLocked(this: T extends object ? IBaseQuery<T> : never, fx: (x:T) => Partial<T>): Promise<T[]>;
+    updateSelectSkipLocked<P>(this: T extends object ? IBaseQuery<T> : never, parameters: P, fx: (x:T, p: P) => Partial<T>): Promise<T[]>;
     updateSelect(this: T extends object ? IBaseQuery<T> : never, fx: (x:T) => Partial<T>): Promise<T[]>;
     updateSelect<P>(this: T extends object ? IBaseQuery<T> : never, parameters: P, fx: (x:T, p: P) => Partial<T>): Promise<T[]>;
 

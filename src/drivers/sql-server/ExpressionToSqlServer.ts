@@ -131,12 +131,17 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
         const fields = this.visitArray(e.fields, ",\n\t\t");
         const joins = e.joins?.length > 0 ? prepare `\n\t\t${this.visitArray(e.joins, "\n")}` : [];
 
-        const showTop = e.limit && !e.offset;
-        const showFetch = e.limit && e.offset;
+        let hasOffset = e.offset && true;
+        if (e.skipLocked) {
+            e.offset ??= 0;
+            hasOffset = true;
+        }
+        const showTop = e.limit && !hasOffset;
+        const showFetch = e.limit && hasOffset;
 
         let { orderBy } = e;
 
-        if (e.limit && e.offset) {
+        if (showFetch) {
             if (!orderBy?.length) {
                 // lets set default order by... if not set...
                 // as sql server needs something to order by...
@@ -166,12 +171,20 @@ export default class ExpressionToSqlServer extends ExpressionToSql {
             as = e.sourceParameter ? prepare ` AS ${this.visit(e.sourceParameter)}` : "";
         }
 
+        const hints = [];
+
+        if (e.skipLocked) {
+            hints.push("UPDLOCK", "READPAST");
+        }
+
+        const withHints = hints.length ? ` WITH (${hints.join(",")}) `: "";
+
         // const as = e.as ? prepare ` AS ${this.visit(e.as)}` : "";
         const offset = showFetch ? prepare ` OFFSET ${Number(e.offset).toString()} ROWS ` : "";
         const next = showFetch ? prepare ` FETCH NEXT ${Number(e.limit).toString()} ROWS ONLY` : "";
         return prepare `SELECT ${top}
         ${fields}
-        FROM ${source}${as}${joins}${where}${orderByText}${offset}${next}`;
+        FROM ${source}${as}${withHints}${joins}${where}${orderByText}${offset}${next}`;
     }
 
     visitValuesStatement(e: ValuesStatement): ITextQuery {
