@@ -175,6 +175,7 @@ export default class WorkflowContext {
     }
 
     public async start({
+        taskGroups = ["default"],
         signal
     }: IWorkflowStartParams = {}) {
         setInterval(() => {
@@ -182,7 +183,7 @@ export default class WorkflowContext {
             this.stats = {};
         },15000);
         // get taskGroups...
-        const set = new Set<string>();
+        const set = new Set<string>(taskGroups);
         for(const g of this.registry.values()) {
             const tg = (g.type as any).taskGroup;
             if(!tg) {
@@ -190,7 +191,7 @@ export default class WorkflowContext {
             }
             set.add(tg);
         }
-        await Promise.all(Array.from(set).map((taskGroup) => this.startGroup(taskGroup, signal)));
+        await Promise.all(Array.from(set).map((tg) => this.startGroup(tg, signal)));
     }
 
     public async get<T = any>(c: IClassOf<Workflow<any, T>> | string, id?: string): Promise<IWorkflowResult<T>> {
