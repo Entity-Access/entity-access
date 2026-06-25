@@ -263,6 +263,7 @@ export default class WorkflowStorage {
             .thenBy((x) => x.priority)
             .limit(20)
             .withSignal(signal)
+            .trace(console.log)
             .updateSelect({ uuid}, (x, p) => ({
                 lockedTTL: Sql.date.addSeconds(Sql.date.now(), 15),
                 lockToken: p.uuid
