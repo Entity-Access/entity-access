@@ -86,8 +86,8 @@ export default abstract class Workflow<TIn = any, TOut = any> {
         }>({} as any);
     }
 
-    protected async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn, throttle?: IWorkflowThrottleGroup): Promise<TChildOut> {
-        return this.context.runChild(this, type, input, throttle);
+    protected async runChild<TChildIn, TChildOut>(type: IClassOf<Workflow<TChildIn, TChildOut>>, input: TChildIn, throttle?: IWorkflowThrottleGroup, taskGroup?: string): Promise<TChildOut> {
+        return this.context.runChild(this, type, input, throttle, taskGroup);
     }
 
     protected async all<T extends readonly unknown[] | []>(values: T): Promise<{ -readonly [P in keyof T]: Awaited<T[P]> }>{
