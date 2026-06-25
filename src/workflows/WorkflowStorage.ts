@@ -251,7 +251,7 @@ export default class WorkflowStorage {
         // const q = this.lockQuery;
 
         const uuid = randomUUID();
-        const ttl = DateTime.now;
+        const ttl = DateTime.now.addSeconds(15);
 
         const items = await db.workflows
             .where({now, taskGroup}, (x, p) => x.eta <= p.now
