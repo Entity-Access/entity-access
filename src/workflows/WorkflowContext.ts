@@ -184,7 +184,7 @@ export default class WorkflowContext {
                 console.log(stats);
             }
             this.stats = {};
-        },60000);
+        },5*60000);
         // get taskGroups...
         const set = new Set<string>(taskGroups);
         for(const g of this.registry.values()) {
