@@ -265,7 +265,7 @@ export default class WorkflowStorage {
             .limit(20)
             .withSignal(signal)
             .updateSelect({ uuid, ttl}, (x, p) => ({
-                lockedTTL: Sql.cast.asDateTime(ttl),
+                lockedTTL: Sql.cast.asDateTime(p.ttl),
                 lockToken: p.uuid
             }));
         const all = [] as WorkflowTask[];
