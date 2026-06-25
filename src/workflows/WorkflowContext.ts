@@ -179,9 +179,12 @@ export default class WorkflowContext {
         signal
     }: IWorkflowStartParams = {}) {
         setInterval(() => {
-            console.log(JSON.stringify(this.stats));
+            const stats = JSON.stringify(this.stats);
+            if (stats !== "{}") {
+                console.log(stats);
+            }
             this.stats = {};
-        },15000);
+        },60000);
         // get taskGroups...
         const set = new Set<string>(taskGroups);
         for(const g of this.registry.values()) {
