@@ -475,14 +475,14 @@ export default class EntityQuery<T = any>
             }).getUpdateStatement(void 0, void 0, returnEntity, skipLocked);
         }
 
-        this.selectStatement.skipLocked = true;
+        const selectStatement = { ... this.selectStatement, skipLocked: true};
 
         const as = Expression.parameter("s1", this.type);
         const sp = Expression.parameter("u1", this.type);
         const join = JoinExpression.create({
             forceJoinType: "INNER",
             joinType: "INNER",
-            source: this.selectStatement,
+            source: selectStatement,
             as
         });
 
@@ -490,7 +490,7 @@ export default class EntityQuery<T = any>
 
         const fieldMap = new Set();
 
-        for (const iterator of this.selectStatement.fields) {
+        for (const iterator of selectStatement.fields) {
             if (iterator.type !== "ExpressionAs") {
                 throw new Error(`Invalid expression ${iterator.type}`);
             }
@@ -510,7 +510,7 @@ export default class EntityQuery<T = any>
             if (fieldMap.has(iterator.columnName)) {
                 continue;
             }
-            this.selectStatement.fields.push(Expression.member(this.selectStatement.sourceParameter, iterator.quotedColumnNameExp));
+            selectStatement.fields.push(Expression.member(selectStatement.sourceParameter, iterator.quotedColumnNameExp));
         }
 
         let returnUpdated = null as ExpressionAs[];
