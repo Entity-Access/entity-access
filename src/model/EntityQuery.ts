@@ -475,7 +475,7 @@ export default class EntityQuery<T = any>
             }).getUpdateStatement(void 0, void 0, returnEntity, skipLocked);
         }
 
-        const selectStatement = { ... this.selectStatement, skipLocked: true};
+        const selectStatement = { ... this.selectStatement, skipLocked };
 
         const as = Expression.parameter("s1", this.type);
         const sp = Expression.parameter("u1", this.type);
