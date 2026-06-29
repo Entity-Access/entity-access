@@ -19,7 +19,7 @@ export default class WorkflowTask implements Disposable {
         public readonly context: WorkflowDbContext,
     ) {
         this.item[loadedFromDb] = true;
-        this.timer = setInterval(this.renewLock, 3000);
+        this.timer = setInterval(this.renewLock, 5000);
         this.timerKey = { timer: this.timer };
         this.ac = new AbortController();
         this.signal = this.ac.signal;
@@ -47,9 +47,9 @@ export default class WorkflowTask implements Disposable {
                 this.ac.abort(new Error("Timed out"));
                 return;
             }
-            lockedTTL = this.item.lockedTTL = now.addSeconds(15);
+            lockedTTL = this.item.lockedTTL = now.addSeconds(30);
             this.context.workflows.where(this.item, (x, p) => x.id === p.id && x.lockToken === p.lockToken)
-                .update((x) => ({ lockedTTL: Sql.date.addSeconds(Sql.date.now(), 15)}))
+                .update((x) => ({ lockedTTL: Sql.date.addSeconds(Sql.date.now(), 30)}))
                 .catch(EALogger.error);
         } catch (error) {
             EALogger.error(error);
