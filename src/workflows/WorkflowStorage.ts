@@ -265,7 +265,11 @@ export default class WorkflowStorage {
             .withSignal(signal)
             .updateSelectSkipLocked({ uuid}, (x, p) => ({
                 lockedTTL: Sql.date.addSeconds(Sql.date.now(),30),
-                lockToken: p.uuid
+                lockToken: p.uuid,
+                /** if something is stuck for longer, this will delay the queue further.
+                 * Unless workflow actually executes and sets smaller eta
+                 */
+                eta: Sql.date.addMinutes(x.eta, 5)
             }));
         const all = [] as WorkflowTask[];
         for (const item of items) {
