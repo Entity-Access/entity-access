@@ -111,4 +111,8 @@ export default abstract class Workflow<TIn = any, TOut = any> {
             throw error;
         }
     }
+
+    protected toDebugString() {
+        return "";
+    }
 }
