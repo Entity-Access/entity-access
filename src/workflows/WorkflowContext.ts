@@ -439,7 +439,13 @@ export default class WorkflowContext {
         let timer = setInterval(() => {
             // @ts-expect-error protected
             const debugString = instance.toDebugString();
-            console.log(`PID ${process.pid} Workflow ${id} running since ${((Date.now() - startTime)/1000).toFixed(2)} seconds - ${debugString}`);
+            console.log(JSON.stringify({
+                action: "still-running",
+                pid: process.pid,
+                since: ((Date.now() - startTime)/1000).toFixed(2) + "s",
+                debugString,
+                id,
+            }));
         }, 60000);
         for (const iterator of schema.activities) {
             instance[iterator] = bindStep(this, workflow, iterator, instance[iterator]);
