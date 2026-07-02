@@ -453,6 +453,8 @@ export default class WorkflowContext {
         for (const iterator of schema.uniqueActivities) {
             instance[iterator] = bindStep(this, workflow, iterator, instance[iterator], true);
         }
+        // @ts-expect-error readonly
+        instance.timer = timer;
         scope.add( schema.type, instance);
         try {
             const result = await instance.run();

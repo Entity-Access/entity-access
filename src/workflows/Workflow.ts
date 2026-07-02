@@ -40,6 +40,8 @@ export default abstract class Workflow<TIn = any, TOut = any> {
 
     public failedPreserveTime: TimeSpan = TimeSpan.fromDays(1);
 
+    protected readonly timer: NodeJS.Timeout;
+
     constructor(
         {
             sequence,
