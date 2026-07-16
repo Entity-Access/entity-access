@@ -232,7 +232,7 @@ export class EntityStatements<T = any> {
                     return r;
                 }
             }
-            return await this.insert(entity);
+            return await this.insert({ ... keys, ... entity });
         } catch (error) {
             logger?.debug(error);
             retry --;
@@ -293,7 +293,7 @@ export class EntitySource<T = any> {
                 return s.statements.update( changes , keys, loadChangeEntry);
             },
             selectOrInsert(changes?: Partial<T>) {
-                return s.statements.selectOrInsert( changes ? { ... changes, ... keys } : { ... keys }, keys);
+                return s.statements.selectOrInsert( changes ? { ... keys, ... changes } : { ... keys }, keys);
             },
             updateOrInsert(changes: Partial<T>) {
                 return s.statements.upsert({ ... keys, ... changes }, (x) => ({ ... x, ... changes }), keys);
