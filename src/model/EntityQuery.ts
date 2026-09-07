@@ -546,11 +546,26 @@ export default class EntityQuery<T = any>
 
     async toPage(start, size): Promise<any> {
         this.maxLimit = size;
+
         let q = this;
+        // we need to make sure orderBy is added...
+        if(!q.selectStatement.orderBy?.length) {
+            if(this.type) {
+                const [k, ... otherKeys] = this.type.keys;
+                
+                q = q.orderBy(`(x) => x.${k.name}`);
+                for(const ok of otherKeys) {
+                    q = q.thenBy(`(x) => x.${ok.name}`);
+                }   
+            }
+        }
+
+
         if (start > 0) {
             q = q.offset(start);
         }
         q = q.limit(size);
+
         const items: T[] = [];
         q.hasMore = false;
         for await (const iterator of q.enumerate()) {
