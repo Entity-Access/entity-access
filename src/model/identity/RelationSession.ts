@@ -2,37 +2,12 @@ import { entriesSymbol } from "../../common/symbols/symbols.js";
 import ChangeEntry from "../changes/ChangeEntry.js";
 import ChangeSet from "../changes/ChangeSet.js";
 import EntityIndex, { EntityId } from "./EntityIndex.js";
-import { IColumn, IEntityRelation } from "../../decorators/IColumn.js";
-
-
-// class RelationMerge {
-
-//     pending: ((e: any) => void)[] = [];
-
-//     parent: any;
-
-//     merge(parent) {
-//         this.parent = parent;
-//         for(const p of this.pending) {
-//             p(parent);
-//         }
-//         this.pending = void 0;
-//     }
-
-//     push(fx: (e: any) => void) {
-//         if(this.parent) {
-//             fx(this.parent);
-//             return;
-//         }
-//         this.pending.push(fx);
-//     }
-
-// }
+import { IEntityRelation } from "../../decorators/IColumn.js";
 
 export default class RelationSession implements Disposable {
 
     index = new EntityIndex();
-    pending = new Set<ChangeEntry>();
+    pending = new Map<string, Set<ChangeEntry>>();
     merged = new Set<ChangeEntry>();
 
     constructor(changeSet: ChangeSet) {
@@ -47,56 +22,69 @@ export default class RelationSession implements Disposable {
 
         this.resolveRelations(entry);
 
-        for(const pending of this.pending.values()) {
-            this.fix(pending);
+        for(const key of entry.type.keys) {
+            const id = new EntityId(key, entry.entity[key.name]);
+            const all = this.pending.get(id.id);
+            if(all) {
+                for(const e of all.values()) {
+                    this.resolveRelations(e);
+                }
+            }
         }
     }
 
     resolveRelations(entry: ChangeEntry) {
-        let remove = true;
         const { entity, type } = entry;
+
         exit: for (const iterator of type.relations) {
             if (iterator.isInverseRelation) {
                 continue;
             }
 
-            const keys = [] as IColumn[];
+            const ids = [] as EntityId[];
 
             for (const { fkColumn, relatedKeyColumn } of iterator.fkMap) {
                 const fkValue = entity[fkColumn.name];
                 if (fkValue === void 0 || fkValue === null) {
                     continue exit;
                 }
-                keys.push(relatedKeyColumn);
+                ids.push(new EntityId(relatedKeyColumn, fkValue));
             }
 
-            remove &&= this.resolve(entry, iterator, keys);
-        }
-        if(remove) {
-            // all are resolved...
-            this.pending.delete(entry);
+            this.resolve(entry, iterator, ids);
         }
     }
 
-    resolve(entry: ChangeEntry, rel: IEntityRelation, keys: IColumn[]) {
+    resolve(entry: ChangeEntry, rel: IEntityRelation, ids: EntityId[]) {
         const { entity } = entry;
-        if(entity[rel.name]) {
-            return true;
-        }
-        const ids = [] as EntityId[];
-        for(const key of keys) {
-            const value = entity[key.name];
-            if(value === void 0 || key === null) {
+        let parent = entity[rel.name];
+        if(!parent) {
+            parent = this.index.search(ids);
+            if(!parent && this.pending) {
+                for(const id of ids) {
+                    let list = this.pending.get(id.id);
+                    if(!list) {
+                        list = new Set();
+                        this.pending.set(id.id, list);
+                    }
+                    list.add(entry);
+                }
                 return;
             }
-            ids.push(new EntityId(key, value));
+            entity[rel.name] = parent;
         }
-        const parent = this.index.search(ids);
-        if(!parent) {
-            this.pending.add(entry);
-            return;
+        // remove from pending if found...
+        if(this.pending) {
+            for(const id1 of ids) {
+                const list = this.pending.get(id1.id);
+                if(list) {
+                    list.delete(entry);
+                    if(list.size === 0) {
+                        this.pending.delete(id1.id);
+                    }
+                }
+            }
         }
-        entity[rel.name] = parent;
         if (rel.relatedRelation.isCollection) {
             const coll = (parent[rel.relatedRelation.name] ??= []) as any[];
             if(!coll.includes(entity)){
@@ -109,7 +97,13 @@ export default class RelationSession implements Disposable {
     }
 
     [Symbol.dispose](): void {
-        
+        // const all = this.pending.values();
+        // this.pending = void 0;
+        // for(const p of all) {
+        //     for(const e of p) {
+        //         this.resolveRelations(e);
+        //     }
+        // }
     }
 
 }

@@ -11,7 +11,7 @@ const intersect = (s1: Set<any>, s2: Set<any>) => {
     return r;
 };
 
-const generateId = (key: IColumn, value: any) => `${key.type.name}-${key.name}-${value}`;
+const generateId = (key: IColumn, value: any) => `${key.entityType.name}-${key.name}-${JSON.stringify(value)}`;
 
 export class EntityId {
 

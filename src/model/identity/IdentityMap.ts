@@ -48,7 +48,7 @@ export default class IdentityMap {
     public set(jsonKey, entity, type: EntityType) {
         entity[entityTypeSymbol] = type;
         this.map.set(jsonKey, entity);
-        this.updateSearchIndex(type, entity);
+        // this.updateSearchIndex(type, entity);
     }
 
     public clear() {
@@ -56,73 +56,73 @@ export default class IdentityMap {
         this.keys.clear();
     }
 
-    public build(key: IColumn) {
-        return this.getKeyEntry(key, true);
-    }
+    // public build(key: IColumn) {
+    //     return this.getKeyEntry(key, true);
+    // }
 
-    searchByKeys(pairs: { key: IColumn, value}[], create = true) {
-        let results: any[];
-        for (const { key, value } of pairs) {
-            const items = this.getAll(key, value, create);
-            if (!items?.length) {
-                return;
-            }
-            if (!results) {
-                results = [].concat(items);
-                continue;
-            }
-            const old = results;
-            results = [];
-            for (const item of items) {
-                if (old.includes(item)) {
-                    results.push(item);
-                }
-            }
-        }
-        return results[0];
-    }
+    // searchByKeys(pairs: { key: IColumn, value}[], create = true) {
+    //     let results: any[];
+    //     for (const { key, value } of pairs) {
+    //         const items = this.getAll(key, value, create);
+    //         if (!items?.length) {
+    //             return;
+    //         }
+    //         if (!results) {
+    //             results = [].concat(items);
+    //             continue;
+    //         }
+    //         const old = results;
+    //         results = [];
+    //         for (const item of items) {
+    //             if (old.includes(item)) {
+    //                 results.push(item);
+    //             }
+    //         }
+    //     }
+    //     return results[0];
+    // }
 
-    private getAll(key: IColumn, value: any, create = true) {
-        const keyEntry = this.getKeyEntry(key, create);
-        return keyEntry.get(value);
-    }
+    // private getAll(key: IColumn, value: any, create = true) {
+    //     const keyEntry = this.getKeyEntry(key, create);
+    //     return keyEntry.get(value);
+    // }
 
-    private getKeyEntry(key: IColumn, create = false) {
-        let keyEntry = this.keys.get(key);
-        if (keyEntry) {
-            return keyEntry;
-        }
-        if (!create) {
-            return;
-        }
-        keyEntry = new Map<any, any[]>();
-        this.keys.set(key, keyEntry);
-        for (const entry of this.map.values()) {
-            this.updateSearchIndex(entry[entityTypeSymbol], entry);
-        }
-        return keyEntry;
-    }
+    // private getKeyEntry(key: IColumn, create = false) {
+    //     let keyEntry = this.keys.get(key);
+    //     if (keyEntry) {
+    //         return keyEntry;
+    //     }
+    //     if (!create) {
+    //         return;
+    //     }
+    //     keyEntry = new Map<any, any[]>();
+    //     this.keys.set(key, keyEntry);
+    //     for (const entry of this.map.values()) {
+    //         this.updateSearchIndex(entry[entityTypeSymbol], entry);
+    //     }
+    //     return keyEntry;
+    // }
 
-    private updateSearchIndex(type: EntityType, entity: any) {
-        for (const key of this.keys.keys()) {
-            if (key.entityType !== type) {
-                continue;
-            }
-            const keyEntry = this.getKeyEntry(key, true);
-            const value = entity[key.name];
-            if (value === void 0 || value === null) {
-                continue;
-            }
-            let values = keyEntry.get(value);
-            if (!values) {
-                values = [];
-                keyEntry.set(value, values);
-            }
-            if (values.includes(entity)) {
-                continue;
-            }
-            values.push(entity);
-        }
-    }
+    // private updateSearchIndex(type: EntityType, entity: any) {
+    //     for (const key of this.keys.keys()) {
+    //         if (key.entityType !== type) {
+    //             continue;
+    //         }
+    //         const keyEntry = this.getKeyEntry(key, true);
+    //         const value = entity[key.name];
+    //         if (value === void 0 || value === null) {
+    //             continue;
+    //         }
+    //         let values = keyEntry.get(value);
+    //         if (!values) {
+    //             values = [];
+    //             keyEntry.set(value, values);
+    //         }
+    //         if (values.includes(entity)) {
+    //             continue;
+    //         }
+    //         values.push(entity);
+    //     }
+    // }
 
 }
