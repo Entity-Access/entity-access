@@ -1,5 +1,5 @@
 import EntityAccessError from "../../common/EntityAccessError.js";
-import { identityMapSymbol } from "../../common/symbols/symbols.js";
+import { entriesSymbol, identityMapSymbol } from "../../common/symbols/symbols.js";
 import EntityContext from "../EntityContext.js";
 import IdentityMap from "../identity/IdentityMap.js";
 import IdentityService from "../identity/IdentityService.js";
@@ -16,6 +16,10 @@ export default class ChangeSet {
 
     get [getContext]() {
         return this.context;
+    }
+
+    get[entriesSymbol]() {
+        return this.entries;
     }
 
     private readonly entries: ChangeEntry[] = [];

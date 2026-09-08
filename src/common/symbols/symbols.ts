@@ -5,4 +5,4 @@ export const entityTypeSymbol = Symbol("entityType");
 export const traceSymbol = Symbol("trace");
 export const identityMapSymbol = Symbol("identityMapSymbol");
 export const identitySymbol = Symbol("identity");
-
+export const entriesSymbol = Symbol("entries");

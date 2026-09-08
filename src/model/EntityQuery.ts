@@ -9,7 +9,8 @@ import { QueryExpander } from "../query/expander/QueryExpander.js";
 import EntityContext from "./EntityContext.js";
 import type { EntitySource } from "./EntitySource.js";
 import { IOrderedEntityQuery, IEntityQuery } from "./IFilterWithParameter.js";
-import RelationMapper from "./identity/RelationMapper.js";
+// import RelationMapper from "./identity/RelationMapper.js";
+import RelationSession from "./identity/RelationSession.js";
 
 export default class EntityQuery<T = any>
     implements IOrderedEntityQuery<T>, IEntityQuery<T> {
@@ -552,11 +553,10 @@ export default class EntityQuery<T = any>
         if(!q.selectStatement.orderBy?.length) {
             if(this.type) {
                 const [k, ... otherKeys] = this.type.keys;
-                
                 q = q.orderBy(`(x) => x.${k.name}`);
                 for(const ok of otherKeys) {
                     q = q.thenBy(`(x) => x.${ok.name}`);
-                }   
+                }
             }
         }
 
@@ -588,7 +588,8 @@ export default class EntityQuery<T = any>
             const type = this.type;
             const signal = this.signal;
 
-            const relationMapper = new RelationMapper(this.context.changeSet);
+            // const relationMapper = new RelationMapper(this.context.changeSet);
+            using rs = new RelationSession(this.context.changeSet);
 
             const include = this.includes;
             if (include?.length > 0) {
@@ -602,7 +603,7 @@ export default class EntityQuery<T = any>
                 // included entities first...
                 const loaders = include
                     .map((x) => QueryExpander.expand(this.context, selectForInclude , x, false)
-                    .map((y) => this.load(relationMapper, session, y, signal)))
+                    .map((y) => this.load(rs, session, y, signal)))
                     .flat(2);
                 await Promise.all(loaders);
             }
@@ -657,7 +658,8 @@ export default class EntityQuery<T = any>
                     Object.setPrototypeOf(iterator, prototype);
                     iterator.$type = type.entityName;
                     const entry = this.context.changeSet.getEntry(iterator, iterator);
-                    relationMapper.fix(entry);
+                    // relationMapper.fix(entry);
+                    rs.fix(entry);
                     yield entry.entity as any;
                     continue;
                 }
@@ -671,7 +673,7 @@ export default class EntityQuery<T = any>
         }
     }
 
-    async load(relationMapper: RelationMapper, session: Logger, select: SelectStatement, signal: AbortSignal) {
+    async load(relationMapper: RelationSession, session: Logger, select: SelectStatement, signal: AbortSignal) {
         let query: { text, values };
         let reader: IDbReader;
         try {
