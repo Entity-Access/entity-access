@@ -13,7 +13,7 @@ export default class TaskManager {
 
     public queue<TR>(fxs: ((...a: any[]) => Promise<TR>)[]): Promise<void> {
         for(const fx of fxs) {
-            this.queueRun(fx).catch((e) => this.error?.(e));
+            this.queueRun(fx);
         }
         return new Promise((resolve) => {
             (async () => {
