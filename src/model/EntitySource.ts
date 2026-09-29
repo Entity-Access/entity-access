@@ -196,7 +196,7 @@ export class EntityStatements<T = any> {
             }
             const r = await this.update(entity, keys);
             if (r) {
-                return r;
+                return entity as T;
             }
             return await this.insert(entity);
         } catch (error) {
