@@ -5,32 +5,34 @@ export default class TaskManager {
 
     public rateLimit = 10;
 
+    public error: (error: any) => void;
+
     private running: Set<any> = new Set();
 
     private waiting: Queue<{ resolve, reject, fx }> = new Queue();
 
-    public error: (error: any) => void;
-
-    public queue<TR>(fxs: ((...a: any[]) => Promise<TR>)[]): Promise<void> {
+    public queue<TR>(fxs: ((...a: any[]) => Promise<TR>)[]): Promise<TR[]> {
+        const result = [] as Promise<TR>[];
         for(const fx of fxs) {
-            this.queueRun(fx);
+            result.push(this.queueRun(fx));
         }
-        return new Promise((resolve) => {
-            (async () => {
-                for(;;) {
-                    await sleep(100);
-                    if (this.running.size > 0) {
-                        continue;
-                    }
-                    await sleep(10);
-                    if (this.running.size > 0) {
-                        continue;
-                    }
-                    break;
-                }
-                resolve();
-            })().catch((e) => this.error?.(e));
-        });
+        return Promise.all(result);
+        // return new Promise((resolve) => {
+        //     (async () => {
+        //         for(;;) {
+        //             await sleep(100);
+        //             if (this.running.size > 0) {
+        //                 continue;
+        //             }
+        //             await sleep(10);
+        //             if (this.running.size > 0) {
+        //                 continue;
+        //             }
+        //             break;
+        //         }
+        //         resolve(Promise.all(result));
+        //     })().catch((e) => this.error?.(e));
+        // });
     }
 
     protected queueRun<TR>(fx: (... a: any[]) => Promise<TR>): Promise<TR> {
