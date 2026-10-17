@@ -8,6 +8,7 @@ export interface ICachedItem {
     expire: number;
     maxExpire: number;
     value: any;
+    touch();
 }
 
 const cacheSet = new Set<WeakRef<TimedCache>>();
@@ -31,6 +32,26 @@ const w = new FinalizationRegistry<any>((heldValue) => {
     cacheSet.delete(heldValue);
 });
 
+export class CachedItem {
+
+    expire: number;
+    maxExpire: number;
+    value: any;
+
+    constructor(
+        public readonly ttl,
+        private readonly max = 10 * ttl,
+        public dispose?: (item: any) => any
+    ) {
+    }
+
+    touch() {
+        const now = Date.now();
+        this.expire = now + this.ttl;
+        this.maxExpire = now + this.max;
+    }
+}
+
 export default class TimedCache<TKey = any, T = any> implements Disposable {
 
     public deletedEvent = new EventSet<TKey>(this);
@@ -41,7 +62,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         return this.map.size;
     }
 
-    private map: Map<TKey,ICachedItem> = new Map();
+    private map: Map<TKey,CachedItem> = new Map();
 
     private weakRef;
 
@@ -81,31 +102,31 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
         this.clearExpired(Number.MAX_SAFE_INTEGER);
     }
 
-    getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP) => T, ttl: number = this.ttl) {
+    getOrCreate<TP>(key: TKey, p1: TP, factory: (k: TKey,p: TP, item: CachedItem) => T, ttl: number = this.ttl) {
         let item = this.map.get(key);
         if (!item) {
-            const now = Date.now();
-            const expire = now + ttl;
-                item = { value: factory(key, p1), ttl, expire, maxExpire: now + this.maxTTL };
+            item = new CachedItem(ttl, this.maxTTL);
+            item.touch();
+            item.value = factory(key, p1, item);
             this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
         } else {
-            item.expire += ttl;
+            item.touch();
         }
         return item.value as T;
     }
 
     async getOrCreateAsync(
         key: TKey,
-        factory: (k: TKey) => Promise<T>,
+        factory: (k: TKey, item: CachedItem) => Promise<T>,
         ttl: number = this.ttl,
         dispose?: ((item: T) => any)
     ): Promise<T> {
         let item = this.map.get(key);
         if (!item) {
-            const now = Date.now();
-            const expire = now + ttl;
-                item = { value: factory(key), ttl, expire, maxExpire: now + this.maxTTL, dispose };
+            item = new CachedItem(ttl, this.maxTTL, dispose);
+            item.value = factory(key, item);
+            item.touch();
             this.addedEvent.dispatch({ key, value: item.value });
             this.map.set(key, item);
             // we need to make sure we do not cache
@@ -119,7 +140,7 @@ export default class TimedCache<TKey = any, T = any> implements Disposable {
                 });
             }
         } else {
-            item.expire += ttl;
+            item.touch();
         }
         return await item.value;
     }
