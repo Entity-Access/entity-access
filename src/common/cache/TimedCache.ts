@@ -40,15 +40,19 @@ export class CachedItem {
 
     constructor(
         public readonly ttl,
-        private readonly max = 10 * ttl,
+        max,
         public dispose?: (item: any) => any
     ) {
+        // max expire can be set only once
+        this.maxExpire = Date.now() + max;
     }
 
-    touch() {
+    touch(updateMaxExpire = false) {
         const now = Date.now();
         this.expire = now + this.ttl;
-        this.maxExpire = now + this.max;
+        if(updateMaxExpire) {
+            this.maxExpire += this.ttl;
+        }
     }
 }
 
