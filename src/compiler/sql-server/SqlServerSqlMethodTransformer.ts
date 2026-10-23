@@ -336,6 +336,9 @@ export const SqlServerSqlHelper: ISqlHelpers = {
         isNullOrEmpty(text) {
             return prepareAny `(${text} IS NULL OR DATALENGTH(${text}) = 0)`;
         },
+        replace(text, search, replace) {
+            return prepareAny `REPLACE(${text}, ${search}, ${replace})`;
+        },
     }
 };
 

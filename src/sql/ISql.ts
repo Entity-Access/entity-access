@@ -123,6 +123,8 @@ export interface ISql {
 
         reverse(text: string): string;
 
+        replace(text: string, search: string, replace: string): string;
+
         /**
          * Create substring from the given string. Please note that the index you specify should be
          * zero based, and based on underlying provider, index will be incremented by one if provider
