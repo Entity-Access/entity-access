@@ -20,5 +20,23 @@ export class UserFile {
     public user: User;
 
     public photoUsers: User[];
+    userFiles: UserFileBlock[];
+
+}
+
+@Table("UserFileBlocks")
+export class UserFileBlock {
+
+    @Column({ dataType: "BigInt", key: true })
+    @RelateTo(UserFile, {
+        property: (x) => x.file,
+        inverseProperty: (x) => x.userFiles
+    })
+    fileID: number;
+
+    @Column({ dataType: "Int", key: true})
+    order: number;
+
+    file: UserFile;
 
 }

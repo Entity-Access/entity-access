@@ -74,7 +74,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         const fields = [];
 
         for (const iterator of keys) {
-            let def = iterator.columnName + " ";
+            let def = iterator.quotedColumnName + " ";
             if (iterator.generated) {
                 switch(iterator.generated) {
                     case "identity":
@@ -93,7 +93,7 @@ export default class PostgresAutomaticMigrations extends PostgresMigrations {
         }
 
         await this.executeQuery(`CREATE TABLE IF NOT EXISTS ${name} (${fields.join(",")}
-        ,CONSTRAINT PK_${name} PRIMARY KEY (${keys.map((x) => x.columnName).join(",")})
+        ,CONSTRAINT PK_${name} PRIMARY KEY (${keys.map((x) => x.quotedColumnName).join(",")})
         )`);
 
     }

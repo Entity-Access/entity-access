@@ -4,7 +4,7 @@ import { RelateTo, RelateToOne } from "../../decorators/Relate.js";
 import Table from "../../decorators/Table.js";
 import Index from "../../decorators/Index.js";
 import DateTime from "../../types/DateTime.js";
-import { UserFile } from "./UseFile.js";
+import { UserFile, UserFileBlock } from "./UseFile.js";
 import Sql from "../../sql/Sql.js";
 import MultiForeignKeys from "../../decorators/ForeignKey.js";
 import CheckConstraint from "../../decorators/CheckConstraint.js";
@@ -34,6 +34,8 @@ export class ShoppingContext extends EntityContext {
     public profilePhotos = this.model.register(ProfilePhoto);
 
     public userFiles = this.model.register(UserFile);
+
+    public userFileBlocks = this.model.register(UserFileBlock);
 
     public emailAddresses = this.model.register(EmailAddress);
 
